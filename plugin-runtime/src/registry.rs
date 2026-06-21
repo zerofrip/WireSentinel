@@ -26,7 +26,7 @@ impl PluginRegistry {
 
     pub fn records(&self) -> Vec<PluginRecord> {
         let mut records: Vec<_> = self.records.values().cloned().collect();
-        records.sort_by(|a, b| b.installed_at.cmp(&a.installed_at));
+        records.sort_by_key(|record| std::cmp::Reverse(record.installed_at));
         records
     }
 

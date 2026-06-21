@@ -256,3 +256,5 @@ jobs:
         run: cargo xwin check --workspace --target aarch64-pc-windows-msvc
         env:
           XWIN_ACCEPT_LICENSE: "1"
+          CC_aarch64_pc_windows_msvc: clang-cl
+          CXX_aarch64_pc_windows_msvc: clang-cl

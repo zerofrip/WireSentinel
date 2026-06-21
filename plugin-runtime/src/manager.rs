@@ -58,8 +58,7 @@ impl PluginManager {
                 record
                     .manifest
                     .capabilities
-                    .iter()
-                    .any(|cap| *cap == PluginCapability::AnonymityBackend)
+                    .contains(&PluginCapability::AnonymityBackend)
             })
             .collect()
     }

@@ -40,6 +40,7 @@ pub trait MixnetBackendPlugin: WireSentinelPlugin {
 }
 
 /// Third-party anonymity backend plugins (Katzenpost, Loopix, federated mixnet).
+#[allow(dead_code)]
 pub trait AnonymityBackendPlugin: WireSentinelPlugin {
     fn provider_id(&self) -> &str;
 }

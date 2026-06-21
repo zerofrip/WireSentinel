@@ -15,14 +15,31 @@ use uuid::Uuid;
 
 pub const WIREGUARD_KEY_LENGTH: usize = 32;
 
-type WireGuardAdapterHandle = *mut c_void;
+type WireGuardAdapterHandleRaw = *mut c_void;
+
+#[derive(Copy, Clone)]
+struct WireGuardAdapterHandle(WireGuardAdapterHandleRaw);
+// SAFETY: opaque WireGuard adapter handles are kernel-owned; used only under Mutex.
+unsafe impl Send for WireGuardAdapterHandle {}
+unsafe impl Sync for WireGuardAdapterHandle {}
+
+impl WireGuardAdapterHandle {
+    fn is_null(self) -> bool {
+        self.0.is_null()
+    }
+
+    fn raw(self) -> WireGuardAdapterHandleRaw {
+        self.0
+    }
+}
 
 type CreateAdapterFn =
-    unsafe extern "system" fn(*const u16, *const u16, *const u8) -> WireGuardAdapterHandle;
-type CloseAdapterFn = unsafe extern "system" fn(WireGuardAdapterHandle);
-type SetConfigurationFn = unsafe extern "system" fn(WireGuardAdapterHandle, *const u8, u32) -> i32;
-type SetAdapterStateFn = unsafe extern "system" fn(WireGuardAdapterHandle, u32) -> i32;
-type GetAdapterStateFn = unsafe extern "system" fn(WireGuardAdapterHandle, *mut u32) -> i32;
+    unsafe extern "system" fn(*const u16, *const u16, *const u8) -> WireGuardAdapterHandleRaw;
+type CloseAdapterFn = unsafe extern "system" fn(WireGuardAdapterHandleRaw);
+type SetConfigurationFn =
+    unsafe extern "system" fn(WireGuardAdapterHandleRaw, *const u8, u32) -> i32;
+type SetAdapterStateFn = unsafe extern "system" fn(WireGuardAdapterHandleRaw, u32) -> i32;
+type GetAdapterStateFn = unsafe extern "system" fn(WireGuardAdapterHandleRaw, *mut u32) -> i32;
 type GetDriverVersionFn = unsafe extern "system" fn() -> u32;
 
 const WIREGUARD_ADAPTER_STATE_UP: u32 = 1;
@@ -101,12 +118,12 @@ impl NativeWireGuardBackend {
         if handle.is_null() {
             return Err(wg_err("WireGuardCreateAdapter failed"));
         }
-        Ok(handle)
+        Ok(WireGuardAdapterHandle(handle))
     }
 
     pub fn delete_adapter(&self, handle: WireGuardAdapterHandle) {
         if !handle.is_null() {
-            unsafe { (self.dll.close_adapter)(handle) };
+            unsafe { (self.dll.close_adapter)(handle.raw()) };
         }
     }
 
@@ -116,7 +133,9 @@ impl NativeWireGuardBackend {
         config: &WireGuardConfig,
     ) -> Result<()> {
         let blob = encode_config(config)?;
-        let ok = unsafe { (self.dll.set_configuration)(handle, blob.as_ptr(), blob.len() as u32) };
+        let ok = unsafe {
+            (self.dll.set_configuration)(handle.raw(), blob.as_ptr(), blob.len() as u32)
+        };
         if ok == 0 {
             return Err(wg_err("WireGuardSetConfiguration failed"));
         }
@@ -125,7 +144,7 @@ impl NativeWireGuardBackend {
 
     fn set_state(&self, handle: WireGuardAdapterHandle, up: bool) -> Result<()> {
         let state = if up { WIREGUARD_ADAPTER_STATE_UP } else { 0 };
-        let ok = unsafe { (self.dll.set_adapter_state)(handle, state) };
+        let ok = unsafe { (self.dll.set_adapter_state)(handle.raw(), state) };
         if ok == 0 {
             return Err(wg_err("WireGuardSetAdapterState failed"));
         }
@@ -134,7 +153,7 @@ impl NativeWireGuardBackend {
 
     fn get_state(&self, handle: WireGuardAdapterHandle) -> VpnStatus {
         let mut state = 0u32;
-        let ok = unsafe { (self.dll.get_adapter_state)(handle, &mut state) };
+        let ok = unsafe { (self.dll.get_adapter_state)(handle.raw(), &mut state) };
         if ok == 0 {
             return VpnStatus::Error;
         }

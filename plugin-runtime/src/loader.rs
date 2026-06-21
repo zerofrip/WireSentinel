@@ -1,4 +1,4 @@
-use shared_types::{PluginManifest, Result, WireSentinelError};
+use shared_types::{PluginManifest, Result};
 use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 

@@ -1,0 +1,85 @@
+[workspace]
+resolver = "2"
+members = [
+    "shared-types",
+    "event-bus",
+    "storage",
+    "app-registry",
+    "policy-engine",
+    "wfp",
+    "vpn-engine",
+    "proxy-engine",
+    "traffic-monitor",
+    "dns",
+    "filter-lists",
+    "dpi-transforms",
+    "plugin-runtime",
+    "transport-engine",
+    "tcp-termination",
+    "split-tunnel",
+    "core-service",
+]
+exclude = ["ui"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["WireSentinel Contributors"]
+repository = "https://github.com/WireSentinel/WireSentinel"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4", "v5", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1"
+async-trait = "0.1"
+parking_lot = "0.12"
+
+shared-types = { path = "shared-types" }
+event-bus = { path = "event-bus" }
+storage = { path = "storage" }
+app-registry = { path = "app-registry" }
+split-tunnel = { path = "split-tunnel" }
+policy-engine = { path = "policy-engine" }
+wfp = { path = "wfp" }
+vpn-engine = { path = "vpn-engine" }
+proxy-engine = { path = "proxy-engine" }
+traffic-monitor = { path = "traffic-monitor" }
+dns = { path = "dns" }
+filter-lists = { path = "filter-lists" }
+dpi-transforms = { path = "dpi-transforms" }
+plugin-runtime = { path = "plugin-runtime" }
+transport-engine = { path = "transport-engine" }
+tcp-termination = { path = "tcp-termination" }
+mixnet-core = { path = "../WireSentinel-Mixnet/mixnet-core" }
+mixnet-transports = { path = "../WireSentinel-Mixnet/transports", package = "transports" }
+mixnet-routing = { path = "../WireSentinel-Mixnet/routing", package = "routing" }
+mixnet-cover-traffic = { path = "../WireSentinel-Mixnet/cover-traffic", package = "cover-traffic" }
+anonymity-core = { path = "../WireSentinel-Anonymity/anonymity-core" }
+anonymity-katzenpost = { path = "../WireSentinel-Anonymity/katzenpost", package = "katzenpost" }
+anonymity-loopix = { path = "../WireSentinel-Anonymity/loopix", package = "loopix" }
+anonymity-federation = { path = "../WireSentinel-Anonymity/federation", package = "federation" }
+anonymity-entropy = { path = "../WireSentinel-Anonymity/entropy", package = "entropy" }
+anonymity-discovery = { path = "../WireSentinel-Anonymity/discovery", package = "discovery" }
+anonymity-decoy-routing = { path = "../WireSentinel-Anonymity/decoy-routing", package = "decoy-routing" }
+anonymity-analytics = { path = "../WireSentinel-Anonymity/analytics", package = "analytics" }
+anonymity-cover-traffic = { path = "../WireSentinel-Anonymity/cover-traffic", package = "anonymity-cover-traffic" }
+anonymity-sdk = { path = "../WireSentinel-Anonymity/sdk", package = "anonymity-sdk" }
+ztna-core = { path = "../WireSentinel-ZTNA/ztna-core" }
+ztna-policy = { path = "../WireSentinel-ZTNA/policy", package = "policy" }
+ztna-trust = { path = "../WireSentinel-ZTNA/trust", package = "trust" }
+ztna-connectors = { path = "../WireSentinel-ZTNA/connectors", package = "connectors" }
+sse-core = { path = "../WireSentinel-SSE/sse-core" }
+swg = { path = "../WireSentinel-SSE/swg" }
+dlp = { path = "../WireSentinel-SSE/dlp" }
+threat-protection = { path = "../WireSentinel-SSE/threat-protection" }
+risk-engine = { path = "../WireSentinel-SSE/risk-engine" }
+xdr-core = { path = "../WireSentinel-XDR/xdr-core" }
+edr = { path = "../WireSentinel-XDR/edr" }
+response = { path = "../WireSentinel-XDR/response" }

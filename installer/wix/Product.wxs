@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WireSentinel WiX MSI.
+  Requires WiX Toolset 4.x:
+    wix build -ext WixToolset.Util.wixext installer/wix/Product.wxs -o dist/WireSentinel-0.1.0-x64.msi
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package
+    Name="WireSentinel"
+    Manufacturer="WireSentinel Contributors"
+    Version="0.1.0"
+    UpgradeCode="a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="MainFeature" Title="WireSentinel" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="DataDirectories" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="WireSentinel" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="WireSentinelData" Name="WireSentinel">
+        <Directory Id="LogsDir" Name="logs" />
+        <Directory Id="TunnelsDir" Name="tunnels" />
+        <Directory Id="TransportsDir" Name="transports" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="System6432Folder" />
+
+    <!-- Loopback API firewall rule (127.0.0.1:8170) — matches NSIS installer -->
+    <CustomAction
+      Id="CA_AddFirewallRule"
+      Directory="System6432Folder"
+      ExeCommand='cmd.exe /c netsh advfirewall firewall add rule name="WireSentinel API (loopback)" dir=in action=allow protocol=TCP localport=8170 remoteip=127.0.0.1 profile=any'
+      Execute="deferred"
+      Impersonate="no"
+      Return="ignore" />
+
+    <CustomAction
+      Id="CA_RemoveFirewallRule"
+      Directory="System6432Folder"
+      ExeCommand='cmd.exe /c netsh advfirewall firewall delete rule name="WireSentinel API (loopback)"'
+      Execute="deferred"
+      Impersonate="no"
+      Return="ignore" />
+
+    <CustomAction
+      Id="CA_RollbackFirewallRule"
+      Directory="System6432Folder"
+      ExeCommand='cmd.exe /c netsh advfirewall firewall delete rule name="WireSentinel API (loopback)"'
+      Execute="rollback"
+      Impersonate="no"
+      Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="CA_RollbackFirewallRule" Before="CA_AddFirewallRule" Condition="NOT Installed" />
+      <Custom Action="CA_AddFirewallRule" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="CA_RemoveFirewallRule" Before="RemoveFiles" Condition='REMOVE="ALL"' />
+    </InstallExecuteSequence>
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="ServiceExe" Guid="b2c3d4e5-f6a7-8901-bcde-f23456789012">
+        <File Source="..\..\target\release\wire-sentinel-service.exe" KeyPath="yes" />
+        <ServiceInstall
+          Id="WireSentinelService"
+          Name="WireSentinel"
+          DisplayName="WireSentinel Network Security Service"
+          Description="WireSentinel VPN, firewall, and DNS security service"
+          Type="ownProcess"
+          Start="demand"
+          ErrorControl="normal"
+          Account="LocalSystem">
+          <ServiceDependency Id="Tcpip" />
+          <ServiceDependency Id="Dnscache" />
+          <util:ServiceConfig
+            FirstFailureActionType="restart"
+            SecondFailureActionType="restart"
+            ThirdFailureActionType="restart"
+            RestartServiceDelayInSeconds="60"
+            ResetPeriodInDays="1" />
+        </ServiceInstall>
+        <ServiceControl
+          Id="StopWireSentinel"
+          Name="WireSentinel"
+          Stop="both"
+          Remove="uninstall" />
+      </Component>
+      <Component Id="GuiExe" Guid="c3d4e5f6-a7b8-9012-cdef-345678901234">
+        <File Source="..\..\ui\src-tauri\target\release\wire-sentinel.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="TunnelDll" Guid="d4e5f6a7-b8c9-0123-def0-456789012345">
+        <File Source="..\..\resources\tunnel.dll" KeyPath="yes" />
+      </Component>
+      <Component Id="WireguardDll" Guid="e5f6a7b8-c9d0-1234-ef01-567890123456">
+        <File Source="..\..\resources\wireguard.dll" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="DataDirectories" Directory="WireSentinelData">
+      <Component Id="DataRoot" Guid="f6a7b8c9-d0e1-2345-f012-678901234567">
+        <CreateFolder />
+      </Component>
+      <Component Id="LogsFolder" Guid="a7b8c9d0-e1f2-3456-0123-789012345678" Directory="LogsDir">
+        <CreateFolder />
+      </Component>
+      <Component Id="TunnelsFolder" Guid="b8c9d0e1-f2a3-4567-1234-890123456789" Directory="TunnelsDir">
+        <CreateFolder />
+      </Component>
+      <Component Id="TransportsFolder" Guid="c9d0e1f2-a3b4-5678-2345-901234567890" Directory="TransportsDir">
+        <CreateFolder />
+      </Component>
+    </ComponentGroup>
+  </Package>
+</Wix>

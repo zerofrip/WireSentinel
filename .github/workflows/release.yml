@@ -1,0 +1,122 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-x64:
+    name: Release x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install WiX Toolset
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Verify VPN resource DLLs
+        shell: pwsh
+        run: |
+          $required = @("resources\tunnel.dll", "resources\wireguard.dll")
+          foreach ($f in $required) {
+            if (-not (Test-Path $f)) {
+              Write-Error "Missing $f — copy WireGuard DLLs per resources/README.md before release"
+            }
+          }
+
+      - name: Build release packages (x64)
+        shell: pwsh
+        run: .\scripts\release-builder.ps1 -Arch x64
+
+      - name: Upload x64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-x64
+          path: dist/release/x64/
+
+  build-arm64:
+    name: Release arm64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-pc-windows-msvc
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install WiX Toolset
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Verify VPN resource DLLs
+        shell: pwsh
+        run: |
+          $required = @("resources\tunnel.dll", "resources\wireguard.dll")
+          foreach ($f in $required) {
+            if (-not (Test-Path $f)) {
+              Write-Error "Missing $f — copy WireGuard DLLs per resources/README.md before release"
+            }
+          }
+
+      - name: Build release packages (arm64)
+        shell: pwsh
+        run: .\scripts\release-builder.ps1 -Arch arm64
+
+      - name: Upload arm64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-arm64
+          path: dist/release/arm64/
+
+  github-release:
+    name: Publish GitHub Release
+    needs: [build-x64, build-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download x64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-x64
+          path: dist/release/x64
+
+      - name: Download arm64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-arm64
+          path: dist/release/arm64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/release/x64/*
+            dist/release/arm64/*
+          generate_release_notes: true

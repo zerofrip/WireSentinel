@@ -1,0 +1,105 @@
+[package]
+name = "core-service"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "core_service"
+path = "src/lib.rs"
+
+[[bin]]
+name = "wire-sentinel-service"
+path = "src/main.rs"
+
+[features]
+default = []
+controller-agent = []
+
+[dependencies]
+shared-types = { workspace = true }
+event-bus = { workspace = true }
+storage = { workspace = true }
+app-registry = { workspace = true }
+policy-engine = { workspace = true }
+wfp = { workspace = true }
+vpn-engine = { workspace = true }
+traffic-monitor = { workspace = true }
+dns = { workspace = true }
+filter-lists = { workspace = true }
+dpi-transforms = { workspace = true }
+plugin-runtime = { workspace = true }
+transport-engine = { workspace = true }
+tcp-termination = { workspace = true }
+split-tunnel = { workspace = true }
+proxy-engine = { workspace = true }
+mixnet-core = { workspace = true }
+mixnet-transports = { workspace = true }
+mixnet-routing = { workspace = true }
+mixnet-cover-traffic = { workspace = true }
+anonymity-core = { workspace = true }
+anonymity-katzenpost = { workspace = true }
+anonymity-loopix = { workspace = true }
+anonymity-federation = { workspace = true }
+anonymity-entropy = { workspace = true }
+anonymity-discovery = { workspace = true }
+anonymity-decoy-routing = { workspace = true }
+anonymity-analytics = { workspace = true }
+anonymity-cover-traffic = { workspace = true }
+ztna-core = { workspace = true }
+ztna-policy = { workspace = true }
+ztna-trust = { workspace = true }
+ztna-connectors = { workspace = true }
+sse-core = { workspace = true }
+swg = { workspace = true }
+dlp = { workspace = true }
+threat-protection = { workspace = true }
+risk-engine = { workspace = true }
+xdr-core = { workspace = true }
+edr = { workspace = true }
+response = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower = { version = "0.5", features = ["limit"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "limit"] }
+futures-util = "0.3"
+windows-service = "0.7"
+utoipa = { version = "5", features = ["uuid", "chrono"] }
+utoipa-swagger-ui = { version = "8", features = ["axum"] }
+governor = "0.8"
+nonzero_ext = "0.3"
+tracing-appender = "0.2"
+sysinfo = "0.33"
+zip = "2"
+md5 = "0.7"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+base64 = "0.22"
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_Security_Cryptography",
+    "Win32_System_SystemInformation",
+    "Win32_NetworkManagement_WindowsFilteringPlatform",
+] }
+
+[dev-dependencies]
+axum-test = "16"
+tokio = { workspace = true, features = ["rt", "macros"] }
+tower = { version = "0.5", features = ["util"] }
+wfp = { workspace = true }
+event-bus = { workspace = true }
+storage = { workspace = true }
+ztna-connectors = { workspace = true }

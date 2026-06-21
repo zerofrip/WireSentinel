@@ -118,13 +118,12 @@ impl MixnetProfileRepository for SqliteMixnetProfileRepository {
     }
 
     async fn get(&self, id: Uuid) -> Result<Option<MixnetProfile>> {
-        let row = sqlx::query_as::<_, MixnetProfileRow>(&format!(
-            "{MIXNET_PROFILE_SELECT} WHERE id = ?"
-        ))
-        .bind(id.to_string())
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let row =
+            sqlx::query_as::<_, MixnetProfileRow>(&format!("{MIXNET_PROFILE_SELECT} WHERE id = ?"))
+                .bind(id.to_string())
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         row.map(|r| {
             parse_profile_row(
@@ -332,13 +331,12 @@ impl MixnetSessionRepository for SqliteMixnetSessionRepository {
     }
 
     async fn get(&self, id: Uuid) -> Result<Option<MixnetSession>> {
-        let row = sqlx::query_as::<_, MixnetSessionRow>(&format!(
-            "{MIXNET_SESSION_SELECT} WHERE id = ?"
-        ))
-        .bind(id.to_string())
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let row =
+            sqlx::query_as::<_, MixnetSessionRow>(&format!("{MIXNET_SESSION_SELECT} WHERE id = ?"))
+                .bind(id.to_string())
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         row.map(|r| parse_session_row(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7))
             .transpose()

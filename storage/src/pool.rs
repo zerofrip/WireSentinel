@@ -19,7 +19,9 @@ pub fn db_path() -> PathBuf {
 }
 
 pub async fn init_pool(db_path: Option<&Path>) -> Result<SqlitePool, WireSentinelError> {
-    let path = db_path.map(PathBuf::from).unwrap_or_else(crate::pool::db_path);
+    let path = db_path
+        .map(PathBuf::from)
+        .unwrap_or_else(crate::pool::db_path);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(WireSentinelError::Io)?;
     }

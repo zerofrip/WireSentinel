@@ -3,7 +3,7 @@
 use crate::policy::{evaluate_domain, DomainDecision};
 use async_trait::async_trait;
 use filter_lists::FilterListProvider;
-use shared_types::{DnsBlockMode, DNSQueryLog, DnsSettings, Result, WireSentinelError};
+use shared_types::{DNSQueryLog, DnsBlockMode, DnsSettings, Result, WireSentinelError};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
@@ -40,9 +40,11 @@ pub struct ProxyContext {
 }
 
 pub fn spawn_proxy(ctx: Arc<ProxyContext>) -> Result<DnsProxyHandle> {
-    let listen = ctx.settings.listen_addr.parse::<SocketAddr>().map_err(|e| {
-        WireSentinelError::Dns(format!("invalid listen_addr: {e}"))
-    })?;
+    let listen = ctx
+        .settings
+        .listen_addr
+        .parse::<SocketAddr>()
+        .map_err(|e| WireSentinelError::Dns(format!("invalid listen_addr: {e}")))?;
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
     let task = tokio::spawn(run_proxy(listen, ctx, shutdown_rx));
     Ok(DnsProxyHandle {
@@ -51,7 +53,11 @@ pub fn spawn_proxy(ctx: Arc<ProxyContext>) -> Result<DnsProxyHandle> {
     })
 }
 
-async fn run_proxy(listen: SocketAddr, ctx: Arc<ProxyContext>, mut shutdown: watch::Receiver<bool>) {
+async fn run_proxy(
+    listen: SocketAddr,
+    ctx: Arc<ProxyContext>,
+    mut shutdown: watch::Receiver<bool>,
+) {
     let socket = match UdpSocket::bind(listen).await {
         Ok(s) => Arc::new(s),
         Err(e) => {

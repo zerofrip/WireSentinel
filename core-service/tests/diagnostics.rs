@@ -41,12 +41,13 @@ async fn diagnostics_bundle_contains_no_secrets() {
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).expect("zip entry");
         let mut content = String::new();
-        file.read_to_string(&mut content)
-            .expect("read zip entry");
+        file.read_to_string(&mut content).expect("read zip entry");
 
         for needle in forbidden {
             assert!(
-                !content.to_ascii_lowercase().contains(&needle.to_ascii_lowercase()),
+                !content
+                    .to_ascii_lowercase()
+                    .contains(&needle.to_ascii_lowercase()),
                 "diagnostics bundle must not contain '{needle}' in {}",
                 file.name()
             );

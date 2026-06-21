@@ -99,7 +99,9 @@ impl NativePluginLoader {
         {
             use windows::core::PCWSTR;
             use windows::Win32::Foundation::FreeLibrary;
-            use windows::Win32::System::LibraryLoader::{LoadLibraryW, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS};
+            use windows::Win32::System::LibraryLoader::{
+                LoadLibraryW, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS,
+            };
 
             let wide: Vec<u16> = path
                 .to_string_lossy()

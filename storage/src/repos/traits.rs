@@ -1,17 +1,17 @@
 use async_trait::async_trait;
 use shared_types::{
-    AppRecord, AuditLogEntry, AuditLogQuery, BandwidthStats, BridgeProfile, ChainProfile,
-    CoverTrafficSettings, DNSQueryLog, BackupManifestEntry, BenchmarkSnapshot, DnsProviderRecord,
-    DnsSettings, DomainCacheEntry, DomainCorrelation, EnterprisePolicy, FilterListRecord,
-    FirewallDecisionRecord, LeakIncident, LogLevel, MixnetProfile, MixnetSession,
-    ObfuscationProfile, PerformanceSnapshot, PluginRecord, PolicyMode, PrivacyAnalyticsSnapshot,
-    PrivacyScoreSnapshot, ProxyChain, ProxyProfile, RouteStatisticsQuery, AnonymousChain,
-    KatzenpostProfile, LoopixProfile, AnonymousService, AnonymousServiceEndpoint,
-    RouteStatisticsRecord, Rule, RuntimeStateRecord, SecurityFinding, TailnetProfile, TorProfile,
-    TopDomainEntry, TrafficEvent, TransportProfile, ValidationCheck, VpnConfigFileRecord,
-    VPNProfile, WfpFilterStateRecord, WireSentinelError,
-    TcpTerminationPolicy, TcpTerminationRule, TcpTerminationSettings,
-    SplitTunnelTemplate, SplitTemplateModeSettings,
+    AnonymousChain, AnonymousService, AnonymousServiceEndpoint, AppRecord, AuditLogEntry,
+    AuditLogQuery, BackupManifestEntry, BandwidthStats, BenchmarkSnapshot, BridgeProfile,
+    ChainProfile, CoverTrafficSettings, DNSQueryLog, DnsProviderRecord, DnsSettings,
+    DomainCacheEntry, DomainCorrelation, EnterprisePolicy, FilterListRecord,
+    FirewallDecisionRecord, KatzenpostProfile, LeakIncident, LogLevel, LoopixProfile,
+    MixnetProfile, MixnetSession, ObfuscationProfile, PerformanceSnapshot, PluginRecord,
+    PolicyMode, PrivacyAnalyticsSnapshot, PrivacyScoreSnapshot, ProxyChain, ProxyProfile,
+    RouteStatisticsQuery, RouteStatisticsRecord, Rule, RuntimeStateRecord, SecurityFinding,
+    SplitTemplateModeSettings, SplitTunnelTemplate, TailnetProfile, TcpTerminationPolicy,
+    TcpTerminationRule, TcpTerminationSettings, TopDomainEntry, TorProfile, TrafficEvent,
+    TransportProfile, VPNProfile, ValidationCheck, VpnConfigFileRecord, WfpFilterStateRecord,
+    WireSentinelError,
 };
 use std::path::Path;
 use uuid::Uuid;
@@ -238,13 +238,21 @@ pub trait RouteStatisticsRepository: Send + Sync {
 pub trait AuditLogRepository: Send + Sync {
     async fn insert(&self, entry: &AuditLogEntry) -> Result<()>;
     async fn list(&self, query: AuditLogQuery) -> Result<Vec<AuditLogEntry>>;
-    async fn count_since(&self, event_type: Option<&str>, since: chrono::DateTime<chrono::Utc>) -> Result<u64>;
+    async fn count_since(
+        &self,
+        event_type: Option<&str>,
+        since: chrono::DateTime<chrono::Utc>,
+    ) -> Result<u64>;
 }
 
 #[async_trait]
 pub trait DomainCacheRepository: Send + Sync {
     async fn upsert(&self, entry: &DomainCacheEntry) -> Result<()>;
-    async fn lookup_by_ip(&self, app_id: Option<Uuid>, ip: &str) -> Result<Option<DomainCacheEntry>>;
+    async fn lookup_by_ip(
+        &self,
+        app_id: Option<Uuid>,
+        ip: &str,
+    ) -> Result<Option<DomainCacheEntry>>;
     async fn purge_expired(&self) -> Result<u64>;
 }
 
@@ -401,7 +409,8 @@ pub trait AnonymousChainRepository: Send + Sync {
 pub trait CoverTrafficRepository: Send + Sync {
     async fn list(&self) -> Result<Vec<CoverTrafficSettings>>;
     async fn get(&self, id: Uuid) -> Result<Option<CoverTrafficSettings>>;
-    async fn get_by_mixnet_profile(&self, profile_id: Uuid) -> Result<Option<CoverTrafficSettings>>;
+    async fn get_by_mixnet_profile(&self, profile_id: Uuid)
+        -> Result<Option<CoverTrafficSettings>>;
     async fn insert(&self, settings: &CoverTrafficSettings) -> Result<()>;
     async fn update(&self, settings: &CoverTrafficSettings) -> Result<()>;
     async fn delete(&self, id: Uuid) -> Result<bool>;

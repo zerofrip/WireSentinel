@@ -1,3 +1,4 @@
+use anonymity_federation::MixnetFederationManager;
 use core_service::anonymity::AnonymityService;
 use core_service::anonymity_entropy::RouteEntropyBridge;
 use core_service::anonymity_security::AnonymitySecurityPolicy;
@@ -5,7 +6,6 @@ use core_service::cover_traffic::CoverTrafficService;
 use core_service::mixnet::MixnetService;
 use core_service::mixnet_security::MixnetSecurityPolicy;
 use core_service::privacy_analytics::PrivacyAnalyticsService;
-use anonymity_federation::MixnetFederationManager;
 use event_bus::EventBus;
 use proxy_engine::ProxyListenPort;
 use std::sync::Arc;
@@ -48,7 +48,9 @@ async fn privacy_analytics_includes_phase13_optional_fields() {
     let events = EventBus::new();
     let listen_ports = Arc::new(ProxyListenPort::new());
     let mixnet_security = Arc::new(MixnetSecurityPolicy::new(events.clone()));
-    let mixnet_manager = Arc::new(mixnet_core::MixnetManager::new(mixnet_security.to_core_policy()));
+    let mixnet_manager = Arc::new(mixnet_core::MixnetManager::new(
+        mixnet_security.to_core_policy(),
+    ));
     let mixnet = Arc::new(MixnetService::new(
         Arc::clone(&storage),
         events.clone(),

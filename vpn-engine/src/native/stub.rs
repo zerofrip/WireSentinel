@@ -12,7 +12,9 @@ pub struct NativeWireGuardBackend {
 
 impl NativeWireGuardBackend {
     pub fn new(dll_path: PathBuf) -> Self {
-        Self { _dll_path: dll_path }
+        Self {
+            _dll_path: dll_path,
+        }
     }
 }
 

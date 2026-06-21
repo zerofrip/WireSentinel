@@ -1,11 +1,11 @@
 use crate::engine::{RouteEnforcer, WfpEngine};
 use async_trait::async_trait;
+use parking_lot::RwLock;
 use shared_types::{AppIdentity, Result, RuleAction, TrafficRoute, TunnelIface};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use parking_lot::RwLock;
+use std::sync::Arc;
 use tracing::{debug, info};
 use uuid::Uuid;
 

@@ -33,7 +33,10 @@ impl DnsProvider for FailingProvider {
     async fn resolve(&self, _qname: &str, _qtype: &str) -> Result<(Vec<String>, u64)> {
         let n = self.calls.fetch_add(1, Ordering::SeqCst);
         if n < self.fail_until {
-            Err(WireSentinelError::Dns(format!("{} simulated failure", self.name)))
+            Err(WireSentinelError::Dns(format!(
+                "{} simulated failure",
+                self.name
+            )))
         } else {
             Ok((vec!["93.184.216.34".into()], 12))
         }

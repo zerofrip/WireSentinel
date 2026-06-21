@@ -11,8 +11,8 @@ use shared_types::{
 use std::sync::Arc;
 use storage::Storage;
 use transport_engine::BridgeManager;
-use uuid::Uuid;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 pub struct TorService {
     storage: Arc<Storage>,
@@ -67,23 +67,28 @@ impl TorService {
             .tor_profiles
             .get(profile_id)
             .await?
-            .ok_or_else(|| WireSentinelError::Config(format!("tor profile {profile_id} not found")))?;
+            .ok_or_else(|| {
+                WireSentinelError::Config(format!("tor profile {profile_id} not found"))
+            })?;
 
         *self.active_profile.write() = Some(profile.clone());
         *self.running.write() = true;
 
         self.events
-            .publish(ServiceEvent::now(ServiceEventInner::TorStarted { profile_id }));
+            .publish(ServiceEvent::now(ServiceEventInner::TorStarted {
+                profile_id,
+            }));
 
         Ok(profile)
     }
 
     pub async fn stop(&self, profile_id: Uuid, reason: &str) -> Result<()> {
         *self.running.write() = false;
-        self.events.publish(ServiceEvent::now(ServiceEventInner::TorStopped {
-            profile_id,
-            reason: reason.to_string(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::TorStopped {
+                profile_id,
+                reason: reason.to_string(),
+            }));
         Ok(())
     }
 
@@ -111,18 +116,20 @@ impl TorService {
             .unwrap_or_else(Uuid::nil);
 
         if result.reachable {
-            self.events.publish(ServiceEvent::now(ServiceEventInner::BridgeConnected {
-                bridge_id,
-                profile_id,
-            }));
+            self.events
+                .publish(ServiceEvent::now(ServiceEventInner::BridgeConnected {
+                    bridge_id,
+                    profile_id,
+                }));
         } else {
-            self.events.publish(ServiceEvent::now(ServiceEventInner::BridgeFailed {
-                bridge_id,
-                error: result
-                    .message
-                    .clone()
-                    .unwrap_or_else(|| "bridge test failed".into()),
-            }));
+            self.events
+                .publish(ServiceEvent::now(ServiceEventInner::BridgeFailed {
+                    bridge_id,
+                    error: result
+                        .message
+                        .clone()
+                        .unwrap_or_else(|| "bridge test failed".into()),
+                }));
         }
 
         Ok(BridgeTestResponse {
@@ -138,10 +145,11 @@ impl TorService {
     }
 
     pub fn notify_circuit_changed(&self, profile_id: Uuid, circuit_count: u32) {
-        self.events.publish(ServiceEvent::now(ServiceEventInner::TorCircuitChanged {
-            profile_id,
-            circuit_count,
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::TorCircuitChanged {
+                profile_id,
+                circuit_count,
+            }));
     }
 }
 

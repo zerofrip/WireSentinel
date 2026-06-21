@@ -2,7 +2,8 @@
 
 use dpi_transforms::TransformPipeline;
 use shared_types::{
-    ChainProfile, ObfuscationPreset, Result, TransportProfile, TransportState, TransportStatusRecord,
+    ChainProfile, ObfuscationPreset, Result, TransportProfile, TransportState,
+    TransportStatusRecord,
 };
 use std::sync::Arc;
 use storage::Storage;
@@ -74,7 +75,12 @@ impl TransportManager {
 
     async fn resolve_obfuscation_preset(&self, chain: &ChainProfile) -> Option<ObfuscationPreset> {
         let profile_id = chain.obfuscation_profile_id?;
-        let profile = self.storage.obfuscation_profiles.get(profile_id).await.ok()??;
+        let profile = self
+            .storage
+            .obfuscation_profiles
+            .get(profile_id)
+            .await
+            .ok()??;
         Some(profile.preset)
     }
 

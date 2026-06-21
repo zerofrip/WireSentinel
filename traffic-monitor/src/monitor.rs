@@ -1,7 +1,7 @@
 use crate::etw::{backend_from_settings, poll_connections, TrafficBackend};
 use crate::handler::ConnectionHandler;
-use shared_types::{AppIdentity, BandwidthSnapshot, ConnectionSnapshot, TrafficEvent};
 use parking_lot::RwLock;
+use shared_types::{AppIdentity, BandwidthSnapshot, ConnectionSnapshot, TrafficEvent};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::broadcast;
@@ -62,9 +62,7 @@ impl TrafficMonitor {
     pub fn emit_connection(&self, snapshot: ConnectionSnapshot) {
         let key = format!(
             "{}:{}:{}",
-            snapshot.pid,
-            snapshot.local_addr,
-            snapshot.remote_addr
+            snapshot.pid, snapshot.local_addr, snapshot.remote_addr
         );
         self.seen_connections.write().insert(key, ());
         let _ = self.connection_tx.send(snapshot);

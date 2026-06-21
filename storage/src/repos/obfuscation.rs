@@ -1,7 +1,9 @@
 use super::traits::{ObfuscationProfileRepository, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use shared_types::{HandshakeProxySettings, ObfuscationPreset, ObfuscationProfile, WireSentinelError};
+use shared_types::{
+    HandshakeProxySettings, ObfuscationPreset, ObfuscationProfile, WireSentinelError,
+};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -34,7 +36,9 @@ fn preset_from_str(s: &str) -> Result<ObfuscationPreset> {
         "aggressive" => Ok(ObfuscationPreset::Aggressive),
         "lwo" => Ok(ObfuscationPreset::Lwo),
         "socks5_handshake" => Ok(ObfuscationPreset::Socks5Handshake),
-        other => Err(WireSentinelError::Config(format!("unknown preset: {other}"))),
+        other => Err(WireSentinelError::Config(format!(
+            "unknown preset: {other}"
+        ))),
     }
 }
 
@@ -49,26 +53,28 @@ impl ObfuscationProfileRepository for SqliteObfuscationProfileRepository {
         .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         rows.into_iter()
-            .map(|(id, name, preset, modules_json, handshake_proxy_json, created_at, updated_at)| {
-                let handshake_proxy = handshake_proxy_json
-                    .map(|j| serde_json::from_str::<HandshakeProxySettings>(&j))
-                    .transpose()
-                    .map_err(WireSentinelError::Serde)?;
-                Ok(ObfuscationProfile {
-                    id: Uuid::parse_str(&id)
-                        .map_err(|e| WireSentinelError::Config(e.to_string()))?,
-                    name,
-                    preset: preset_from_str(&preset)?,
-                    modules_json,
-                    handshake_proxy,
-                    created_at: DateTime::parse_from_rfc3339(&created_at)
-                        .map_err(|e| WireSentinelError::Config(e.to_string()))?
-                        .with_timezone(&Utc),
-                    updated_at: DateTime::parse_from_rfc3339(&updated_at)
-                        .map_err(|e| WireSentinelError::Config(e.to_string()))?
-                        .with_timezone(&Utc),
-                })
-            })
+            .map(
+                |(id, name, preset, modules_json, handshake_proxy_json, created_at, updated_at)| {
+                    let handshake_proxy = handshake_proxy_json
+                        .map(|j| serde_json::from_str::<HandshakeProxySettings>(&j))
+                        .transpose()
+                        .map_err(WireSentinelError::Serde)?;
+                    Ok(ObfuscationProfile {
+                        id: Uuid::parse_str(&id)
+                            .map_err(|e| WireSentinelError::Config(e.to_string()))?,
+                        name,
+                        preset: preset_from_str(&preset)?,
+                        modules_json,
+                        handshake_proxy,
+                        created_at: DateTime::parse_from_rfc3339(&created_at)
+                            .map_err(|e| WireSentinelError::Config(e.to_string()))?
+                            .with_timezone(&Utc),
+                        updated_at: DateTime::parse_from_rfc3339(&updated_at)
+                            .map_err(|e| WireSentinelError::Config(e.to_string()))?
+                            .with_timezone(&Utc),
+                    })
+                },
+            )
             .collect()
     }
 

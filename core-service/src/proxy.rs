@@ -47,9 +47,10 @@ impl ProxyService {
         }
         profile.updated_at = now;
         self.storage.proxy_profiles.insert(&profile).await?;
-        self.events.publish(ServiceEvent::now(ServiceEventInner::ProxyProfileCreated {
-            profile: profile.clone(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::ProxyProfileCreated {
+                profile: profile.clone(),
+            }));
         Ok(profile)
     }
 
@@ -57,9 +58,10 @@ impl ProxyService {
         let mut profile = profile;
         profile.updated_at = Utc::now();
         self.storage.proxy_profiles.update(&profile).await?;
-        self.events.publish(ServiceEvent::now(ServiceEventInner::ProxyProfileUpdated {
-            profile: profile.clone(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::ProxyProfileUpdated {
+                profile: profile.clone(),
+            }));
         Ok(profile)
     }
 
@@ -94,10 +96,11 @@ impl ProxyService {
                 profile.last_error = Some(e.to_string());
                 profile.updated_at = Utc::now();
                 let _ = self.storage.proxy_profiles.update(&profile).await;
-                self.events.publish(ServiceEvent::now(ServiceEventInner::ProxyFailed {
-                    profile_id,
-                    error: e.to_string(),
-                }));
+                self.events
+                    .publish(ServiceEvent::now(ServiceEventInner::ProxyFailed {
+                        profile_id,
+                        error: e.to_string(),
+                    }));
                 Err(e)
             }
         }
@@ -127,13 +130,14 @@ impl ProxyService {
             self.storage.proxy_profiles.update(&profile).await?;
         }
         if !health.healthy {
-            self.events.publish(ServiceEvent::now(ServiceEventInner::ProxyFailed {
-                profile_id,
-                error: health
-                    .message
-                    .clone()
-                    .unwrap_or_else(|| "health check failed".into()),
-            }));
+            self.events
+                .publish(ServiceEvent::now(ServiceEventInner::ProxyFailed {
+                    profile_id,
+                    error: health
+                        .message
+                        .clone()
+                        .unwrap_or_else(|| "health check failed".into()),
+                }));
         }
         Ok(health)
     }
@@ -217,10 +221,11 @@ impl ProxyService {
             .start_chain_with_profiles(chain_id, &profiles)
             .await?;
 
-        self.events.publish(ServiceEvent::now(ServiceEventInner::ProxyChainStarted {
-            chain_id,
-            name: chain.name.clone(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::ProxyChainStarted {
+                chain_id,
+                name: chain.name.clone(),
+            }));
         let _ = port;
         Ok(chain)
     }
@@ -262,9 +267,9 @@ impl ProxyService {
                     }
                 }
                 self.start_chain(*id).await?;
-                self.manager
-                    .socks_port_for(*id)
-                    .ok_or_else(|| WireSentinelError::Proxy("proxy chain listen port unavailable".into()))
+                self.manager.socks_port_for(*id).ok_or_else(|| {
+                    WireSentinelError::Proxy("proxy chain listen port unavailable".into())
+                })
             }
             _ => Err(WireSentinelError::Proxy("not a proxy route".into())),
         }

@@ -52,7 +52,19 @@ impl CorrelationRepository for SqliteCorrelationRepository {
         }
         sql.push_str(" ORDER BY last_seen DESC LIMIT ?");
 
-        let mut q = sqlx::query_as::<_, (String, Option<String>, String, Option<String>, String, String, i64, i64)>(&sql);
+        let mut q = sqlx::query_as::<
+            _,
+            (
+                String,
+                Option<String>,
+                String,
+                Option<String>,
+                String,
+                String,
+                i64,
+                i64,
+            ),
+        >(&sql);
         if let Some(app_id) = query.app_id {
             q = q.bind(app_id.to_string());
         }

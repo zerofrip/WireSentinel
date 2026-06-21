@@ -89,10 +89,7 @@ impl PluginManager {
 
             let mut wasm_path = PathBuf::from(&manifest.path);
             if !wasm_path.is_absolute() {
-                wasm_path = path
-                    .parent()
-                    .unwrap_or(&self.data_dir)
-                    .join(wasm_path);
+                wasm_path = path.parent().unwrap_or(&self.data_dir).join(wasm_path);
                 manifest.path = wasm_path.to_string_lossy().into_owned();
             }
 
@@ -188,8 +185,10 @@ impl PluginManager {
 }
 
 fn parse_manifest_file(path: &Path) -> Result<PluginManifest> {
-    let raw = std::fs::read_to_string(path).map_err(|e| WireSentinelError::Config(e.to_string()))?;
-    let mut manifest: PluginManifest = serde_json::from_str(&raw).map_err(WireSentinelError::Serde)?;
+    let raw =
+        std::fs::read_to_string(path).map_err(|e| WireSentinelError::Config(e.to_string()))?;
+    let mut manifest: PluginManifest =
+        serde_json::from_str(&raw).map_err(WireSentinelError::Serde)?;
 
     if manifest.path.is_empty() {
         let stem = path

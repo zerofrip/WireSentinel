@@ -28,7 +28,9 @@ fn leak_type_from_str(s: &str) -> Result<LeakType> {
         "dns" => Ok(LeakType::Dns),
         "route" => Ok(LeakType::Route),
         "vpn_disconnect" => Ok(LeakType::VpnDisconnect),
-        other => Err(WireSentinelError::Config(format!("unknown leak type: {other}"))),
+        other => Err(WireSentinelError::Config(format!(
+            "unknown leak type: {other}"
+        ))),
     }
 }
 
@@ -100,12 +102,14 @@ impl LeakIncidentRepository for SqliteLeakIncidentRepository {
 
     async fn resolve(&self, id: Uuid) -> Result<bool> {
         let now = Utc::now().to_rfc3339();
-        let r = sqlx::query("UPDATE leak_incidents SET resolved_at = ? WHERE id = ? AND resolved_at IS NULL")
-            .bind(now)
-            .bind(id.to_string())
-            .execute(&self.pool)
-            .await
-            .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let r = sqlx::query(
+            "UPDATE leak_incidents SET resolved_at = ? WHERE id = ? AND resolved_at IS NULL",
+        )
+        .bind(now)
+        .bind(id.to_string())
+        .execute(&self.pool)
+        .await
+        .map_err(|e| WireSentinelError::Config(e.to_string()))?;
         Ok(r.rows_affected() > 0)
     }
 }

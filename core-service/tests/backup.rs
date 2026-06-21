@@ -40,7 +40,9 @@ async fn backup_export_import_round_trip() {
     backup.import_json(&json).await.expect("import");
 
     let rules = storage.rules.list().await.expect("list rules");
-    assert!(rules.iter().any(|r| matches!(r.scope, shared_types::RuleScope::Domain(ref d) if d == "example.com")));
+    assert!(rules
+        .iter()
+        .any(|r| matches!(r.scope, shared_types::RuleScope::Domain(ref d) if d == "example.com")));
 
     let manifests = storage
         .backup_manifest

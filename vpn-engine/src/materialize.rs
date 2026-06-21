@@ -27,9 +27,8 @@ pub fn materialize_profile_config(profile: &VPNProfile, blob: Option<&[u8]>) -> 
         return Ok(profile.config_path.clone());
     }
 
-    let blob = blob.ok_or_else(|| {
-        WireSentinelError::Vpn("config blob required for db:// profile".into())
-    })?;
+    let blob = blob
+        .ok_or_else(|| WireSentinelError::Vpn("config blob required for db:// profile".into()))?;
     let plaintext = String::from_utf8(blob.to_vec())
         .map_err(|e| WireSentinelError::Vpn(format!("invalid config blob: {e}")))?;
 

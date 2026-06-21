@@ -50,10 +50,7 @@ impl FaultInjectionService {
             _ => {}
         }
 
-        let restored = self
-            .recovery
-            .recover_all(vpn, transport, true)
-            .await?;
+        let restored = self.recovery.recover_all(vpn, transport, true).await?;
 
         let verified = restored > 0 || scenario == "dns_crash";
         if verified {

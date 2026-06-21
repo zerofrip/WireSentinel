@@ -2,8 +2,8 @@
 
 use crate::backend::VpnBackend;
 use async_trait::async_trait;
-use shared_types::{Result, VPNProfile, VpnStats, VpnStatus, WireSentinelError};
 use parking_lot::RwLock;
+use shared_types::{Result, VPNProfile, VpnStats, VpnStatus, WireSentinelError};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::{info, warn};
@@ -33,11 +33,7 @@ impl ScmTunnelDllBackend {
     }
 
     #[cfg(windows)]
-    fn install_and_start_service(
-        &self,
-        service_name: &str,
-        config_path: &PathBuf,
-    ) -> Result<()> {
+    fn install_and_start_service(&self, service_name: &str, config_path: &PathBuf) -> Result<()> {
         use std::ffi::OsStr;
         use std::os::windows::ffi::OsStrExt;
         use windows::core::PCWSTR;
@@ -83,15 +79,15 @@ impl ScmTunnelDllBackend {
 
             match service {
                 Ok(handle) => {
-                    StartServiceW(handle, None).map_err(|e| {
-                        WireSentinelError::Vpn(format!("StartServiceW: {e}"))
-                    })?;
+                    StartServiceW(handle, None)
+                        .map_err(|e| WireSentinelError::Vpn(format!("StartServiceW: {e}")))?;
                     let _ = CloseServiceHandle(handle);
                 }
                 Err(_) => {
                     // Service may already exist — try to start it
-                    let existing = OpenServiceW(scm, PCWSTR(name_wide.as_ptr()), SERVICE_ALL_ACCESS)
-                        .map_err(|e| WireSentinelError::Vpn(format!("OpenServiceW: {e}")))?;
+                    let existing =
+                        OpenServiceW(scm, PCWSTR(name_wide.as_ptr()), SERVICE_ALL_ACCESS)
+                            .map_err(|e| WireSentinelError::Vpn(format!("OpenServiceW: {e}")))?;
                     StartServiceW(existing, None).map_err(|e| {
                         WireSentinelError::Vpn(format!("StartServiceW existing: {e}"))
                     })?;
@@ -109,8 +105,8 @@ impl ScmTunnelDllBackend {
         use std::os::windows::ffi::OsStrExt;
         use windows::core::PCWSTR;
         use windows::Win32::System::Services::{
-            CloseServiceHandle, ControlService, OpenSCManagerW, OpenServiceW,
-            SC_MANAGER_CONNECT, SERVICE_ALL_ACCESS, SERVICE_CONTROL_STOP,
+            CloseServiceHandle, ControlService, OpenSCManagerW, OpenServiceW, SC_MANAGER_CONNECT,
+            SERVICE_ALL_ACCESS, SERVICE_CONTROL_STOP,
         };
 
         let name_wide: Vec<u16> = OsStr::new(service_name)
@@ -150,8 +146,7 @@ impl ScmTunnelDllBackend {
             let Ok(scm) = OpenSCManagerW(PCWSTR::null(), PCWSTR::null(), SC_MANAGER_CONNECT) else {
                 return false;
             };
-            let Ok(service) =
-                OpenServiceW(scm, PCWSTR(name_wide.as_ptr()), SERVICE_ALL_ACCESS)
+            let Ok(service) = OpenServiceW(scm, PCWSTR(name_wide.as_ptr()), SERVICE_ALL_ACCESS)
             else {
                 let _ = CloseServiceHandle(scm);
                 return false;
@@ -179,10 +174,8 @@ impl ScmTunnelDllBackend {
             let mut config = crate::conf::parse_conf(&content);
             let _session =
                 crate::handshake_proxy::apply_handshake_proxy(profile, &mut config, None).await?;
-            let temp = crate::materialize::vpn_config_dir().join(format!(
-                "handshake-{}.conf",
-                profile.id
-            ));
+            let temp =
+                crate::materialize::vpn_config_dir().join(format!("handshake-{}.conf", profile.id));
             let rendered = crate::conf::write_conf(&config);
             std::fs::write(&temp, rendered)
                 .map_err(|e| WireSentinelError::Vpn(format!("write temp config: {e}")))?;
@@ -213,12 +206,8 @@ impl VpnBackend for ScmTunnelDllBackend {
             warn!("SCM VPN connect is only supported on Windows");
         }
 
-        self.service_names
-            .write()
-            .insert(profile.id, service_name);
-        self.states
-            .write()
-            .insert(profile.id, VpnStatus::Connected);
+        self.service_names.write().insert(profile.id, service_name);
+        self.states.write().insert(profile.id, VpnStatus::Connected);
         Ok(())
     }
 

@@ -87,7 +87,11 @@ impl Verdict {
         }
     }
 
-    pub fn from_route(route: &TrafficRoute, rule_id: Option<Uuid>, reason: impl Into<String>) -> Self {
+    pub fn from_route(
+        route: &TrafficRoute,
+        rule_id: Option<Uuid>,
+        reason: impl Into<String>,
+    ) -> Self {
         Self {
             kind: VerdictKind::from(route),
             matched_rule_id: rule_id,

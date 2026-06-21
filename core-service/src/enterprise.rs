@@ -37,8 +37,10 @@ impl LocalPolicyProvider {
 impl PolicyProvider for LocalPolicyProvider {
     async fn load(&self) -> Result<EnterprisePolicy> {
         if Self::policy_file().exists() {
-            let text = std::fs::read_to_string(Self::policy_file()).map_err(WireSentinelError::Io)?;
-            let policy: EnterprisePolicy = serde_json::from_str(&text).map_err(WireSentinelError::Serde)?;
+            let text =
+                std::fs::read_to_string(Self::policy_file()).map_err(WireSentinelError::Io)?;
+            let policy: EnterprisePolicy =
+                serde_json::from_str(&text).map_err(WireSentinelError::Serde)?;
             *self.locked_keys.write() = policy.locked_keys.clone();
             return Ok(policy);
         }

@@ -88,8 +88,12 @@ pub fn parse_conf(content: &str) -> WireGuardConfig {
 fn set_interface_field(section: &mut InterfaceSection, key: &str, value: &str) {
     match key {
         "PrivateKey" => section.private_key = Some(value.into()),
-        "Address" => section.address.extend(value.split(',').map(|s| s.trim().to_string())),
-        "DNS" => section.dns.extend(value.split(',').map(|s| s.trim().to_string())),
+        "Address" => section
+            .address
+            .extend(value.split(',').map(|s| s.trim().to_string())),
+        "DNS" => section
+            .dns
+            .extend(value.split(',').map(|s| s.trim().to_string())),
         "MTU" => section.mtu = value.parse().ok(),
         "ListenPort" => section.listen_port = value.parse().ok(),
         "Jc" => section.jc = value.parse().ok(),
@@ -146,7 +150,10 @@ pub fn write_conf(config: &WireGuardConfig) -> String {
         out.push_str(&format!("PrivateKey = {k}\n"));
     }
     if !config.interface.address.is_empty() {
-        out.push_str(&format!("Address = {}\n", config.interface.address.join(", ")));
+        out.push_str(&format!(
+            "Address = {}\n",
+            config.interface.address.join(", ")
+        ));
     }
     if !config.interface.dns.is_empty() {
         out.push_str(&format!("DNS = {}\n", config.interface.dns.join(", ")));

@@ -1,14 +1,12 @@
 //! Diagnostics health checks and bundle export.
 
 use chrono::Utc;
-use shared_types::{
-    DiagnosticsHealth, Result, SubsystemHealth, TransportState, WireSentinelError,
-};
+use dns::DnsLayer;
+use shared_types::{DiagnosticsHealth, Result, SubsystemHealth, TransportState, WireSentinelError};
 use std::sync::Arc;
 use storage::{data_dir, Storage};
 use vpn_engine::VpnManager;
 use wfp::WfpEngine;
-use dns::DnsLayer;
 
 use crate::transport::TransportManager;
 
@@ -118,10 +116,11 @@ impl DiagnosticsService {
         let mut buffer = std::io::Cursor::new(Vec::new());
         {
             let mut zip = zip::ZipWriter::new(&mut buffer);
-            let options =
-                zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+            let options = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Stored);
 
-            let health_json = serde_json::to_string_pretty(&health).map_err(WireSentinelError::Serde)?;
+            let health_json =
+                serde_json::to_string_pretty(&health).map_err(WireSentinelError::Serde)?;
             zip.start_file("health.json", options)
                 .map_err(|e| WireSentinelError::Config(e.to_string()))?;
             zip.write_all(health_json.as_bytes())

@@ -60,7 +60,8 @@ pub trait WfpEngine: Send + Sync {
     }
 
     async fn block_connection(&self, app: &AppIdentity) -> Result<()> {
-        self.route_connection(app, &TrafficRoute::Blocked, None).await
+        self.route_connection(app, &TrafficRoute::Blocked, None)
+            .await
     }
 
     async fn route_connection(

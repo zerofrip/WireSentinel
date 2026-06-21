@@ -57,7 +57,10 @@ impl CloudTelemetryReporter {
         }
     }
 
-    pub async fn save_config(storage: &Storage, config: &CloudTelemetryReporterConfig) -> Result<()> {
+    pub async fn save_config(
+        storage: &Storage,
+        config: &CloudTelemetryReporterConfig,
+    ) -> Result<()> {
         let json = serde_json::to_string(config).map_err(WireSentinelError::Serde)?;
         storage.settings.set(SETTINGS_KEY, &json).await
     }
@@ -81,8 +84,7 @@ impl CloudTelemetryReporter {
         tokio::spawn(async move {
             let http = reqwest::Client::new();
             let base = config.cloud_url.trim_end_matches('/').to_string();
-            let mut tick =
-                tokio::time::interval(Duration::from_secs(config.interval_secs.max(30)));
+            let mut tick = tokio::time::interval(Duration::from_secs(config.interval_secs.max(30)));
             tick.tick().await;
 
             loop {

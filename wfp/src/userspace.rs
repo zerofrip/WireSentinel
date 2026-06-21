@@ -5,11 +5,11 @@
 
 use crate::engine::{RouteEnforcer, WfpEngine};
 use async_trait::async_trait;
+use parking_lot::RwLock;
 use shared_types::{AppIdentity, Result, RuleAction, TrafficRoute, TunnelIface, WireSentinelError};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use parking_lot::RwLock;
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
@@ -68,7 +68,10 @@ impl UserspaceWfpEngine {
         }
     }
 
-    fn app_id_from_path(path: &PathBuf) -> Result<*mut windows::Win32::NetworkManagement::WindowsFilteringPlatform::FWP_BYTE_BLOB> {
+    fn app_id_from_path(
+        path: &PathBuf,
+    ) -> Result<*mut windows::Win32::NetworkManagement::WindowsFilteringPlatform::FWP_BYTE_BLOB>
+    {
         use windows::core::PCWSTR;
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::FwpmGetAppIdFromFileName0;
 
@@ -85,7 +88,9 @@ impl UserspaceWfpEngine {
         Ok(app_id)
     }
 
-    fn free_app_id(app_id: *mut windows::Win32::NetworkManagement::WindowsFilteringPlatform::FWP_BYTE_BLOB) {
+    fn free_app_id(
+        app_id: *mut windows::Win32::NetworkManagement::WindowsFilteringPlatform::FWP_BYTE_BLOB,
+    ) {
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::FwpmFreeMemory0;
         if !app_id.is_null() {
             unsafe {
@@ -103,8 +108,8 @@ impl UserspaceWfpEngine {
         tunnel: Option<&TunnelIface>,
     ) -> Result<u64> {
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::{
-            FwpmFilterAdd0, FWPM_FILTER0, FWPM_FILTER_CONDITION0, FWP_ACTION_BLOCK,
-            FWP_ACTION_PERMIT, FWP_MATCH_EQUAL, FWPM_CONDITION_ALE_APP_ID,
+            FwpmFilterAdd0, FWPM_CONDITION_ALE_APP_ID, FWPM_FILTER0, FWPM_FILTER_CONDITION0,
+            FWP_ACTION_BLOCK, FWP_ACTION_PERMIT, FWP_MATCH_EQUAL,
         };
 
         let block = matches!(action, RuleAction::Block);
@@ -133,9 +138,8 @@ impl UserspaceWfpEngine {
         debug!(filter = %display_data, block, "adding WFP ALE filter");
 
         let mut filter: FWPM_FILTER0 = unsafe { std::mem::zeroed() };
-        filter.displayData.name = windows::core::PWSTR(
-            windows::core::HSTRING::from(display_data.clone()).as_ptr() as _,
-        );
+        filter.displayData.name =
+            windows::core::PWSTR(windows::core::HSTRING::from(display_data.clone()).as_ptr() as _);
         filter.layerKey = layer;
         filter.action.r#type = filter_action;
         filter.weight.r#type =
@@ -150,9 +154,8 @@ impl UserspaceWfpEngine {
         }
 
         let mut filter_id = 0u64;
-        let add_result = unsafe {
-            FwpmFilterAdd0(engine as _, &filter, None, Some(&mut filter_id))
-        };
+        let add_result =
+            unsafe { FwpmFilterAdd0(engine as _, &filter, None, Some(&mut filter_id)) };
         Self::free_app_id(app_id_blob);
 
         add_result.map_err(|e| {
@@ -240,13 +243,16 @@ impl UserspaceWfpEngine {
 
     fn apply_kill_switch_filters(&self, engine: u64) -> Result<Vec<u64>> {
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::{
-            FwpmFilterAdd0, FWPM_FILTER0, FWP_ACTION_BLOCK, FWPM_LAYER_ALE_AUTH_CONNECT_V4,
-            FWPM_LAYER_ALE_AUTH_CONNECT_V6,
+            FwpmFilterAdd0, FWPM_FILTER0, FWPM_LAYER_ALE_AUTH_CONNECT_V4,
+            FWPM_LAYER_ALE_AUTH_CONNECT_V6, FWP_ACTION_BLOCK,
         };
 
         info!("applying kill switch block-all filters");
         let mut ids = Vec::new();
-        for layer in [FWPM_LAYER_ALE_AUTH_CONNECT_V4, FWPM_LAYER_ALE_AUTH_CONNECT_V6] {
+        for layer in [
+            FWPM_LAYER_ALE_AUTH_CONNECT_V4,
+            FWPM_LAYER_ALE_AUTH_CONNECT_V6,
+        ] {
             let mut filter: FWPM_FILTER0 = unsafe { std::mem::zeroed() };
             filter.displayData.name = windows::core::PWSTR(
                 windows::core::HSTRING::from("WireSentinel: KillSwitch").as_ptr() as _,
@@ -279,18 +285,16 @@ impl UserspaceWfpEngine {
 
         let mut provider: FWPM_PROVIDER0 = unsafe { std::mem::zeroed() };
         provider.providerKey = provider_key;
-        provider.displayData.name = windows::core::PWSTR(
-            windows::core::HSTRING::from(PROVIDER_NAME).as_ptr() as _,
-        );
+        provider.displayData.name =
+            windows::core::PWSTR(windows::core::HSTRING::from(PROVIDER_NAME).as_ptr() as _);
         unsafe {
             let _ = FwpmProviderAdd0(engine as _, &provider, None);
         }
 
         let mut sublayer: FWPM_SUBLAYER0 = unsafe { std::mem::zeroed() };
         sublayer.subLayerKey = sublayer_key;
-        sublayer.displayData.name = windows::core::PWSTR(
-            windows::core::HSTRING::from(SUBLAYER_NAME).as_ptr() as _,
-        );
+        sublayer.displayData.name =
+            windows::core::PWSTR(windows::core::HSTRING::from(SUBLAYER_NAME).as_ptr() as _);
         sublayer.providerKey = provider_key;
         sublayer.weight = 0x100;
         unsafe {
@@ -393,7 +397,8 @@ impl WfpEngine for UserspaceWfpEngine {
     }
 
     async fn block_connection(&self, app: &AppIdentity) -> Result<()> {
-        self.route_connection(app, &TrafficRoute::Blocked, None).await
+        self.route_connection(app, &TrafficRoute::Blocked, None)
+            .await
     }
 
     async fn route_connection(

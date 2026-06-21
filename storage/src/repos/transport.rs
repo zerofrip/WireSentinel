@@ -27,7 +27,9 @@ fn kind_from_str(s: &str) -> Result<TransportProfileKind> {
     match s {
         "sing_box" => Ok(TransportProfileKind::SingBox),
         "xray" => Ok(TransportProfileKind::Xray),
-        other => Err(WireSentinelError::Config(format!("unknown transport kind: {other}"))),
+        other => Err(WireSentinelError::Config(format!(
+            "unknown transport kind: {other}"
+        ))),
     }
 }
 

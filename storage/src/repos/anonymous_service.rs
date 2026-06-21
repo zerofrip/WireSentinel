@@ -2,7 +2,7 @@ use super::traits::{AnonymousServiceRepository, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use shared_types::{
-    AnonymousService, AnonymousServiceEndpoint, AnonymityProvider, WireSentinelError,
+    AnonymityProvider, AnonymousService, AnonymousServiceEndpoint, WireSentinelError,
 };
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -87,30 +87,24 @@ fn parse_service_row(
 #[async_trait]
 impl AnonymousServiceRepository for SqliteAnonymousServiceRepository {
     async fn list(&self) -> Result<Vec<AnonymousService>> {
-        let rows = sqlx::query_as::<_, AnonymousServiceRow>(&format!(
-            "{SERVICE_SELECT} ORDER BY name"
-        ))
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let rows =
+            sqlx::query_as::<_, AnonymousServiceRow>(&format!("{SERVICE_SELECT} ORDER BY name"))
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         rows.into_iter()
-            .map(|r| {
-                parse_service_row(
-                    r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8,
-                )
-            })
+            .map(|r| parse_service_row(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8))
             .collect()
     }
 
     async fn get(&self, id: Uuid) -> Result<Option<AnonymousService>> {
-        let row = sqlx::query_as::<_, AnonymousServiceRow>(&format!(
-            "{SERVICE_SELECT} WHERE id = ?"
-        ))
-        .bind(id.to_string())
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let row =
+            sqlx::query_as::<_, AnonymousServiceRow>(&format!("{SERVICE_SELECT} WHERE id = ?"))
+                .bind(id.to_string())
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         row.map(|r| parse_service_row(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8))
             .transpose()
@@ -174,21 +168,19 @@ impl AnonymousServiceRepository for SqliteAnonymousServiceRepository {
         .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         rows.into_iter()
-            .map(
-                |(id, service_id, host, port, protocol, path, enabled)| {
-                    Ok(AnonymousServiceEndpoint {
-                        id: Uuid::parse_str(&id)
-                            .map_err(|e| WireSentinelError::Config(e.to_string()))?,
-                        service_id: Uuid::parse_str(&service_id)
-                            .map_err(|e| WireSentinelError::Config(e.to_string()))?,
-                        host,
-                        port: port as u16,
-                        protocol,
-                        path,
-                        enabled: enabled != 0,
-                    })
-                },
-            )
+            .map(|(id, service_id, host, port, protocol, path, enabled)| {
+                Ok(AnonymousServiceEndpoint {
+                    id: Uuid::parse_str(&id)
+                        .map_err(|e| WireSentinelError::Config(e.to_string()))?,
+                    service_id: Uuid::parse_str(&service_id)
+                        .map_err(|e| WireSentinelError::Config(e.to_string()))?,
+                    host,
+                    port: port as u16,
+                    protocol,
+                    path,
+                    enabled: enabled != 0,
+                })
+            })
             .collect()
     }
 

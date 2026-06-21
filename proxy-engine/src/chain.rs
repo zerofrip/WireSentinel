@@ -62,13 +62,19 @@ mod tests {
 
     #[test]
     fn socks5_to_https_is_valid() {
-        let hops = vec![hop(ProxyChainHopKind::Socks5, 0), hop(ProxyChainHopKind::Https, 1)];
+        let hops = vec![
+            hop(ProxyChainHopKind::Socks5, 0),
+            hop(ProxyChainHopKind::Https, 1),
+        ];
         assert!(validate_hop_sequence(&hops).is_ok());
     }
 
     #[test]
     fn https_to_socks5_is_invalid() {
-        let hops = vec![hop(ProxyChainHopKind::Https, 0), hop(ProxyChainHopKind::Socks5, 1)];
+        let hops = vec![
+            hop(ProxyChainHopKind::Https, 0),
+            hop(ProxyChainHopKind::Socks5, 1),
+        ];
         assert!(validate_hop_sequence(&hops).is_err());
     }
 

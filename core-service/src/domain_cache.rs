@@ -38,12 +38,7 @@ impl DomainResolverCache {
         }
     }
 
-    pub async fn record_dns(
-        &self,
-        app_id: Option<Uuid>,
-        domain: &str,
-        ips: &[&str],
-    ) -> Result<()> {
+    pub async fn record_dns(&self, app_id: Option<Uuid>, domain: &str, ips: &[&str]) -> Result<()> {
         let wildcard = domain.starts_with("*.");
         let now = Utc::now();
         let expires_at = now + Duration::seconds(self.ttl_secs as i64);

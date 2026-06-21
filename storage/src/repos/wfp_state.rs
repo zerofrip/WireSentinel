@@ -18,8 +18,7 @@ impl SqliteWfpFilterStateRepository {
 #[async_trait]
 impl WfpFilterStateRepository for SqliteWfpFilterStateRepository {
     async fn upsert(&self, record: &WfpFilterStateRecord) -> Result<()> {
-        let route_json =
-            serde_json::to_string(&record.route).map_err(WireSentinelError::Serde)?;
+        let route_json = serde_json::to_string(&record.route).map_err(WireSentinelError::Serde)?;
         sqlx::query(
             r#"INSERT INTO wfp_filter_state (id, scope_type, scope_value, filter_id, route_json, rule_id, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)

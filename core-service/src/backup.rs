@@ -42,8 +42,13 @@ impl BackupService {
         let bundle: BackupBundle = serde_json::from_str(json).map_err(WireSentinelError::Serde)?;
         self.apply_bundle(&bundle).await?;
         let checksum = format!("{:x}", md5::compute(json.as_bytes()));
-        self.record_manifest("import", "json", &checksum, serde_json::json!({ "version": bundle.version }))
-            .await?;
+        self.record_manifest(
+            "import",
+            "json",
+            &checksum,
+            serde_json::json!({ "version": bundle.version }),
+        )
+        .await?;
         self.audit("backup_import", Some("json import"));
         Ok(())
     }
@@ -59,7 +64,11 @@ impl BackupService {
 
     async fn build_bundle(&self) -> Result<BackupBundle> {
         let rules = self.storage.rules.list().await?;
-        let apps = self.storage.apps.list(storage::AppFilter::default()).await?;
+        let apps = self
+            .storage
+            .apps
+            .list(storage::AppFilter::default())
+            .await?;
         let dns_settings = self.storage.settings.get_dns_settings().await?;
         let dns_providers = self.storage.dns_providers.list().await?;
         let filter_lists = self.storage.filter_lists.list().await?;
@@ -110,24 +119,69 @@ impl BackupService {
             exported_at: Utc::now(),
             settings,
             vpn_profiles,
-            rules: rules.into_iter().map(|r| serde_json::to_value(r).unwrap_or_default()).collect(),
-            apps: apps.into_iter().map(|a| serde_json::to_value(a).unwrap_or_default()).collect(),
+            rules: rules
+                .into_iter()
+                .map(|r| serde_json::to_value(r).unwrap_or_default())
+                .collect(),
+            apps: apps
+                .into_iter()
+                .map(|a| serde_json::to_value(a).unwrap_or_default())
+                .collect(),
             dns_settings: serde_json::to_value(dns_settings).map_err(WireSentinelError::Serde)?,
-            dns_providers: dns_providers.into_iter().map(|p| serde_json::to_value(p).unwrap_or_default()).collect(),
-            filter_lists: filter_lists.into_iter().map(|f| serde_json::to_value(f).unwrap_or_default()).collect(),
-            transport_profiles: transport_profiles.into_iter().map(|t| serde_json::to_value(t).unwrap_or_default()).collect(),
-            chain_profiles: chain_profiles.into_iter().map(|c| serde_json::to_value(c).unwrap_or_default()).collect(),
-            obfuscation_profiles: obfuscation_profiles.into_iter().map(|o| serde_json::to_value(o).unwrap_or_default()).collect(),
-            proxy_profiles: proxy_profiles.into_iter().map(|p| serde_json::to_value(p).unwrap_or_default()).collect(),
-            proxy_chains: proxy_chains.into_iter().map(|c| serde_json::to_value(c).unwrap_or_default()).collect(),
-            mixnet_profiles: mixnet_profiles.into_iter().map(|p| serde_json::to_value(p).unwrap_or_default()).collect(),
-            anonymous_chains: anonymous_chains.into_iter().map(|c| serde_json::to_value(c).unwrap_or_default()).collect(),
-            cover_traffic_settings: cover_traffic_settings.into_iter().map(|s| serde_json::to_value(s).unwrap_or_default()).collect(),
+            dns_providers: dns_providers
+                .into_iter()
+                .map(|p| serde_json::to_value(p).unwrap_or_default())
+                .collect(),
+            filter_lists: filter_lists
+                .into_iter()
+                .map(|f| serde_json::to_value(f).unwrap_or_default())
+                .collect(),
+            transport_profiles: transport_profiles
+                .into_iter()
+                .map(|t| serde_json::to_value(t).unwrap_or_default())
+                .collect(),
+            chain_profiles: chain_profiles
+                .into_iter()
+                .map(|c| serde_json::to_value(c).unwrap_or_default())
+                .collect(),
+            obfuscation_profiles: obfuscation_profiles
+                .into_iter()
+                .map(|o| serde_json::to_value(o).unwrap_or_default())
+                .collect(),
+            proxy_profiles: proxy_profiles
+                .into_iter()
+                .map(|p| serde_json::to_value(p).unwrap_or_default())
+                .collect(),
+            proxy_chains: proxy_chains
+                .into_iter()
+                .map(|c| serde_json::to_value(c).unwrap_or_default())
+                .collect(),
+            mixnet_profiles: mixnet_profiles
+                .into_iter()
+                .map(|p| serde_json::to_value(p).unwrap_or_default())
+                .collect(),
+            anonymous_chains: anonymous_chains
+                .into_iter()
+                .map(|c| serde_json::to_value(c).unwrap_or_default())
+                .collect(),
+            cover_traffic_settings: cover_traffic_settings
+                .into_iter()
+                .map(|s| serde_json::to_value(s).unwrap_or_default())
+                .collect(),
             enterprise_policy,
             bundle_version: 2,
-            plugins: plugins.into_iter().map(|p| serde_json::to_value(p).unwrap_or_default()).collect(),
-            tailnet_profiles: tailnet_profiles.into_iter().map(|p| serde_json::to_value(p).unwrap_or_default()).collect(),
-            tor_profiles: tor_profiles.into_iter().map(|p| serde_json::to_value(p).unwrap_or_default()).collect(),
+            plugins: plugins
+                .into_iter()
+                .map(|p| serde_json::to_value(p).unwrap_or_default())
+                .collect(),
+            tailnet_profiles: tailnet_profiles
+                .into_iter()
+                .map(|p| serde_json::to_value(p).unwrap_or_default())
+                .collect(),
+            tor_profiles: tor_profiles
+                .into_iter()
+                .map(|p| serde_json::to_value(p).unwrap_or_default())
+                .collect(),
             controller_agent_config,
             cloud_sync_config,
         })
@@ -143,8 +197,8 @@ impl BackupService {
             }
         }
 
-        let dns: shared_types::DnsSettings =
-            serde_json::from_value(bundle.dns_settings.clone()).map_err(WireSentinelError::Serde)?;
+        let dns: shared_types::DnsSettings = serde_json::from_value(bundle.dns_settings.clone())
+            .map_err(WireSentinelError::Serde)?;
         self.storage.settings.set_dns_settings(&dns).await?;
 
         for rule_val in &bundle.rules {
@@ -200,25 +254,32 @@ impl BackupService {
         }
 
         for profile_val in &bundle.proxy_profiles {
-            if let Ok(profile) = serde_json::from_value::<shared_types::ProxyProfile>(profile_val.clone()) {
+            if let Ok(profile) =
+                serde_json::from_value::<shared_types::ProxyProfile>(profile_val.clone())
+            {
                 let _ = self.storage.proxy_profiles.insert(&profile).await;
             }
         }
 
         for chain_val in &bundle.proxy_chains {
-            if let Ok(chain) = serde_json::from_value::<shared_types::ProxyChain>(chain_val.clone()) {
+            if let Ok(chain) = serde_json::from_value::<shared_types::ProxyChain>(chain_val.clone())
+            {
                 let _ = self.storage.proxy_chains.insert(&chain).await;
             }
         }
 
         for profile_val in &bundle.mixnet_profiles {
-            if let Ok(profile) = serde_json::from_value::<shared_types::MixnetProfile>(profile_val.clone()) {
+            if let Ok(profile) =
+                serde_json::from_value::<shared_types::MixnetProfile>(profile_val.clone())
+            {
                 let _ = self.storage.mixnet_profiles.insert(&profile).await;
             }
         }
 
         for chain_val in &bundle.anonymous_chains {
-            if let Ok(chain) = serde_json::from_value::<shared_types::AnonymousChain>(chain_val.clone()) {
+            if let Ok(chain) =
+                serde_json::from_value::<shared_types::AnonymousChain>(chain_val.clone())
+            {
                 let _ = self.storage.anonymous_chains.insert(&chain).await;
             }
         }
@@ -236,7 +297,8 @@ impl BackupService {
         }
 
         for plugin_val in &bundle.plugins {
-            if let Ok(plugin) = serde_json::from_value::<shared_types::PluginRecord>(plugin_val.clone())
+            if let Ok(plugin) =
+                serde_json::from_value::<shared_types::PluginRecord>(plugin_val.clone())
             {
                 let _ = self.storage.plugins.upsert(&plugin).await;
             }
@@ -312,7 +374,7 @@ fn encrypt_backup(plaintext: &[u8]) -> shared_types::Result<Vec<u8>> {
     #[cfg(windows)]
     {
         use windows::Win32::Security::Cryptography::{
-            CryptProtectData, CRYPT_INTEGER_BLOB, CRYPTPROTECT_LOCAL_MACHINE,
+            CryptProtectData, CRYPTPROTECT_LOCAL_MACHINE, CRYPT_INTEGER_BLOB,
         };
         let mut input = CRYPT_INTEGER_BLOB {
             cbData: plaintext.len() as u32,

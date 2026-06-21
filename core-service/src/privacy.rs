@@ -4,8 +4,7 @@ use chrono::Utc;
 use dns::DnsLayer;
 use event_bus::EventBus;
 use shared_types::{
-    DnsTransport, LeakType, PrivacyScoreComponents, PrivacyScoreSnapshot, Result,
-    ServiceEventInner,
+    DnsTransport, LeakType, PrivacyScoreComponents, PrivacyScoreSnapshot, Result, ServiceEventInner,
 };
 use std::sync::Arc;
 use storage::Storage;
@@ -70,10 +69,7 @@ impl PrivacyScoreService {
             .filter(|r| r.route_type == "direct")
             .map(|r| r.bytes_out + r.bytes_in)
             .sum();
-        let total_bytes: u64 = route_stats
-            .iter()
-            .map(|r| r.bytes_out + r.bytes_in)
-            .sum();
+        let total_bytes: u64 = route_stats.iter().map(|r| r.bytes_out + r.bytes_in).sum();
         let route_leakage = if total_bytes == 0 {
             100
         } else {
@@ -136,8 +132,7 @@ impl PrivacyScoreService {
                 .await
                 .unwrap_or(300)
                 .max(30);
-            let mut interval =
-                tokio::time::interval(std::time::Duration::from_secs(interval_secs));
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(interval_secs));
             interval.tick().await;
 
             loop {

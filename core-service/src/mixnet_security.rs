@@ -67,7 +67,12 @@ impl MixnetSecurityPolicy {
                     .config_json
                     .as_ref()
                     .and_then(|v| v.get("mnemonic"))
-                    .or_else(|| profile.config_json.as_ref().and_then(|v| v.get("credential")))
+                    .or_else(|| {
+                        profile
+                            .config_json
+                            .as_ref()
+                            .and_then(|v| v.get("credential"))
+                    })
                     .is_some();
                 if !has_creds {
                     let detail = "nym profile missing mnemonic or credential".to_string();
@@ -96,11 +101,12 @@ impl MixnetSecurityPolicy {
     }
 
     fn publish_violation(&self, profile_id: Uuid, violation_type: &str, detail: &str) {
-        self.events
-            .publish(ServiceEvent::now(ServiceEventInner::MixnetSecurityViolation {
+        self.events.publish(ServiceEvent::now(
+            ServiceEventInner::MixnetSecurityViolation {
                 profile_id,
                 violation_type: violation_type.to_string(),
                 detail: detail.to_string(),
-            }));
+            },
+        ));
     }
 }

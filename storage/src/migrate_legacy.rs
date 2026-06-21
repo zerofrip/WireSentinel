@@ -30,13 +30,22 @@ pub async fn migrate_legacy_if_needed(pool: &SqlitePool) -> Result<(), WireSenti
     let config: AppConfig = serde_json::from_str(&data).map_err(WireSentinelError::Serde)?;
 
     settings
-        .set("policy_mode", &serde_json::to_string(&config.policy_mode).map_err(WireSentinelError::Serde)?)
+        .set(
+            "policy_mode",
+            &serde_json::to_string(&config.policy_mode).map_err(WireSentinelError::Serde)?,
+        )
         .await?;
     settings
-        .set("dns", &serde_json::to_string(&config.dns).map_err(WireSentinelError::Serde)?)
+        .set(
+            "dns",
+            &serde_json::to_string(&config.dns).map_err(WireSentinelError::Serde)?,
+        )
         .await?;
     settings
-        .set("api_port", &serde_json::to_string(&config.api_port).map_err(WireSentinelError::Serde)?)
+        .set(
+            "api_port",
+            &serde_json::to_string(&config.api_port).map_err(WireSentinelError::Serde)?,
+        )
         .await?;
     settings
         .set(

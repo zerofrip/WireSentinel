@@ -7,27 +7,33 @@ use axum::{
 };
 use governor::{Quota, RateLimiter};
 use std::num::NonZeroU32;
-use std::sync::{Arc, LazyLock};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, LazyLock};
 
 use crate::api::AppState;
 use crate::auth;
 
-static REST_LIMITER: LazyLock<Arc<RateLimiter<governor::state::NotKeyed, governor::state::InMemoryState, governor::clock::DefaultClock>>> =
-    LazyLock::new(|| {
-        Arc::new(RateLimiter::direct(
-            Quota::per_minute(NonZeroU32::new(100).expect("100 > 0")),
-        ))
-    });
+static REST_LIMITER: LazyLock<
+    Arc<
+        RateLimiter<
+            governor::state::NotKeyed,
+            governor::state::InMemoryState,
+            governor::clock::DefaultClock,
+        >,
+    >,
+> = LazyLock::new(|| {
+    Arc::new(RateLimiter::direct(Quota::per_minute(
+        NonZeroU32::new(100).expect("100 > 0"),
+    )))
+});
 
 static WS_CONNECTIONS: AtomicU64 = AtomicU64::new(0);
 const MAX_WS_CONNECTIONS: u64 = 5;
 
-pub async fn rate_limit(
-    req: Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
-    REST_LIMITER.check().map_err(|_| StatusCode::TOO_MANY_REQUESTS)?;
+pub async fn rate_limit(req: Request, next: Next) -> Result<Response, StatusCode> {
+    REST_LIMITER
+        .check()
+        .map_err(|_| StatusCode::TOO_MANY_REQUESTS)?;
     Ok(next.run(req).await)
 }
 
@@ -61,24 +67,18 @@ pub fn extract_bearer(headers: &axum::http::HeaderMap) -> Option<&str> {
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "))
-        .or_else(|| {
-            headers
-                .get("X-API-Token")
-                .and_then(|v| v.to_str().ok())
-        })
+        .or_else(|| headers.get("X-API-Token").and_then(|v| v.to_str().ok()))
 }
 
 pub fn extract_bearer_from_query(query: &str) -> Option<String> {
-    query
-        .split('&')
-        .find_map(|pair| {
-            let mut parts = pair.splitn(2, '=');
-            let key = parts.next()?;
-            let val = parts.next()?;
-            if key == "token" {
-                Some(val.to_string())
-            } else {
-                None
-            }
-        })
+    query.split('&').find_map(|pair| {
+        let mut parts = pair.splitn(2, '=');
+        let key = parts.next()?;
+        let val = parts.next()?;
+        if key == "token" {
+            Some(val.to_string())
+        } else {
+            None
+        }
+    })
 }

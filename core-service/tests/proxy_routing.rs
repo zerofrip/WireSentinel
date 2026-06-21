@@ -4,9 +4,7 @@ use core_service::split_tunnel::SplitTunnelEngine;
 use event_bus::EventBus;
 use policy_engine::Decision;
 use proxy_engine::{ProxyListenPort, ProxyManager};
-use shared_types::{
-    AppIdentity, AppRecord, ProxyKind, ProxyProfile, TrafficRoute, Verdict,
-};
+use shared_types::{AppIdentity, AppRecord, ProxyKind, ProxyProfile, TrafficRoute, Verdict};
 use std::path::PathBuf;
 use std::sync::Arc;
 use storage::{init_pool_in_memory, Storage};
@@ -27,7 +25,7 @@ async fn proxy_route_uses_wfp_route_connection() {
     ));
     let vpn = Arc::new(VpnManager::new(factory));
     let domain_cache = Arc::new(DomainResolverCache::new(
-        Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>,
+        Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>
     ));
     let listen_ports = Arc::new(ProxyListenPort::new());
     let proxy_manager = Arc::new(ProxyManager::new(Arc::clone(&listen_ports)));
@@ -91,7 +89,7 @@ async fn proxy_chain_route_is_not_direct_fallback() {
     ));
     let vpn = Arc::new(VpnManager::new(factory));
     let domain_cache = Arc::new(DomainResolverCache::new(
-        Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>,
+        Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>
     ));
     let listen_ports = Arc::new(ProxyListenPort::new());
     let proxy_manager = Arc::new(ProxyManager::new(Arc::clone(&listen_ports)));

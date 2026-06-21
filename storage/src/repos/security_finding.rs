@@ -98,7 +98,16 @@ fn parse_severity(s: &str) -> SecuritySeverity {
 }
 
 fn parse_row(
-    row: (String, String, String, String, String, i32, String, Option<String>),
+    row: (
+        String,
+        String,
+        String,
+        String,
+        String,
+        i32,
+        String,
+        Option<String>,
+    ),
 ) -> Result<SecurityFinding> {
     let (id, severity, category, title, detail_json, resolved, created_at, resolved_at) = row;
     Ok(SecurityFinding {

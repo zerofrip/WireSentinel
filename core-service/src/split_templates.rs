@@ -51,7 +51,13 @@ impl SplitTemplateService {
     }
 
     pub async fn upsert(&self, template: SplitTunnelTemplate) -> Result<()> {
-        if self.storage.split_templates.get(template.id).await?.is_some() {
+        if self
+            .storage
+            .split_templates
+            .get(template.id)
+            .await?
+            .is_some()
+        {
             self.storage.split_templates.update(&template).await?;
         } else {
             self.storage.split_templates.insert(&template).await?;

@@ -30,7 +30,8 @@ impl EnterprisePolicyRepository for SqliteEnterprisePolicyRepository {
     }
 
     async fn upsert(&self, policy: &EnterprisePolicy) -> Result<()> {
-        let policy_json = serde_json::to_string(&policy.policy_json).map_err(WireSentinelError::Serde)?;
+        let policy_json =
+            serde_json::to_string(&policy.policy_json).map_err(WireSentinelError::Serde)?;
         let locked_json =
             serde_json::to_string(&policy.locked_keys).map_err(WireSentinelError::Serde)?;
 

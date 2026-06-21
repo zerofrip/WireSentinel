@@ -38,10 +38,7 @@ impl Socks5HandshakeBackend {
     }
 
     /// Establish SOCKS5 UDP associate relay for WireGuard endpoint `host:port`.
-    pub async fn prepare_handshake_endpoint(
-        &self,
-        wg_endpoint: &str,
-    ) -> Result<PreparedHandshake> {
+    pub async fn prepare_handshake_endpoint(&self, wg_endpoint: &str) -> Result<PreparedHandshake> {
         if self.settings.proxy_type != ProxyType::Socks5 {
             return Err(WireSentinelError::Vpn(
                 "handshake proxy: only SOCKS5 is supported".into(),
@@ -55,12 +52,16 @@ impl Socks5HandshakeBackend {
             .map_err(|e| WireSentinelError::Vpn(format!("socks5 connect {proxy_addr}: {e}")))?;
 
         self.socks5_auth(&mut stream).await?;
-        let bind_addr = self.socks5_udp_associate(&mut stream, &target_host, target_port).await?;
+        let bind_addr = self
+            .socks5_udp_associate(&mut stream, &target_host, target_port)
+            .await?;
 
         let relay = UdpSocket::bind("127.0.0.1:0")
             .await
             .map_err(|e| WireSentinelError::Vpn(format!("udp relay bind: {e}")))?;
-        let relay_local = relay.local_addr().map_err(|e| WireSentinelError::Vpn(e.to_string()))?;
+        let relay_local = relay
+            .local_addr()
+            .map_err(|e| WireSentinelError::Vpn(e.to_string()))?;
 
         let proxy_host = self.settings.host.clone();
         let proxy_port = self.settings.port;
@@ -68,7 +69,18 @@ impl Socks5HandshakeBackend {
         let password = self.settings.password.clone();
 
         let relay_task = tokio::spawn(async move {
-            if let Err(e) = udp_relay_loop(relay, proxy_host, proxy_port, username, password, bind_addr, target_host, target_port).await {
+            if let Err(e) = udp_relay_loop(
+                relay,
+                proxy_host,
+                proxy_port,
+                username,
+                password,
+                bind_addr,
+                target_host,
+                target_port,
+            )
+            .await
+            {
                 warn!(error = %e, "handshake udp relay stopped");
             }
         });
@@ -120,9 +132,10 @@ impl Socks5HandshakeBackend {
                     .await
                     .map_err(|e| WireSentinelError::Vpn(format!("socks5 auth: {e}")))?;
                 let mut auth_resp = [0u8; 2];
-                stream.read_exact(&mut auth_resp).await.map_err(|e| {
-                    WireSentinelError::Vpn(format!("socks5 auth resp: {e}"))
-                })?;
+                stream
+                    .read_exact(&mut auth_resp)
+                    .await
+                    .map_err(|e| WireSentinelError::Vpn(format!("socks5 auth resp: {e}")))?;
                 if auth_resp[1] != 0 {
                     return Err(WireSentinelError::Vpn("socks5 auth failed".into()));
                 }
@@ -169,31 +182,35 @@ async fn parse_bound_address(stream: &mut TcpStream, atyp: u8) -> Result<SocketA
     match atyp {
         SOCKS5_ATYP_IPV4 => {
             let mut buf = [0u8; 4 + 2];
-            stream.read_exact(&mut buf).await.map_err(|e| {
-                WireSentinelError::Vpn(format!("socks5 bound ipv4: {e}"))
-            })?;
+            stream
+                .read_exact(&mut buf)
+                .await
+                .map_err(|e| WireSentinelError::Vpn(format!("socks5 bound ipv4: {e}")))?;
             let ip = std::net::Ipv4Addr::new(buf[0], buf[1], buf[2], buf[3]);
             let port = u16::from_be_bytes([buf[4], buf[5]]);
             Ok(SocketAddr::new(ip.into(), port))
         }
         SOCKS5_ATYP_IPV6 => {
             let mut buf = [0u8; 16 + 2];
-            stream.read_exact(&mut buf).await.map_err(|e| {
-                WireSentinelError::Vpn(format!("socks5 bound ipv6: {e}"))
-            })?;
+            stream
+                .read_exact(&mut buf)
+                .await
+                .map_err(|e| WireSentinelError::Vpn(format!("socks5 bound ipv6: {e}")))?;
             let ip = std::net::Ipv6Addr::from(<[u8; 16]>::try_from(&buf[..16]).unwrap());
             let port = u16::from_be_bytes([buf[16], buf[17]]);
             Ok(SocketAddr::new(ip.into(), port))
         }
         SOCKS5_ATYP_DOMAIN => {
             let mut len = [0u8; 1];
-            stream.read_exact(&mut len).await.map_err(|e| {
-                WireSentinelError::Vpn(format!("socks5 bound domain len: {e}"))
-            })?;
+            stream
+                .read_exact(&mut len)
+                .await
+                .map_err(|e| WireSentinelError::Vpn(format!("socks5 bound domain len: {e}")))?;
             let mut domain = vec![0u8; len[0] as usize + 2];
-            stream.read_exact(&mut domain).await.map_err(|e| {
-                WireSentinelError::Vpn(format!("socks5 bound domain: {e}"))
-            })?;
+            stream
+                .read_exact(&mut domain)
+                .await
+                .map_err(|e| WireSentinelError::Vpn(format!("socks5 bound domain: {e}")))?;
             let port = u16::from_be_bytes([domain[domain.len() - 2], domain[domain.len() - 1]]);
             let host = String::from_utf8_lossy(&domain[..domain.len() - 2]).into_owned();
             let ip: std::net::IpAddr = tokio::net::lookup_host(format!("{host}:{port}"))
@@ -204,7 +221,9 @@ async fn parse_bound_address(stream: &mut TcpStream, atyp: u8) -> Result<SocketA
                 .ip();
             Ok(SocketAddr::new(ip, port))
         }
-        other => Err(WireSentinelError::Vpn(format!("unknown socks5 atyp {other}"))),
+        other => Err(WireSentinelError::Vpn(format!(
+            "unknown socks5 atyp {other}"
+        ))),
     }
 }
 
@@ -292,11 +311,8 @@ async fn udp_relay_loop(
             .await
             .map_err(|e| WireSentinelError::Vpn(format!("relay send: {e}")))?;
 
-        if let Ok(Ok((resp_len, _))) = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            socks.recv_from(&mut buf),
-        )
-        .await
+        if let Ok(Ok((resp_len, _))) =
+            tokio::time::timeout(std::time::Duration::from_secs(2), socks.recv_from(&mut buf)).await
         {
             if resp_len > 0 {
                 if let Ok(header_end) = packet_header_end(&buf[..resp_len]) {

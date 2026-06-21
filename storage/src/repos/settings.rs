@@ -24,11 +24,12 @@ impl SqliteSettingsRepository {
 #[async_trait]
 impl SettingsRepository for SqliteSettingsRepository {
     async fn get(&self, key: &str) -> Result<Option<String>> {
-        let row: Option<(String,)> = sqlx::query_as("SELECT value_json FROM settings WHERE key = ?")
-            .bind(key)
-            .fetch_optional(&self.pool)
-            .await
-            .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let row: Option<(String,)> =
+            sqlx::query_as("SELECT value_json FROM settings WHERE key = ?")
+                .bind(key)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| WireSentinelError::Config(e.to_string()))?;
         Ok(row.map(|r| r.0))
     }
 
@@ -85,11 +86,13 @@ impl SettingsRepository for SqliteSettingsRepository {
     }
 
     async fn wfp_engine_impl(&self) -> Result<String> {
-        self.get_json("wfp_engine_impl", "userspace".to_string()).await
+        self.get_json("wfp_engine_impl", "userspace".to_string())
+            .await
     }
 
     async fn dns_block_mode(&self) -> Result<String> {
-        self.get_json("dns_block_mode", "nxdomain".to_string()).await
+        self.get_json("dns_block_mode", "nxdomain".to_string())
+            .await
     }
 
     async fn store_firewall_decisions(&self) -> Result<bool> {
@@ -101,7 +104,8 @@ impl SettingsRepository for SqliteSettingsRepository {
     }
 
     async fn global_obfuscation_profile(&self) -> Result<Option<Uuid>> {
-        self.get_json("global_obfuscation_profile", None::<Uuid>).await
+        self.get_json("global_obfuscation_profile", None::<Uuid>)
+            .await
     }
 
     async fn set_global_obfuscation_profile(&self, id: Option<Uuid>) -> Result<()> {

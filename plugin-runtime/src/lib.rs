@@ -6,9 +6,7 @@ mod registry;
 mod traits;
 mod wasm_loader;
 
-pub use loader::{
-    AuthenticodeVerifier, LoadLibraryError, NativePluginHandle, NativePluginLoader,
-};
+pub use loader::{AuthenticodeVerifier, LoadLibraryError, NativePluginHandle, NativePluginLoader};
 pub use manager::{plugins_data_dir, PluginManager};
 pub use registry::PluginRegistry;
 pub use traits::{

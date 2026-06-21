@@ -92,7 +92,10 @@ fn route_assignment(
             reserved: [0; 4],
         },
         _ => {
-            let profile_id = route.profile_id().map(|id| id.as_u128() as u64).unwrap_or(0);
+            let profile_id = route
+                .profile_id()
+                .map(|id| id.as_u128() as u64)
+                .unwrap_or(0);
             NdisRouteAssignmentV2::new_vpn(
                 flow_id,
                 app_id,
@@ -151,9 +154,7 @@ impl NdisEngine for NdisCalloutEngine {
         route: &TrafficRoute,
         tunnel: Option<TunnelIface>,
     ) -> Result<()> {
-        self.stub_routes
-            .lock()
-            .insert(app.id(), route.clone());
+        self.stub_routes.lock().insert(app.id(), route.clone());
         if let Some(client) = self.client.lock().as_ref() {
             let assignment = route_assignment(app, route, tunnel.as_ref());
             client

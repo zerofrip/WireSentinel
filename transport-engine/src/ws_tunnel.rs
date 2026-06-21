@@ -5,7 +5,8 @@ use crate::singbox::config::{build_config, SingBoxOutboundSpec, SingBoxProtocol}
 use async_trait::async_trait;
 use parking_lot::RwLock;
 use shared_types::{
-    Result, TransportHealth, TransportKind, TransportState, WebSocketTunnelConfig, WireSentinelError,
+    Result, TransportHealth, TransportKind, TransportState, WebSocketTunnelConfig,
+    WireSentinelError,
 };
 use std::path::PathBuf;
 use std::sync::Arc;

@@ -63,8 +63,5 @@ impl FilterPlugin for WasmFilterPlugin {
 
 /// Default built-in filter plugins (hosts + easylist).
 pub fn default_plugins() -> Vec<Arc<dyn FilterPlugin>> {
-    vec![
-        Arc::new(HostsFilterPlugin),
-        Arc::new(EasyListFilterPlugin),
-    ]
+    vec![Arc::new(HostsFilterPlugin), Arc::new(EasyListFilterPlugin)]
 }

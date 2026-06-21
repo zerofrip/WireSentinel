@@ -81,11 +81,7 @@ impl KatzenpostProfileRepository for SqliteKatzenpostProfileRepository {
         .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         rows.into_iter()
-            .map(|r| {
-                parse_profile_row(
-                    r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9, r.10,
-                )
-            })
+            .map(|r| parse_profile_row(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9, r.10))
             .collect()
     }
 
@@ -98,12 +94,8 @@ impl KatzenpostProfileRepository for SqliteKatzenpostProfileRepository {
         .await
         .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
-        row.map(|r| {
-            parse_profile_row(
-                r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9, r.10,
-            )
-        })
-        .transpose()
+        row.map(|r| parse_profile_row(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9, r.10))
+            .transpose()
     }
 
     async fn insert(&self, profile: &KatzenpostProfile) -> Result<()> {

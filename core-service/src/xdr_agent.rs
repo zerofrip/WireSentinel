@@ -6,8 +6,8 @@ use event_bus::EventBus;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use shared_types::{
-    ProcessEvent, Result, ServiceEvent, ServiceEventInner, XdrPolicyBundle, XdrTelemetryPayload,
-    WireSentinelError,
+    ProcessEvent, Result, ServiceEvent, ServiceEventInner, WireSentinelError, XdrPolicyBundle,
+    XdrTelemetryPayload,
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -215,11 +215,7 @@ struct XdrRegisterRequest {
     agent_version: Option<String>,
 }
 
-async fn register_xdr_agent(
-    http: &reqwest::Client,
-    base: &str,
-    token: &str,
-) -> Result<Uuid> {
+async fn register_xdr_agent(http: &reqwest::Client, base: &str, token: &str) -> Result<Uuid> {
     let url = format!("{base}/api/v1/agents/register");
     let body = XdrRegisterRequest {
         enrollment_token: token.to_string(),

@@ -67,15 +67,15 @@ mod tests {
     fn blacklist_blocks_listed() {
         let provider = MockProvider::new(&["ads.example.com"]);
         assert_eq!(
-            evaluate_domain(
-                "ads.example.com",
-                DnsFilterMode::Blacklist,
-                Some(&provider),
-            ),
+            evaluate_domain("ads.example.com", DnsFilterMode::Blacklist, Some(&provider),),
             DomainDecision::Block
         );
         assert_eq!(
-            evaluate_domain("safe.example.com", DnsFilterMode::Blacklist, Some(&provider)),
+            evaluate_domain(
+                "safe.example.com",
+                DnsFilterMode::Blacklist,
+                Some(&provider)
+            ),
             DomainDecision::Allow
         );
     }

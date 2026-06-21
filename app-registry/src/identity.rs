@@ -1,5 +1,5 @@
-use shared_types::WireSentinelError;
 use sha2::{Digest, Sha256};
+use shared_types::WireSentinelError;
 use std::path::Path;
 
 /// Compute SHA256 hash of executable file.

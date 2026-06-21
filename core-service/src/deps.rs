@@ -1,70 +1,73 @@
 //! Service dependency injection container.
 
+use anonymity_federation::MixnetFederationManager;
 use app_registry::AppRegistryService;
 use chrono::Utc;
 use dns::DnsLayer;
 use event_bus::EventBus;
-use filter_lists::{filters_cache_dir, FilterListEngine, FilterListProvider, FilterSubscription, FilterUpdateScheduler};
+use filter_lists::{
+    filters_cache_dir, FilterListEngine, FilterListProvider, FilterSubscription,
+    FilterUpdateScheduler,
+};
 use parking_lot::RwLock;
 use policy_engine::{PolicyEngine, ProfileLookup};
+use proxy_engine::{ProxyListenPort, ProxyManager};
 use shared_types::{
-    DnsProviderRecord, DnsTransport, FilterListRecord, Ruleset, ServiceEventInner, VpnBackendKind,
-    VPNProfile,
+    DnsProviderRecord, DnsTransport, FilterListRecord, Ruleset, ServiceEventInner, VPNProfile,
+    VpnBackendKind,
 };
+use split_tunnel::SplitTunnelTemplateManager;
 use std::collections::HashMap;
 use std::sync::Arc;
 use storage::Storage;
-use split_tunnel::SplitTunnelTemplateManager;
 use tcp_termination::TcpTerminationEngine;
 use traffic_monitor::TrafficMonitor;
 use uuid::Uuid;
 use vpn_engine::{default_dll_path, default_factory, VpnBackendFactory, VpnManager};
 use wfp::WfpEngine;
-use proxy_engine::{ProxyListenPort, ProxyManager};
-use anonymity_federation::MixnetFederationManager;
 
-use crate::audit::AuditRecorder;
-use crate::backup::BackupService;
-use crate::benchmark::BenchmarkService;
-use crate::correlation::TrafficCorrelator;
-use crate::diagnostics::DiagnosticsService;
-use crate::domain_cache::DomainResolverCache;
-use crate::enterprise::LocalPolicyProvider;
-use crate::fault_injection::FaultInjectionService;
-use crate::leak_detector::LeakDetector;
-use crate::metrics::MetricsService;
-use crate::performance::PerformanceMonitor;
-use crate::plugins::PluginService;
-use crate::mixnet::MixnetService;
-use crate::privacy::PrivacyScoreService;
-use crate::mixnet_security::MixnetSecurityPolicy;
-use crate::cover_traffic::CoverTrafficService;
-use crate::anonymous_routing::AnonymousRoutingService;
-use crate::guardian_hybrid::GuardianHybridService;
-use crate::kernel_route_bridge::KernelRouteBridge;
-use crate::kernel_telemetry::KernelTelemetryService;
 use crate::anonymity::AnonymityService;
 use crate::anonymity_decoy::AnonymityDecoyService;
 use crate::anonymity_discovery::AnonymityDiscoveryService;
 use crate::anonymity_entropy::RouteEntropyBridge;
 use crate::anonymity_security::AnonymitySecurityPolicy;
+use crate::anonymous_routing::AnonymousRoutingService;
+use crate::audit::AuditRecorder;
+use crate::backup::BackupService;
+use crate::benchmark::BenchmarkService;
+use crate::correlation::TrafficCorrelator;
+use crate::cover_traffic::CoverTrafficService;
+use crate::diagnostics::DiagnosticsService;
+use crate::domain_cache::DomainResolverCache;
+use crate::enterprise::LocalPolicyProvider;
+use crate::fault_injection::FaultInjectionService;
+use crate::guardian_hybrid::GuardianHybridService;
+use crate::kernel_route_bridge::KernelRouteBridge;
+use crate::kernel_telemetry::KernelTelemetryService;
+use crate::leak_detector::LeakDetector;
+use crate::metrics::MetricsService;
+use crate::mixnet::MixnetService;
 use crate::mixnet_redirect::MixnetRedirectEngine;
-use crate::proxy_redirect::ProxyRedirectEngine;
+use crate::mixnet_security::MixnetSecurityPolicy;
+use crate::performance::PerformanceMonitor;
+use crate::plugins::PluginService;
+use crate::privacy::PrivacyScoreService;
 use crate::privacy_analytics::PrivacyAnalyticsService;
 use crate::proxy::ProxyService;
+use crate::proxy_redirect::ProxyRedirectEngine;
 use crate::recovery::RecoveryService;
 use crate::security_audit::SecurityAuditService;
-use crate::split_tunnel::SplitTunnelEngine;
 use crate::split_templates::SplitTemplateService;
-use crate::tcp_termination::TcpTerminationService;
+use crate::split_tunnel::SplitTunnelEngine;
+use crate::sse_agent::SseAgent;
 use crate::tailscale::TailscaleService;
+use crate::tcp_termination::TcpTerminationService;
 use crate::tor::TorService;
 use crate::transport::TransportManager;
-use crate::ztna_agent::ZtnaAgent;
-use crate::sse_agent::SseAgent;
-use crate::xdr_agent::XdrAgent;
 use crate::update::UpdateManager;
 use crate::validation::ValidationService;
+use crate::xdr_agent::XdrAgent;
+use crate::ztna_agent::ZtnaAgent;
 
 pub struct ProfileCache {
     map: RwLock<HashMap<Uuid, VpnBackendKind>>,
@@ -270,9 +273,7 @@ impl ServiceDeps {
         let awg_impl = storage.settings.vpn_amnezia_impl().await?;
         let dll_path = default_dll_path();
         let vpn_factory = Arc::new(default_factory(service_exe, &wg_impl, &awg_impl, dll_path));
-        let vpn = Arc::new(
-            VpnManager::new(Arc::clone(&vpn_factory)).with_events(events.clone()),
-        );
+        let vpn = Arc::new(VpnManager::new(Arc::clone(&vpn_factory)).with_events(events.clone()));
 
         let profiles = storage.vpn_profiles.list().await?;
         vpn.set_profiles(profiles.clone());
@@ -315,7 +316,7 @@ impl ServiceDeps {
         dns.set_filter_provider(Arc::clone(&filter_lists) as Arc<dyn FilterListProvider>);
 
         let domain_cache = Arc::new(DomainResolverCache::new(
-            Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>,
+            Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>
         ));
 
         let proxy = Arc::new(ProxyService::new(
@@ -358,10 +359,8 @@ impl ServiceDeps {
             Arc::clone(&ndis),
             events.clone(),
         ));
-        let kernel_route_bridge = Arc::new(KernelRouteBridge::new(
-            Arc::clone(&ndis),
-            guardian_mode,
-        ));
+        let kernel_route_bridge =
+            Arc::new(KernelRouteBridge::new(Arc::clone(&ndis), guardian_mode));
         let proxy_redirect = Arc::new(ProxyRedirectEngine::new(
             Arc::clone(&kernel_route_bridge),
             Arc::clone(&listen_ports),
@@ -416,8 +415,7 @@ impl ServiceDeps {
                 Arc::clone(&domain_cache),
                 Arc::clone(&storage.route_statistics)
                     as Arc<dyn storage::RouteStatisticsRepository>,
-                Arc::clone(&storage.wfp_filter_state)
-                    as Arc<dyn storage::WfpFilterStateRepository>,
+                Arc::clone(&storage.wfp_filter_state) as Arc<dyn storage::WfpFilterStateRepository>,
             )
             .with_events(events.clone())
             .with_proxy(Arc::clone(&proxy))
@@ -458,18 +456,12 @@ impl ServiceDeps {
             Arc::clone(&storage),
             vpn_factory.as_ref(),
         ));
-        let recovery = Arc::new(RecoveryService::new(
-            Arc::clone(&storage),
-            events.clone(),
-        ));
+        let recovery = Arc::new(RecoveryService::new(Arc::clone(&storage), events.clone()));
         let performance = Arc::new(PerformanceMonitor::new(
             Arc::clone(&storage),
             events.clone(),
         ));
-        let backup = Arc::new(BackupService::new(
-            Arc::clone(&storage),
-            events.clone(),
-        ));
+        let backup = Arc::new(BackupService::new(Arc::clone(&storage), events.clone()));
         let enterprise = Arc::new(LocalPolicyProvider::new(Arc::clone(&storage)));
         let update = Arc::new(UpdateManager::new(Arc::clone(&storage)));
         let diagnostics = Arc::new(DiagnosticsService::new(
@@ -484,19 +476,13 @@ impl ServiceDeps {
             Arc::clone(&vpn),
             Arc::clone(&transport),
         ));
-        let validation = Arc::new(ValidationService::new(
-            Arc::clone(&storage),
-            events.clone(),
-        ));
+        let validation = Arc::new(ValidationService::new(Arc::clone(&storage), events.clone()));
         let benchmark = Arc::new(BenchmarkService::new(Arc::clone(&storage)));
         let security_audit = Arc::new(SecurityAuditService::new(
             Arc::clone(&storage),
             events.clone(),
         ));
-        let plugins = Arc::new(PluginService::new(
-            Arc::clone(&storage),
-            events.clone(),
-        )?);
+        let plugins = Arc::new(PluginService::new(Arc::clone(&storage), events.clone())?);
         let fault_injection = Arc::new(FaultInjectionService::new(
             Arc::clone(&recovery),
             events.clone(),

@@ -61,10 +61,12 @@ mod tests {
     async fn publish_subscribe() {
         let bus = EventBus::new();
         let mut rx = bus.subscribe();
-        bus.publish(ServiceEventInner::SystemWarning {
-            message: "test".into(),
-        }
-        .with_timestamp(Utc::now()));
+        bus.publish(
+            ServiceEventInner::SystemWarning {
+                message: "test".into(),
+            }
+            .with_timestamp(Utc::now()),
+        );
         let event = rx.recv().await.unwrap();
         assert!(matches!(event, ServiceEvent::SystemWarning { .. }));
     }

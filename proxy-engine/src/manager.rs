@@ -115,9 +115,9 @@ impl ProxyManager {
         let profiles: Vec<ProxyProfile> = ordered
             .iter()
             .filter_map(|hop| match hop.kind {
-                ProxyChainHopKind::Socks5
-                | ProxyChainHopKind::Http
-                | ProxyChainHopKind::Https => resolve_profile(hop.profile_id),
+                ProxyChainHopKind::Socks5 | ProxyChainHopKind::Http | ProxyChainHopKind::Https => {
+                    resolve_profile(hop.profile_id)
+                }
                 ProxyChainHopKind::Tor | ProxyChainHopKind::TlsTunnel => None,
             })
             .collect();

@@ -123,15 +123,7 @@ jobs:
 
       - name: Pester installer e2e (static)
         working-directory: WireSentinel
-        run: |
-          pwsh -NoProfile -Command @'
-          Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module Pester -RequiredVersion 5.5.0 -Force -Scope CurrentUser -SkipPublisherCheck
-          $config = New-PesterConfiguration
-          $config.Run.Path = "installer/tests/installer-e2e.ps1"
-          $config.Output.Verbosity = "Detailed"
-          Invoke-Pester -Configuration $config
-          '@
+        run: pwsh -NoProfile -File installer/tests/run-pester-ci.ps1
 
   windows-cross:
     name: Windows cross-check (x64)
@@ -184,9 +176,19 @@ jobs:
         with:
           workspaces: WireSentinel
 
+      - name: Install cargo-xwin
+        run: cargo install cargo-xwin --locked
+
+      - name: Setup Windows SDK (xwin)
+        run: cargo xwin setup --accept-license
+        env:
+          XWIN_CACHE_DIR: ${{ runner.temp }}/xwin
+
       - name: cargo check (x86_64-pc-windows-msvc)
         working-directory: WireSentinel
-        run: cargo check --workspace --target x86_64-pc-windows-msvc
+        run: cargo xwin check --workspace --target x86_64-pc-windows-msvc
+        env:
+          XWIN_CACHE_DIR: ${{ runner.temp }}/xwin
 
   windows-arm64:
     name: Windows ARM64 check
@@ -239,6 +241,16 @@ jobs:
         with:
           workspaces: WireSentinel
 
+      - name: Install cargo-xwin
+        run: cargo install cargo-xwin --locked
+
+      - name: Setup Windows SDK (xwin)
+        run: cargo xwin setup --accept-license
+        env:
+          XWIN_CACHE_DIR: ${{ runner.temp }}/xwin
+
       - name: cargo check (aarch64-pc-windows-msvc)
         working-directory: WireSentinel
-        run: cargo check --workspace --target aarch64-pc-windows-msvc
+        run: cargo xwin check --workspace --target aarch64-pc-windows-msvc
+        env:
+          XWIN_CACHE_DIR: ${{ runner.temp }}/xwin

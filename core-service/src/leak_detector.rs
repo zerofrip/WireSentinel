@@ -5,8 +5,7 @@ use event_bus::EventBus;
 use parking_lot::RwLock;
 use policy_engine::PolicyEngine;
 use shared_types::{
-    ConnectionSnapshot, LeakIncident, LeakType, Result, ServiceEventInner, TrafficRoute,
-    VpnStatus,
+    ConnectionSnapshot, LeakIncident, LeakType, Result, ServiceEventInner, TrafficRoute, VpnStatus,
 };
 use std::sync::Arc;
 use storage::Storage;
@@ -53,10 +52,7 @@ impl LeakDetector {
             return Ok(());
         }
 
-        if conn.remote_addr.port() == 53
-            && matches!(route, TrafficRoute::Direct)
-            && vpn_connected
-        {
+        if conn.remote_addr.port() == 53 && matches!(route, TrafficRoute::Direct) && vpn_connected {
             self.report(
                 LeakType::Dns,
                 Some(app_id),

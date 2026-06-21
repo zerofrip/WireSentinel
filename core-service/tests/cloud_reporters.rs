@@ -1,5 +1,7 @@
 use core_service::cloud_backup_reporter::{CloudBackupReporter, CloudBackupReporterConfig};
-use core_service::cloud_telemetry_reporter::{CloudTelemetryReporter, CloudTelemetryReporterConfig};
+use core_service::cloud_telemetry_reporter::{
+    CloudTelemetryReporter, CloudTelemetryReporterConfig,
+};
 use core_service::cloud_usage_reporter::{CloudUsageReporter, CloudUsageReporterConfig};
 use std::sync::Arc;
 use storage::{init_pool_in_memory, Storage};

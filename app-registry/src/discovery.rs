@@ -9,7 +9,9 @@ pub fn exe_path_for_pid(pid: u32) -> Result<PathBuf, WireSentinelError> {
         use std::os::windows::ffi::OsStringExt;
         use windows::Win32::Foundation::{CloseHandle, MAX_PATH};
         use windows::Win32::System::ProcessStatus::K32GetModuleFileNameExW;
-        use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ};
+        use windows::Win32::System::Threading::{
+            OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ,
+        };
 
         unsafe {
             let handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid)
@@ -18,7 +20,9 @@ pub fn exe_path_for_pid(pid: u32) -> Result<PathBuf, WireSentinelError> {
             let len = K32GetModuleFileNameExW(handle, None, &mut buf);
             let _ = CloseHandle(handle);
             if len == 0 {
-                return Err(WireSentinelError::Other(format!("no exe path for pid {pid}")));
+                return Err(WireSentinelError::Other(format!(
+                    "no exe path for pid {pid}"
+                )));
             }
             buf.truncate(len as usize);
             return Ok(PathBuf::from(OsString::from_wide(&buf)));

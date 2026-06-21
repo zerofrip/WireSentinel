@@ -30,7 +30,9 @@ fn transport_from_str(s: &str) -> Result<DnsTransport> {
         "doh" => Ok(DnsTransport::Doh),
         "dot" => Ok(DnsTransport::Dot),
         "doq" => Ok(DnsTransport::Doq),
-        other => Err(WireSentinelError::Config(format!("unknown dns transport: {other}"))),
+        other => Err(WireSentinelError::Config(format!(
+            "unknown dns transport: {other}"
+        ))),
     }
 }
 

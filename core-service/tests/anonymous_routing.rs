@@ -1,3 +1,4 @@
+use anonymity_federation::MixnetFederationManager;
 use core_service::anonymity::AnonymityService;
 use core_service::anonymity_security::AnonymitySecurityPolicy;
 use core_service::anonymous_routing::AnonymousRoutingService;
@@ -7,7 +8,6 @@ use core_service::mixnet_security::MixnetSecurityPolicy;
 use core_service::proxy::ProxyService;
 use core_service::split_tunnel::SplitTunnelEngine;
 use core_service::tor::TorService;
-use anonymity_federation::MixnetFederationManager;
 use event_bus::EventBus;
 use mixnet_core::MixnetManager;
 use policy_engine::Decision;
@@ -52,7 +52,7 @@ async fn anonymous_route_does_not_fall_back_to_direct() {
     ));
     let vpn = Arc::new(VpnManager::new(factory));
     let domain_cache = Arc::new(DomainResolverCache::new(
-        Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>,
+        Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>
     ));
 
     let listen_ports = Arc::new(ProxyListenPort::new());

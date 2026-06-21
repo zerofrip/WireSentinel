@@ -14,7 +14,9 @@ mod ndis;
 
 pub use engine::{RouteEnforcer, WfpEngine, WfpEvent, WfpEventKind};
 pub use hybrid::HybridWfpEngine;
-pub use ndis::{create_ndis_engine, ndis_driver_available, NdisCalloutEngine, NdisEngine, StubNdisEngine};
+pub use ndis::{
+    create_ndis_engine, ndis_driver_available, NdisCalloutEngine, NdisEngine, StubNdisEngine,
+};
 
 #[cfg(windows)]
 pub use kernel::KernelCalloutEngine;

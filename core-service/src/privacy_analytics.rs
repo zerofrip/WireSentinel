@@ -2,9 +2,7 @@
 
 use chrono::Utc;
 use event_bus::EventBus;
-use shared_types::{
-    PrivacyAnalyticsSnapshot, Result, ServiceEvent, ServiceEventInner,
-};
+use shared_types::{PrivacyAnalyticsSnapshot, Result, ServiceEvent, ServiceEventInner};
 use std::sync::Arc;
 use storage::Storage;
 use tokio::sync::watch;
@@ -59,10 +57,7 @@ impl PrivacyAnalyticsService {
             })
             .await?;
 
-        let total_bytes: u64 = route_stats
-            .iter()
-            .map(|r| r.bytes_in + r.bytes_out)
-            .sum();
+        let total_bytes: u64 = route_stats.iter().map(|r| r.bytes_in + r.bytes_out).sum();
         let anonymous_types = [
             "tor",
             "anonymous",
@@ -79,16 +74,16 @@ impl PrivacyAnalyticsService {
             .map(|r| r.bytes_in + r.bytes_out)
             .sum();
 
-        let route_types: Vec<&str> = route_stats
-            .iter()
-            .map(|r| r.route_type.as_str())
-            .collect();
+        let route_types: Vec<&str> = route_stats.iter().map(|r| r.route_type.as_str()).collect();
         let route_entropy = self.entropy.score_route_types(&route_types);
 
         let path_diversity = if route_stats.is_empty() {
             0.0
         } else {
-            let distinct_routes = route_types.iter().collect::<std::collections::HashSet<_>>().len();
+            let distinct_routes = route_types
+                .iter()
+                .collect::<std::collections::HashSet<_>>()
+                .len();
             (distinct_routes as f64 / 10.0).min(1.0)
         };
 
@@ -112,9 +107,10 @@ impl PrivacyAnalyticsService {
             anonymous_bytes as f64 / total_bytes as f64
         };
 
-        let anonymity_score = ((anonymous_ratio * 65.0) + mixnet_bonus + anonymity_bonus + cover_bonus)
-            .min(100.0)
-            .max(0.0) as u8;
+        let anonymity_score =
+            ((anonymous_ratio * 65.0) + mixnet_bonus + anonymity_bonus + cover_bonus)
+                .min(100.0)
+                .max(0.0) as u8;
 
         let cover_traffic_effectiveness = if self.cover_traffic.is_running() {
             match self.cover_traffic.engine().profile() {
@@ -130,9 +126,16 @@ impl PrivacyAnalyticsService {
 
         let advanced = self.analytics.compute(
             anonymity_status.active_providers,
-            if anonymity_status.federated_active { 1 } else { 0 },
+            if anonymity_status.federated_active {
+                1
+            } else {
+                0
+            },
             self.cover_traffic.is_adaptive(),
-            route_types.iter().collect::<std::collections::HashSet<_>>().len() as u32,
+            route_types
+                .iter()
+                .collect::<std::collections::HashSet<_>>()
+                .len() as u32,
         );
         let anonymity_set_estimate = Some(self.entropy.estimate_from_counts(
             anonymity_status.active_providers,
@@ -156,18 +159,20 @@ impl PrivacyAnalyticsService {
         };
 
         self.storage.privacy_analytics.insert(&snapshot).await?;
-        self.events.publish(ServiceEvent::now(ServiceEventInner::PrivacyAnalyticsUpdated {
-            snapshot: snapshot.clone(),
-        }));
-        self.events.publish(ServiceEvent::now(ServiceEventInner::AnonymityAnalyticsUpdated {
-            snapshot: snapshot.clone(),
-        }));
+        self.events.publish(ServiceEvent::now(
+            ServiceEventInner::PrivacyAnalyticsUpdated {
+                snapshot: snapshot.clone(),
+            },
+        ));
+        self.events.publish(ServiceEvent::now(
+            ServiceEventInner::AnonymityAnalyticsUpdated {
+                snapshot: snapshot.clone(),
+            },
+        ));
 
         debug!(
             anonymity_score,
-            route_entropy,
-            path_diversity,
-            "privacy analytics updated"
+            route_entropy, path_diversity, "privacy analytics updated"
         );
         Ok(snapshot)
     }
@@ -182,8 +187,7 @@ impl PrivacyAnalyticsService {
                 .await
                 .unwrap_or(300)
                 .max(60);
-            let mut interval =
-                tokio::time::interval(std::time::Duration::from_secs(interval_secs));
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(interval_secs));
             interval.tick().await;
 
             loop {

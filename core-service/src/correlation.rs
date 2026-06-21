@@ -39,9 +39,7 @@ impl TrafficCorrelator {
             .await?;
 
         for ip in ips {
-            self.correlations
-                .record_dns(app_id, domain, ip)
-                .await?;
+            self.correlations.record_dns(app_id, domain, ip).await?;
         }
         let _ = correlation_id;
         let _ = &self.dns_logs;

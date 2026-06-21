@@ -571,10 +571,7 @@ impl Default for XdrSecurityPolicy {
                 ResponseActionKind::BlockIp,
                 ResponseActionKind::QuarantineDevice,
             ],
-            allowed_playbook_kinds: vec![
-                PlaybookKind::NotifyTeam,
-                PlaybookKind::EscalateIncident,
-            ],
+            allowed_playbook_kinds: vec![PlaybookKind::NotifyTeam, PlaybookKind::EscalateIncident],
             max_detection_rule_conditions: 50,
             require_mfa_for_response: true,
         }

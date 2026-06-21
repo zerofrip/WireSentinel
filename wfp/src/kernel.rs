@@ -3,10 +3,10 @@
 use crate::engine::{RouteEnforcer, WfpEngine};
 use async_trait::async_trait;
 use guardian_controller::{
-    GuardianAppPolicyV1, GuardianClient, GuardianKillSwitchV1, GuardianLifecycleState,
-    GuardianPolicyAction, GuardianPolicyMatchKind, GuardianRouteAssignmentV1, GuardianRouteKind,
-    GuardianDriverStateV1, GUARDIAN_APP_POLICY_VERSION, GUARDIAN_ROUTE_ASSIGNMENT_VERSION,
-    uuid_to_bytes, wide_path_bytes,
+    uuid_to_bytes, wide_path_bytes, GuardianAppPolicyV1, GuardianClient, GuardianDriverStateV1,
+    GuardianKillSwitchV1, GuardianLifecycleState, GuardianPolicyAction, GuardianPolicyMatchKind,
+    GuardianRouteAssignmentV1, GuardianRouteKind, GUARDIAN_APP_POLICY_VERSION,
+    GUARDIAN_ROUTE_ASSIGNMENT_VERSION,
 };
 use parking_lot::{Mutex, RwLock};
 use proxy_engine::ProxyListenPort;
@@ -101,13 +101,18 @@ fn map_traffic_route(route: &TrafficRoute) -> (u32, u64) {
         TrafficRoute::Chain(id) => (GuardianRouteKind::Chain as u32, id.as_u128() as u64),
         TrafficRoute::Katzenpost(id) => (GuardianRouteKind::Katzenpost as u32, id.as_u128() as u64),
         TrafficRoute::Loopix(id) => (GuardianRouteKind::Loopix as u32, id.as_u128() as u64),
-        TrafficRoute::FederatedMixnet(id) => {
-            (GuardianRouteKind::FederatedMixnet as u32, id.as_u128() as u64)
-        }
+        TrafficRoute::FederatedMixnet(id) => (
+            GuardianRouteKind::FederatedMixnet as u32,
+            id.as_u128() as u64,
+        ),
     }
 }
 
-fn build_app_policy(app: &AppIdentity, route: &TrafficRoute, tunnel: Option<&TunnelIface>) -> GuardianAppPolicyV1 {
+fn build_app_policy(
+    app: &AppIdentity,
+    route: &TrafficRoute,
+    tunnel: Option<&TunnelIface>,
+) -> GuardianAppPolicyV1 {
     let exe = app.exe_path().to_string_lossy().into_owned();
     let (exe_path, len) = wide_path_bytes(&exe);
     let (_route_kind, profile_id) = map_traffic_route(route);
@@ -151,12 +156,11 @@ fn driver_state_from_kernel(state: &GuardianDriverStateV1) -> DriverState {
 #[async_trait]
 impl WfpEngine for KernelCalloutEngine {
     async fn init(&self) -> Result<()> {
-        let client = GuardianClient::connect().map_err(|e| {
-            WireSentinelError::Wfp(format!("Guardian driver connect failed: {e}"))
-        })?;
-        let _ = client.reconcile().map_err(|e| {
-            WireSentinelError::Wfp(format!("Guardian reconcile failed: {e}"))
-        })?;
+        let client = GuardianClient::connect()
+            .map_err(|e| WireSentinelError::Wfp(format!("Guardian driver connect failed: {e}")))?;
+        let _ = client
+            .reconcile()
+            .map_err(|e| WireSentinelError::Wfp(format!("Guardian reconcile failed: {e}")))?;
         *self.client.lock() = Some(client);
         Ok(())
     }
@@ -228,11 +232,9 @@ impl WfpEngine for KernelCalloutEngine {
                 .map_err(|e| WireSentinelError::Wfp(format!("set policy: {e}")))?;
 
             let assignment = match route {
-                TrafficRoute::Proxy(id) => GuardianRouteAssignmentV1::new_proxy(
-                    app.id(),
-                    id.as_u128() as u64,
-                    socks_port,
-                ),
+                TrafficRoute::Proxy(id) => {
+                    GuardianRouteAssignmentV1::new_proxy(app.id(), id.as_u128() as u64, socks_port)
+                }
                 TrafficRoute::ProxyChain(id) => GuardianRouteAssignmentV1::new_proxy_chain(
                     app.id(),
                     id.as_u128() as u64,

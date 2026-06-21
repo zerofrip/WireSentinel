@@ -2,9 +2,7 @@
 
 use event_bus::EventBus;
 use serde::{Deserialize, Serialize};
-use shared_types::{
-    Result, ServiceEvent, ServiceEventInner, SyncMode, WireSentinelError,
-};
+use shared_types::{Result, ServiceEvent, ServiceEventInner, SyncMode, WireSentinelError};
 use std::sync::Arc;
 use std::time::Duration;
 use storage::Storage;
@@ -187,10 +185,12 @@ impl CloudSyncAgent {
                 }
             }
 
-            events.publish(ServiceEvent::now(ServiceEventInner::ControllerDisconnected {
-                controller_id,
-                reason: "shutdown".into(),
-            }));
+            events.publish(ServiceEvent::now(
+                ServiceEventInner::ControllerDisconnected {
+                    controller_id,
+                    reason: "shutdown".into(),
+                },
+            ));
         });
     }
 }

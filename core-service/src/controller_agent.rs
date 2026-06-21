@@ -14,8 +14,8 @@ use uuid::Uuid;
 use crate::audit::AuditRecorder;
 use crate::enterprise::{LocalPolicyProvider, RemotePolicyProvider};
 use crate::metrics::MetricsService;
-use crate::ztna_agent::ZtnaAgent;
 use crate::sse_agent::SseAgent;
+use crate::ztna_agent::ZtnaAgent;
 
 const SETTINGS_KEY: &str = "controller_agent";
 
@@ -122,10 +122,12 @@ impl ControllerAgent {
                                 warn!(error = %e, "failed to persist controller device id");
                             }
                             if let Ok(agent_id) = Uuid::parse_str(&device_id) {
-                                events.publish(ServiceEvent::now(ServiceEventInner::AgentEnrolled {
-                                    agent_id,
-                                    name: config.device_name.clone(),
-                                }));
+                                events.publish(ServiceEvent::now(
+                                    ServiceEventInner::AgentEnrolled {
+                                        agent_id,
+                                        name: config.device_name.clone(),
+                                    },
+                                ));
                             }
                             info!(device_id, "controller agent enrolled");
                         }
@@ -150,8 +152,9 @@ impl ControllerAgent {
 
             let mut heartbeat_tick =
                 tokio::time::interval(Duration::from_secs(config.heartbeat_interval_secs.max(15)));
-            let mut policy_tick =
-                tokio::time::interval(Duration::from_secs(config.policy_pull_interval_secs.max(60)));
+            let mut policy_tick = tokio::time::interval(Duration::from_secs(
+                config.policy_pull_interval_secs.max(60),
+            ));
             policy_tick.tick().await;
 
             loop {
@@ -385,12 +388,10 @@ async fn push_anonymity_heartbeat(
     payload: &serde_json::Value,
 ) -> Result<()> {
     let url = format!("{base}/api/v1/agents/{device_id}/anonymity/heartbeat");
-    let resp = http
-        .post(url)
-        .json(payload)
-        .send()
-        .await
-        .map_err(|e| WireSentinelError::Config(format!("controller anonymity heartbeat: {e}")))?;
+    let resp =
+        http.post(url).json(payload).send().await.map_err(|e| {
+            WireSentinelError::Config(format!("controller anonymity heartbeat: {e}"))
+        })?;
     if !resp.status().is_success() {
         return Err(WireSentinelError::Config(format!(
             "controller anonymity heartbeat status {}",

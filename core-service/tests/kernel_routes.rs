@@ -11,9 +11,13 @@ async fn test_app() -> AppState {
     let storage = Arc::new(Storage::new(pool));
     let events = EventBus::new();
     let deps = Arc::new(
-        ServiceDeps::build(storage, events, Arc::new(parking_lot::RwLock::new("test".into())))
-            .await
-            .unwrap(),
+        ServiceDeps::build(
+            storage,
+            events,
+            Arc::new(parking_lot::RwLock::new("test".into())),
+        )
+        .await
+        .unwrap(),
     );
     AppState { deps }
 }

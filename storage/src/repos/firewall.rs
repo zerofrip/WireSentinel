@@ -18,8 +18,7 @@ impl SqliteFirewallDecisionRepository {
 #[async_trait]
 impl FirewallDecisionRepository for SqliteFirewallDecisionRepository {
     async fn insert(&self, record: &FirewallDecisionRecord) -> Result<()> {
-        let route_json =
-            serde_json::to_string(&record.route).map_err(WireSentinelError::Serde)?;
+        let route_json = serde_json::to_string(&record.route).map_err(WireSentinelError::Serde)?;
         let verdict_json =
             serde_json::to_string(&record.verdict).map_err(WireSentinelError::Serde)?;
         sqlx::query(

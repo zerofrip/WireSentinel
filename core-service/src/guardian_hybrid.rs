@@ -38,14 +38,18 @@ impl GuardianHybridService {
     }
 
     fn publish_driver_integrity_failure(&self, driver: &str, detail: String) {
-        self.events.publish(ServiceEvent::now(ServiceEventInner::DriverIntegrityFailure {
-            driver: driver.into(),
-            detail: detail.clone(),
-        }));
-        self.events.publish(ServiceEvent::now(ServiceEventInner::KernelSecurityViolation {
-            violation_type: "driver_integrity".into(),
-            detail: format!("{driver}: {detail}"),
-        }));
+        self.events.publish(ServiceEvent::now(
+            ServiceEventInner::DriverIntegrityFailure {
+                driver: driver.into(),
+                detail: detail.clone(),
+            },
+        ));
+        self.events.publish(ServiceEvent::now(
+            ServiceEventInner::KernelSecurityViolation {
+                violation_type: "driver_integrity".into(),
+                detail: format!("{driver}: {detail}"),
+            },
+        ));
     }
 
     pub async fn validate(&self) -> Result<(GuardianMode, Option<String>, Option<String>)> {

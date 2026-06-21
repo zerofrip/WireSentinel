@@ -71,7 +71,11 @@ impl ValidationService {
             ValidationStatus::Pass
         };
 
-        info!(?overall_status, count = checks.len(), "validation completed");
+        info!(
+            ?overall_status,
+            count = checks.len(),
+            "validation completed"
+        );
 
         Ok(ValidationReport {
             overall_status,
@@ -120,7 +124,10 @@ impl ValidationService {
                         ));
                     }
                 }
-                Ok((ValidationStatus::Warn, Some("could not read OS version".into())))
+                Ok((
+                    ValidationStatus::Warn,
+                    Some("could not read OS version".into()),
+                ))
             }
             #[cfg(not(windows))]
             {
@@ -197,10 +204,10 @@ impl ValidationService {
         self.make_check("wfp_availability", || {
             #[cfg(windows)]
             {
+                use windows::core::PCWSTR;
                 use windows::Win32::NetworkManagement::WindowsFilteringPlatform::{
                     FwpmEngineClose0, FwpmEngineOpen0, FWPM_SESSION0,
                 };
-                use windows::core::PCWSTR;
                 let mut handle = std::ptr::null_mut();
                 let session = FWPM_SESSION0::default();
                 unsafe {
@@ -231,7 +238,10 @@ impl ValidationService {
         self.make_check("etw_availability", || {
             #[cfg(windows)]
             {
-                Ok((ValidationStatus::Pass, Some("tracing subscriber active".into())))
+                Ok((
+                    ValidationStatus::Pass,
+                    Some("tracing subscriber active".into()),
+                ))
             }
             #[cfg(not(windows))]
             {

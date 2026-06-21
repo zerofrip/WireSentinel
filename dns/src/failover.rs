@@ -43,11 +43,7 @@ impl DnsProviderRegistry {
         self.latencies.read().clone()
     }
 
-    pub async fn resolve(
-        &self,
-        qname: &str,
-        qtype: &str,
-    ) -> Result<(Vec<String>, u64, String)> {
+    pub async fn resolve(&self, qname: &str, qtype: &str) -> Result<(Vec<String>, u64, String)> {
         if self.providers.is_empty() {
             return Err(WireSentinelError::Dns("no DNS providers configured".into()));
         }
@@ -73,9 +69,7 @@ impl DnsProviderRegistry {
             }
         }
 
-        Err(last_err.unwrap_or_else(|| {
-            WireSentinelError::Dns("all DNS providers failed".into())
-        }))
+        Err(last_err.unwrap_or_else(|| WireSentinelError::Dns("all DNS providers failed".into())))
     }
 
     pub async fn health_check_all(&self) -> Vec<(String, ProviderHealth)> {

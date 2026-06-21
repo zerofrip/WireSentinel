@@ -1,8 +1,8 @@
 //! API bearer token — stored in DPAPI-protected file, read by UI locally.
 
 use shared_types::WireSentinelError;
-use storage::data_dir;
 use std::path::PathBuf;
+use storage::data_dir;
 use uuid::Uuid;
 
 pub fn token_path() -> PathBuf {
@@ -64,9 +64,7 @@ fn encrypt_token(plaintext: &[u8]) -> Result<Vec<u8>, WireSentinelError> {
 fn decrypt_token(ciphertext: &[u8]) -> Result<Vec<u8>, WireSentinelError> {
     #[cfg(windows)]
     {
-        use windows::Win32::Security::Cryptography::{
-            CryptUnprotectData, CRYPT_INTEGER_BLOB,
-        };
+        use windows::Win32::Security::Cryptography::{CryptUnprotectData, CRYPT_INTEGER_BLOB};
         let mut input = CRYPT_INTEGER_BLOB {
             cbData: ciphertext.len() as u32,
             pbData: ciphertext.as_ptr() as *mut u8,

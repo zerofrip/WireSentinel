@@ -82,8 +82,7 @@ impl CloudUsageReporter {
             let http = reqwest::Client::new();
             let base = config.cloud_url.trim_end_matches('/').to_string();
             let device_id = config.device_id.clone();
-            let mut tick =
-                tokio::time::interval(Duration::from_secs(config.interval_secs.max(60)));
+            let mut tick = tokio::time::interval(Duration::from_secs(config.interval_secs.max(60)));
             tick.tick().await;
 
             loop {

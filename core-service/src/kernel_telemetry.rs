@@ -1,9 +1,7 @@
 //! Bridges Guardian WFP and NDIS telemetry into shared Phase 12 DTOs.
 
 use chrono::Utc;
-use shared_types::{
-    GuardianMode, KernelStatistics, KernelTelemetryV2, Result, WireSentinelError,
-};
+use shared_types::{GuardianMode, KernelStatistics, KernelTelemetryV2, Result, WireSentinelError};
 use std::sync::Arc;
 use storage::Storage;
 use uuid::Uuid;
@@ -45,29 +43,19 @@ impl KernelTelemetryService {
         } else {
             None
         };
-        let summary = self
-            .ndis
-            .telemetry_summary()
-            .await
-            .unwrap_or_default();
-        let classify_count = unsafe {
-            std::ptr::read_unaligned(std::ptr::addr_of!(summary.classify_count))
-        };
-        let redirect_count = unsafe {
-            std::ptr::read_unaligned(std::ptr::addr_of!(summary.redirect_count))
-        };
-        let transform_count = unsafe {
-            std::ptr::read_unaligned(std::ptr::addr_of!(summary.transform_count))
-        };
-        let cover_traffic_count = unsafe {
-            std::ptr::read_unaligned(std::ptr::addr_of!(summary.cover_traffic_count))
-        };
-        let error_count = unsafe {
-            std::ptr::read_unaligned(std::ptr::addr_of!(summary.error_count))
-        };
-        let dropped_count = unsafe {
-            std::ptr::read_unaligned(std::ptr::addr_of!(summary.dropped_count))
-        };
+        let summary = self.ndis.telemetry_summary().await.unwrap_or_default();
+        let classify_count =
+            unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(summary.classify_count)) };
+        let redirect_count =
+            unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(summary.redirect_count)) };
+        let transform_count =
+            unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(summary.transform_count)) };
+        let cover_traffic_count =
+            unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(summary.cover_traffic_count)) };
+        let error_count =
+            unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(summary.error_count)) };
+        let dropped_count =
+            unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(summary.dropped_count)) };
 
         Ok(KernelTelemetryV2 {
             guardian_mode: mode,
@@ -118,8 +106,7 @@ impl KernelTelemetryService {
     pub async fn persist_snapshot(&self) -> Result<()> {
         let telemetry = self.collect().await?;
         let statistics = self.statistics().await?;
-        let telemetry_json =
-            serde_json::to_string(&telemetry).map_err(WireSentinelError::Serde)?;
+        let telemetry_json = serde_json::to_string(&telemetry).map_err(WireSentinelError::Serde)?;
         let statistics_json =
             serde_json::to_string(&statistics).map_err(WireSentinelError::Serde)?;
         sqlx::query(

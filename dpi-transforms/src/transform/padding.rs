@@ -9,16 +9,12 @@ impl TransformModule for PaddingTransform {
     }
 
     fn apply_outbound(&self, ctx: &mut TransformContext) {
-        ctx.outbound.insert(
-            "padding".into(),
-            json!({ "enabled": true, "size": 64 }),
-        );
+        ctx.outbound
+            .insert("padding".into(), json!({ "enabled": true, "size": 64 }));
     }
 
     fn apply_inbound(&self, ctx: &mut TransformContext) {
-        ctx.inbound.insert(
-            "padding".into(),
-            json!({ "enabled": true, "size": 64 }),
-        );
+        ctx.inbound
+            .insert("padding".into(), json!({ "enabled": true, "size": 64 }));
     }
 }

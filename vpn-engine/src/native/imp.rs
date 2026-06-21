@@ -17,7 +17,8 @@ pub const WIREGUARD_KEY_LENGTH: usize = 32;
 
 type WireGuardAdapterHandle = *mut c_void;
 
-type CreateAdapterFn = unsafe extern "system" fn(*const u16, *const u16, *const u8) -> WireGuardAdapterHandle;
+type CreateAdapterFn =
+    unsafe extern "system" fn(*const u16, *const u16, *const u8) -> WireGuardAdapterHandle;
 type CloseAdapterFn = unsafe extern "system" fn(WireGuardAdapterHandle);
 type SetConfigurationFn = unsafe extern "system" fn(WireGuardAdapterHandle, *const u8, u32) -> i32;
 type SetAdapterStateFn = unsafe extern "system" fn(WireGuardAdapterHandle, u32) -> i32;
@@ -109,7 +110,11 @@ impl NativeWireGuardBackend {
         }
     }
 
-    pub fn set_config(&self, handle: WireGuardAdapterHandle, config: &WireGuardConfig) -> Result<()> {
+    pub fn set_config(
+        &self,
+        handle: WireGuardAdapterHandle,
+        config: &WireGuardConfig,
+    ) -> Result<()> {
         let blob = encode_config(config)?;
         let ok = unsafe { (self.dll.set_configuration)(handle, blob.as_ptr(), blob.len() as u32) };
         if ok == 0 {
@@ -119,11 +124,7 @@ impl NativeWireGuardBackend {
     }
 
     fn set_state(&self, handle: WireGuardAdapterHandle, up: bool) -> Result<()> {
-        let state = if up {
-            WIREGUARD_ADAPTER_STATE_UP
-        } else {
-            0
-        };
+        let state = if up { WIREGUARD_ADAPTER_STATE_UP } else { 0 };
         let ok = unsafe { (self.dll.set_adapter_state)(handle, state) };
         if ok == 0 {
             return Err(wg_err("WireGuardSetAdapterState failed"));
@@ -148,8 +149,8 @@ impl NativeWireGuardBackend {
         if profile.config_path.to_string_lossy().starts_with("db://") {
             return Err(wg_err("native backend requires config file path on disk"));
         }
-        let content =
-            read_conf_file(&profile.config_path).map_err(|e| wg_err(format!("read config: {e}")))?;
+        let content = read_conf_file(&profile.config_path)
+            .map_err(|e| wg_err(format!("read config: {e}")))?;
         Ok(parse_conf(&content))
     }
 }
@@ -246,13 +247,14 @@ fn encode_config(config: &WireGuardConfig) -> Result<Vec<u8>> {
     const FLAG_HAS_ENDPOINT: u32 = 1 << 2;
     const FLAG_HAS_PERSISTENT_KEEPALIVE: u32 = 1 << 4;
 
-    let private_key = decode_key(config.interface.private_key.as_deref().ok_or_else(|| {
-        wg_err("missing private key")
-    })?)?;
-    let peer = config
-        .peers
-        .first()
-        .ok_or_else(|| wg_err("missing peer"))?;
+    let private_key = decode_key(
+        config
+            .interface
+            .private_key
+            .as_deref()
+            .ok_or_else(|| wg_err("missing private key"))?,
+    )?;
+    let peer = config.peers.first().ok_or_else(|| wg_err("missing peer"))?;
     let public_key = decode_key(
         peer.public_key
             .as_deref()
@@ -280,7 +282,8 @@ fn encode_config(config: &WireGuardConfig) -> Result<Vec<u8>> {
         + WIREGUARD_KEY_LENGTH
         + endpoint_wide.len() * 2
         + mem::size_of::<u16>();
-    let total = mem::size_of::<u32>() * 4 + WIREGUARD_KEY_LENGTH + mem::size_of::<u32>() + peer_size;
+    let total =
+        mem::size_of::<u32>() * 4 + WIREGUARD_KEY_LENGTH + mem::size_of::<u32>() + peer_size;
 
     let mut blob = Vec::with_capacity(total);
     blob.extend_from_slice(&flags.to_le_bytes());

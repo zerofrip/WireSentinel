@@ -90,13 +90,12 @@ impl CoverTrafficRepository for SqliteCoverTrafficRepository {
     }
 
     async fn get(&self, id: Uuid) -> Result<Option<CoverTrafficSettings>> {
-        let row = sqlx::query_as::<_, CoverTrafficRow>(&format!(
-            "{COVER_TRAFFIC_SELECT} WHERE id = ?"
-        ))
-        .bind(id.to_string())
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let row =
+            sqlx::query_as::<_, CoverTrafficRow>(&format!("{COVER_TRAFFIC_SELECT} WHERE id = ?"))
+                .bind(id.to_string())
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         row.map(|r| parse_row(r.0, r.1, r.2, r.3, r.4, r.5, r.6))
             .transpose()

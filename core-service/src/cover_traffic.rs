@@ -1,5 +1,6 @@
 //! Cover traffic generation backed by mixnet-cover-traffic.
 
+use anonymity_cover_traffic::{AdaptiveCoverProfile, AdaptiveCoverTrafficEngine};
 use chrono::Utc;
 use event_bus::EventBus;
 use mixnet_cover_traffic::CoverTrafficEngine;
@@ -10,7 +11,6 @@ use shared_types::{
 use std::sync::Arc;
 use storage::Storage;
 use uuid::Uuid;
-use anonymity_cover_traffic::{AdaptiveCoverProfile, AdaptiveCoverTrafficEngine};
 
 fn to_engine_profile(profile: CoverTrafficProfile) -> mixnet_cover_traffic::CoverTrafficProfile {
     match profile {
@@ -89,7 +89,10 @@ impl CoverTrafficService {
         self.storage.cover_traffic.get(id).await
     }
 
-    pub async fn get_for_mixnet(&self, mixnet_profile_id: Uuid) -> Result<Option<CoverTrafficSettings>> {
+    pub async fn get_for_mixnet(
+        &self,
+        mixnet_profile_id: Uuid,
+    ) -> Result<Option<CoverTrafficSettings>> {
         self.storage
             .cover_traffic
             .get_by_mixnet_profile(mixnet_profile_id)
@@ -127,41 +130,41 @@ impl CoverTrafficService {
                 WireSentinelError::Other(format!("cover traffic settings {settings_id} not found"))
             })?;
 
+        self.engine.set_profile(to_engine_profile(settings.profile));
         self.engine
-            .set_profile(to_engine_profile(settings.profile));
-        self.engine.start().await.map_err(|e| {
-            WireSentinelError::Other(format!("cover traffic start failed: {e}"))
-        })?;
+            .start()
+            .await
+            .map_err(|e| WireSentinelError::Other(format!("cover traffic start failed: {e}")))?;
         self.sync_adaptive_engine().await?;
 
-        let profile_id = settings
-            .mixnet_profile_id
-            .unwrap_or(settings_id);
+        let profile_id = settings.mixnet_profile_id.unwrap_or(settings_id);
         *self.active_profile_id.write() = Some(profile_id);
 
         self.events
-            .publish(ServiceEvent::now(ServiceEventInner::CoverTrafficStarted { profile_id }));
+            .publish(ServiceEvent::now(ServiceEventInner::CoverTrafficStarted {
+                profile_id,
+            }));
         Ok(settings)
     }
 
     pub async fn stop(&self, settings_id: Uuid, reason: &str) -> Result<()> {
-        self.engine.stop().await.map_err(|e| {
-            WireSentinelError::Other(format!("cover traffic stop failed: {e}"))
-        })?;
-        self.adaptive_engine.stop().await.map_err(|e| {
-            WireSentinelError::Other(format!("adaptive cover stop failed: {e}"))
-        })?;
+        self.engine
+            .stop()
+            .await
+            .map_err(|e| WireSentinelError::Other(format!("cover traffic stop failed: {e}")))?;
+        self.adaptive_engine
+            .stop()
+            .await
+            .map_err(|e| WireSentinelError::Other(format!("adaptive cover stop failed: {e}")))?;
 
-        let profile_id = self
-            .active_profile_id
-            .read()
-            .unwrap_or(settings_id);
+        let profile_id = self.active_profile_id.read().unwrap_or(settings_id);
         *self.active_profile_id.write() = None;
 
-        self.events.publish(ServiceEvent::now(ServiceEventInner::CoverTrafficStopped {
-            profile_id,
-            reason: reason.to_string(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::CoverTrafficStopped {
+                profile_id,
+                reason: reason.to_string(),
+            }));
         Ok(())
     }
 

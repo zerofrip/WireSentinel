@@ -1,3 +1,4 @@
+use anonymity_federation::MixnetFederationManager;
 use core_service::anonymity::AnonymityService;
 use core_service::anonymity_entropy::RouteEntropyBridge;
 use core_service::anonymity_security::AnonymitySecurityPolicy;
@@ -5,7 +6,6 @@ use core_service::cover_traffic::CoverTrafficService;
 use core_service::mixnet::MixnetService;
 use core_service::mixnet_security::MixnetSecurityPolicy;
 use core_service::privacy_analytics::PrivacyAnalyticsService;
-use anonymity_federation::MixnetFederationManager;
 use event_bus::EventBus;
 use mixnet_core::MixnetManager;
 use proxy_engine::ProxyListenPort;

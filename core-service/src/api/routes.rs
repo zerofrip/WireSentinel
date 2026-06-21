@@ -1,6 +1,28 @@
+use crate::api::anonymity_routes::{
+    create_anonymous_service, get_anonymity_entropy, get_anonymity_status,
+    get_privacy_anonymity_analytics, list_anonymous_services, list_katzenpost_profiles,
+    list_loopix_profiles, simulate_decoy_route, start_katzenpost, start_loopix,
+};
+use crate::api::kernel_routes::{
+    kernel_packets, kernel_routes, kernel_status, kernel_telemetry, ndis_status,
+};
 use crate::api::middleware::extract_bearer;
+use crate::api::mixnet_routes::{
+    create_anonymous_route, delete_anonymous_route, get_anonymous_route,
+    get_cover_traffic_settings, get_privacy_analytics, list_anonymous_routes, list_mixnet_profiles,
+    mixnet_routes, mixnet_status, start_anonymous_route, start_mixnet, stop_anonymous_route,
+    stop_mixnet, update_anonymous_route, update_cover_traffic_settings,
+};
 use crate::api::openapi::ApiDoc;
+use crate::api::proxy_routes::{
+    connect_proxy, create_proxy, create_proxy_chain, delete_proxy, delete_proxy_chain,
+    disconnect_proxy, get_proxy, get_proxy_chain, health_proxy, latency_proxy, list_proxies,
+    list_proxy_chains, start_proxy_chain, stop_proxy_chain, update_proxy, update_proxy_chain,
+};
 use crate::api::AppState;
+use crate::enterprise::PolicyProvider;
+use crate::route_stats::RouteStatsAggregator;
+use crate::tor::{BridgeTestRequest, BridgeTestResponse};
 use axum::{
     extract::{Path, Query, State, WebSocketUpgrade},
     http::{HeaderMap, StatusCode},
@@ -9,40 +31,20 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
-use crate::enterprise::PolicyProvider;
-use crate::route_stats::RouteStatsAggregator;
 use chrono::Utc;
 use filter_lists::{filters_cache_dir, FilterSubscription};
 use serde::Deserialize;
 use shared_types::{
-    AppSummary, AuditLogQuery, ChainProfile, DnsProviderRecord, DnsSettings,
-    EnterprisePolicy, FilterListRecord, KernelStatistics, KernelTelemetryV2, LeakIncident, LogLevel, PolicyMode, PrivacyScoreSnapshot,
-    RouteStatisticsQuery, Rule, SecurityAuditEntry, SecurityFinding, ServiceEventInner,
-    ServiceStatus, TailscaleStatus, TopDomainEntry, TorStatus, TrafficEvent, TrafficRoute,
-    TransportProfile, TransportStatusRecord, ValidationReport, VPNProfile,
-};
-use crate::tor::{BridgeTestRequest, BridgeTestResponse};
-use crate::api::kernel_routes::{
-    kernel_packets, kernel_routes, kernel_status, kernel_telemetry, ndis_status,
-};
-use crate::api::mixnet_routes::{
-    create_anonymous_route, delete_anonymous_route, get_anonymous_route,
-    get_cover_traffic_settings, get_privacy_analytics, list_anonymous_routes, list_mixnet_profiles,
-    mixnet_routes, mixnet_status, start_anonymous_route, start_mixnet, stop_anonymous_route,
-    stop_mixnet, update_anonymous_route, update_cover_traffic_settings,
-};
-use crate::api::anonymity_routes::{
-    create_anonymous_service, get_anonymity_entropy, get_anonymity_status,
-    get_privacy_anonymity_analytics, list_anonymous_services, list_katzenpost_profiles,
-    list_loopix_profiles, simulate_decoy_route, start_katzenpost, start_loopix,
-};
-use crate::api::proxy_routes::{
-    connect_proxy, create_proxy, create_proxy_chain, delete_proxy, delete_proxy_chain,
-    disconnect_proxy, get_proxy, get_proxy_chain, health_proxy, latency_proxy, list_proxies,
-    list_proxy_chains, start_proxy_chain, stop_proxy_chain, update_proxy, update_proxy_chain,
+    AppSummary, AuditLogQuery, ChainProfile, DnsProviderRecord, DnsSettings, EnterprisePolicy,
+    FilterListRecord, KernelStatistics, KernelTelemetryV2, LeakIncident, LogLevel, PolicyMode,
+    PrivacyScoreSnapshot, RouteStatisticsQuery, Rule, SecurityAuditEntry, SecurityFinding,
+    ServiceEventInner, ServiceStatus, TailscaleStatus, TopDomainEntry, TorStatus, TrafficEvent,
+    TrafficRoute, TransportProfile, TransportStatusRecord, VPNProfile, ValidationReport,
 };
 use std::sync::Arc;
-use storage::{CorrelationQuery, DnsLogQuery, DnsSortField, SortOrder, TrafficLogQuery, TrafficSortField};
+use storage::{
+    CorrelationQuery, DnsLogQuery, DnsSortField, SortOrder, TrafficLogQuery, TrafficSortField,
+};
 use tower_http::cors::{Any, CorsLayer};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -73,7 +75,10 @@ pub fn router(state: AppState) -> Router {
         .route("/dns/settings", get(get_dns).put(set_dns))
         .route("/dns/logs", get(dns_logs))
         .route("/dns/resolve", post(dns_resolve))
-        .route("/filter-lists", get(list_filter_lists).post(add_filter_list))
+        .route(
+            "/filter-lists",
+            get(list_filter_lists).post(add_filter_list),
+        )
         .route(
             "/filter-lists/{id}",
             put(update_filter_list).delete(delete_filter_list),
@@ -106,7 +111,10 @@ pub fn router(state: AppState) -> Router {
         .route("/proxies/{id}/disconnect", post(disconnect_proxy))
         .route("/proxies/{id}/health", post(health_proxy))
         .route("/proxies/{id}/latency", post(latency_proxy))
-        .route("/proxy-chains", get(list_proxy_chains).post(create_proxy_chain))
+        .route(
+            "/proxy-chains",
+            get(list_proxy_chains).post(create_proxy_chain),
+        )
         .route(
             "/proxy-chains/{id}",
             get(get_proxy_chain)
@@ -154,7 +162,10 @@ pub fn router(state: AppState) -> Router {
             "/cover-traffic/settings",
             get(get_cover_traffic_settings).put(update_cover_traffic_settings),
         )
-        .route("/dns/providers", get(list_dns_providers).put(upsert_dns_providers))
+        .route(
+            "/dns/providers",
+            get(list_dns_providers).put(upsert_dns_providers),
+        )
         .route("/logs", get(list_logs))
         .route("/logs/download", get(download_logs))
         .route("/settings/log-level", put(set_log_level))
@@ -163,7 +174,10 @@ pub fn router(state: AppState) -> Router {
         .route("/diagnostics/export", post(export_diagnostics))
         .route("/backup/export", get(export_backup))
         .route("/backup/import", post(import_backup))
-        .route("/enterprise/policy", get(get_enterprise_policy).put(set_enterprise_policy))
+        .route(
+            "/enterprise/policy",
+            get(get_enterprise_policy).put(set_enterprise_policy),
+        )
         .route("/update", get(get_update))
         .route("/update/check", post(check_update))
         .route("/metrics", get(get_metrics))
@@ -185,7 +199,12 @@ pub fn router(state: AppState) -> Router {
         .merge(SwaggerUi::new("/api/v1/docs").url("/api/v1/openapi.json", ApiDoc::openapi()))
         .nest("/api/v1", api)
         .layer(middleware::from_fn(crate::api::middleware::rate_limit))
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
+        )
 }
 
 #[utoipa::path(get, path = "/api/v1/status", responses((status = 200, body = ServiceStatus)))]
@@ -309,7 +328,8 @@ async fn export_traffic(
         };
         match state.deps.storage.traffic_logs.list(query).await {
             Ok(logs) => {
-                let mut csv = String::from("id,app_id,timestamp,protocol,remote_addr,domain,route\n");
+                let mut csv =
+                    String::from("id,app_id,timestamp,protocol,remote_addr,domain,route\n");
                 for log in logs {
                     csv.push_str(&format!(
                         "{},{},{},{:?},{},{},{:?}\n",
@@ -322,12 +342,7 @@ async fn export_traffic(
                         log.route
                     ));
                 }
-                (
-                    StatusCode::OK,
-                    [("content-type", "text/csv")],
-                    csv,
-                )
-                    .into_response()
+                (StatusCode::OK, [("content-type", "text/csv")], csv).into_response()
             }
             Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
         }
@@ -505,9 +520,10 @@ async fn add_rule(State(state): State<Arc<AppState>>, Json(rule): Json<Rule>) ->
         return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response();
     }
     state.deps.policy.write().add_rule(rule.clone());
-    state.deps.events.publish(
-        ServiceEventInner::RuleCreated { rule: rule.clone() }.with_timestamp(Utc::now()),
-    );
+    state
+        .deps
+        .events
+        .publish(ServiceEventInner::RuleCreated { rule: rule.clone() }.with_timestamp(Utc::now()));
     Json(serde_json::json!({"ok": true})).into_response()
 }
 
@@ -523,9 +539,10 @@ async fn update_rule(
     if !state.deps.policy.write().update_rule(rule.clone()) {
         state.deps.policy.write().add_rule(rule.clone());
     }
-    state.deps.events.publish(
-        ServiceEventInner::RuleUpdated { rule: rule.clone() }.with_timestamp(Utc::now()),
-    );
+    state
+        .deps
+        .events
+        .publish(ServiceEventInner::RuleUpdated { rule: rule.clone() }.with_timestamp(Utc::now()));
     Json(serde_json::json!({"ok": true})).into_response()
 }
 
@@ -536,9 +553,10 @@ async fn delete_rule(
     match state.deps.storage.rules.delete(id).await {
         Ok(true) => {
             state.deps.policy.write().remove_rule(id);
-            state.deps.events.publish(
-                ServiceEventInner::RuleDeleted { rule_id: id }.with_timestamp(Utc::now()),
-            );
+            state
+                .deps
+                .events
+                .publish(ServiceEventInner::RuleDeleted { rule_id: id }.with_timestamp(Utc::now()));
             Json(serde_json::json!({"ok": true})).into_response()
         }
         Ok(false) => StatusCode::NOT_FOUND.into_response(),
@@ -598,11 +616,8 @@ async fn route_statistics(
         route_type: q.route_type,
         limit: q.limit.unwrap_or(100),
     };
-    match RouteStatsAggregator::list_routes(
-        Arc::clone(&state.deps.storage.route_statistics),
-        query,
-    )
-    .await
+    match RouteStatsAggregator::list_routes(Arc::clone(&state.deps.storage.route_statistics), query)
+        .await
     {
         Ok(rows) => Json(rows).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
@@ -707,7 +722,11 @@ async fn add_vpn(
 ) -> impl IntoResponse {
     let backend = detect_backend(&body.config_plaintext);
     let blob = body.config_plaintext.into_bytes();
-    let profile = VPNProfile::new(body.name, backend, std::path::PathBuf::from(format!("db://{}", Uuid::new_v4())));
+    let profile = VPNProfile::new(
+        body.name,
+        backend,
+        std::path::PathBuf::from(format!("db://{}", Uuid::new_v4())),
+    );
     if let Err(e) = state
         .deps
         .storage
@@ -722,10 +741,7 @@ async fn add_vpn(
     Json(profile).into_response()
 }
 
-async fn vpn_connect(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
-) -> Response {
+async fn vpn_connect(State(state): State<Arc<AppState>>, Path(id): Path<Uuid>) -> Response {
     let profile = match state.deps.vpn.get_profile(id) {
         Some(p) => p,
         None => return StatusCode::NOT_FOUND.into_response(),
@@ -744,20 +760,14 @@ async fn vpn_connect(
     }
 }
 
-async fn vpn_disconnect(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
-) -> Response {
+async fn vpn_disconnect(State(state): State<Arc<AppState>>, Path(id): Path<Uuid>) -> Response {
     match state.deps.vpn.disconnect(id).await {
         Ok(()) => Json(serde_json::json!({"ok": true})).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
 
-async fn vpn_status(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
-) -> Response {
+async fn vpn_status(State(state): State<Arc<AppState>>, Path(id): Path<Uuid>) -> Response {
     match state.deps.vpn.state(id).await {
         Some(s) => Json(s).into_response(),
         None => StatusCode::NOT_FOUND.into_response(),
@@ -774,7 +784,12 @@ async fn set_dns(
 ) -> impl IntoResponse {
     match state.deps.dns.update_settings(settings.clone()) {
         Ok(()) => {
-            let _ = state.deps.storage.settings.set_dns_settings(&settings).await;
+            let _ = state
+                .deps
+                .storage
+                .settings
+                .set_dns_settings(&settings)
+                .await;
             Json(serde_json::json!({"ok": true})).into_response()
         }
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
@@ -885,7 +900,13 @@ pub async fn list_leaks(
     State(state): State<Arc<AppState>>,
     Query(query): Query<LeaksQuery>,
 ) -> impl IntoResponse {
-    match state.deps.storage.leak_incidents.list_recent(query.limit).await {
+    match state
+        .deps
+        .storage
+        .leak_incidents
+        .list_recent(query.limit)
+        .await
+    {
         Ok(incidents) => Json(incidents).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
@@ -954,7 +975,13 @@ pub async fn start_chain(
     };
 
     if let Some(profile_id) = chain.obfuscation_profile_id {
-        if let Ok(Some(obf)) = state.deps.storage.obfuscation_profiles.get(profile_id).await {
+        if let Ok(Some(obf)) = state
+            .deps
+            .storage
+            .obfuscation_profiles
+            .get(profile_id)
+            .await
+        {
             state.deps.events.publish(
                 ServiceEventInner::ObfuscationProfileApplied {
                     chain_id: chain.id,
@@ -1057,7 +1084,16 @@ pub async fn upsert_tailnet(
         profile.created_at = now;
     }
     profile.updated_at = now;
-    let op = if state.deps.storage.tailnet_profiles.get(profile.id).await.ok().flatten().is_some() {
+    let op = if state
+        .deps
+        .storage
+        .tailnet_profiles
+        .get(profile.id)
+        .await
+        .ok()
+        .flatten()
+        .is_some()
+    {
         state.deps.storage.tailnet_profiles.update(&profile).await
     } else {
         state.deps.storage.tailnet_profiles.insert(&profile).await
@@ -1105,7 +1141,16 @@ pub async fn upsert_tor(
         profile.created_at = now;
     }
     profile.updated_at = now;
-    let op = if state.deps.storage.tor_profiles.get(profile.id).await.ok().flatten().is_some() {
+    let op = if state
+        .deps
+        .storage
+        .tor_profiles
+        .get(profile.id)
+        .await
+        .ok()
+        .flatten()
+        .is_some()
+    {
         state.deps.storage.tor_profiles.update(&profile).await
     } else {
         state.deps.storage.tor_profiles.insert(&profile).await
@@ -1241,7 +1286,8 @@ async fn ws_handler(
     let token = extract_bearer(&headers)
         .map(|s| s.to_string())
         .or_else(|| query.get("token").cloned());
-    if crate::auth::validate_token(state.deps.api_token.read().as_str(), token.as_deref()).is_err() {
+    if crate::auth::validate_token(state.deps.api_token.read().as_str(), token.as_deref()).is_err()
+    {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     ws.on_upgrade(move |socket| crate::api::ws::handle_socket(socket, state))
@@ -1264,12 +1310,9 @@ async fn list_logs(Query(q): Query<LogsQuery>) -> impl IntoResponse {
 async fn download_logs() -> impl IntoResponse {
     match crate::logging::global() {
         Some(logging) => match crate::logging::zip_log_files(logging.log_dir()) {
-            Ok(bytes) => (
-                StatusCode::OK,
-                [("content-type", "application/zip")],
-                bytes,
-            )
-                .into_response(),
+            Ok(bytes) => {
+                (StatusCode::OK, [("content-type", "application/zip")], bytes).into_response()
+            }
             Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
         },
         None => StatusCode::NOT_FOUND.into_response(),
@@ -1325,12 +1368,7 @@ async fn get_diagnostics(State(state): State<Arc<AppState>>) -> impl IntoRespons
 
 async fn export_diagnostics(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     match state.deps.diagnostics.export_bundle().await {
-        Ok(bytes) => (
-            StatusCode::OK,
-            [("content-type", "application/zip")],
-            bytes,
-        )
-            .into_response(),
+        Ok(bytes) => (StatusCode::OK, [("content-type", "application/zip")], bytes).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
@@ -1357,8 +1395,10 @@ async fn export_backup(
         }
     } else {
         match state.deps.backup.export_json().await {
-            Ok((_, json)) => Json(serde_json::from_str::<serde_json::Value>(&json).unwrap_or_default())
-                .into_response(),
+            Ok((_, json)) => {
+                Json(serde_json::from_str::<serde_json::Value>(&json).unwrap_or_default())
+                    .into_response()
+            }
             Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
         }
     }
@@ -1526,7 +1566,9 @@ pub async fn get_benchmark(
             "recent": recent,
         }))
         .into_response(),
-        (Err(e), _) | (_, Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+        (Err(e), _) | (_, Err(e)) => {
+            (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+        }
     }
 }
 
@@ -1568,7 +1610,9 @@ async fn fault_inject(
         )
         .await
     {
-        Ok(verified) => Json(serde_json::json!({ "ok": true, "verified": verified })).into_response(),
+        Ok(verified) => {
+            Json(serde_json::json!({ "ok": true, "verified": verified })).into_response()
+        }
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }

@@ -1,9 +1,9 @@
 //! HTTP REST + WebSocket API server.
 
-mod kernel_routes;
-mod mixnet_routes;
 mod anonymity_routes;
+mod kernel_routes;
 mod middleware;
+mod mixnet_routes;
 mod openapi;
 mod proxy_routes;
 pub mod routes;

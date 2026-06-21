@@ -45,10 +45,10 @@ impl PrivacyAnalyticsRepository for SqlitePrivacyAnalyticsRepository {
         .await
         .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
-        row.map(|(id, anonymity_score, route_entropy, path_diversity, cover_traffic_effectiveness, anonymity_set_estimate, cover_traffic_efficiency, mixnet_diversity, federation_diversity, timestamp)| {
-            Ok(PrivacyAnalyticsSnapshot {
-                id: Uuid::parse_str(&id).map_err(|e| WireSentinelError::Config(e.to_string()))?,
-                anonymity_score: anonymity_score.clamp(0, 100) as u8,
+        row.map(
+            |(
+                id,
+                anonymity_score,
                 route_entropy,
                 path_diversity,
                 cover_traffic_effectiveness,
@@ -56,11 +56,25 @@ impl PrivacyAnalyticsRepository for SqlitePrivacyAnalyticsRepository {
                 cover_traffic_efficiency,
                 mixnet_diversity,
                 federation_diversity,
-                timestamp: DateTime::parse_from_rfc3339(&timestamp)
-                    .map_err(|e| WireSentinelError::Config(e.to_string()))?
-                    .with_timezone(&Utc),
-            })
-        })
+                timestamp,
+            )| {
+                Ok(PrivacyAnalyticsSnapshot {
+                    id: Uuid::parse_str(&id)
+                        .map_err(|e| WireSentinelError::Config(e.to_string()))?,
+                    anonymity_score: anonymity_score.clamp(0, 100) as u8,
+                    route_entropy,
+                    path_diversity,
+                    cover_traffic_effectiveness,
+                    anonymity_set_estimate,
+                    cover_traffic_efficiency,
+                    mixnet_diversity,
+                    federation_diversity,
+                    timestamp: DateTime::parse_from_rfc3339(&timestamp)
+                        .map_err(|e| WireSentinelError::Config(e.to_string()))?
+                        .with_timezone(&Utc),
+                })
+            },
+        )
         .transpose()
     }
 

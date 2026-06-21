@@ -2,13 +2,13 @@
 mod phase2_tests {
     use chrono::Utc;
     use shared_types::{
-        AppIdentity, AppRecord, Direction, DNSQueryLog, FilterListRecord, FilterListType,
-        Protocol, TrafficEvent, TrafficRoute, Verdict,
+        AppIdentity, AppRecord, DNSQueryLog, Direction, FilterListRecord, FilterListType, Protocol,
+        TrafficEvent, TrafficRoute, Verdict,
     };
     use std::path::PathBuf;
     use storage::{
-        init_pool_in_memory, CorrelationQuery, CorrelationRepository, DnsLogQuery, DnsLogRepository,
-        DnsSortField, FilterListRepository, SortOrder, Storage, TrafficLogQuery,
+        init_pool_in_memory, CorrelationQuery, CorrelationRepository, DnsLogQuery,
+        DnsLogRepository, DnsSortField, FilterListRepository, SortOrder, Storage, TrafficLogQuery,
         TrafficLogRepository, TrafficSortField,
     };
     use uuid::Uuid;
@@ -44,7 +44,10 @@ mod phase2_tests {
     async fn traffic_logs_list_filter_sort() {
         let s = storage().await;
         let app = sample_app();
-        s.traffic_logs.insert(&sample_traffic(app.clone())).await.unwrap();
+        s.traffic_logs
+            .insert(&sample_traffic(app.clone()))
+            .await
+            .unwrap();
         let query = TrafficLogQuery {
             limit: 10,
             offset: 0,
@@ -140,14 +143,14 @@ mod phase2_tests {
 mod phase3_tests {
     use chrono::Utc;
     use shared_types::{
-        AuditLogEntry, AuditLogQuery, ChainHop, ChainProfile, DomainCacheEntry,
-        DnsProviderRecord, FirewallDecisionRecord, PrivacyScoreComponents, PrivacyScoreSnapshot,
-        RouteStatisticsQuery, RouteStatisticsRecord, TrafficRoute, TransportKind,
-        TransportProfile, TransportProfileKind, Verdict,
+        AuditLogEntry, AuditLogQuery, ChainHop, ChainProfile, DnsProviderRecord, DomainCacheEntry,
+        FirewallDecisionRecord, PrivacyScoreComponents, PrivacyScoreSnapshot, RouteStatisticsQuery,
+        RouteStatisticsRecord, TrafficRoute, TransportKind, TransportProfile, TransportProfileKind,
+        Verdict,
     };
     use storage::{
-        init_pool_in_memory, AuditLogRepository, DomainCacheRepository,
-        FirewallDecisionRepository, RouteStatisticsRepository, Storage,
+        init_pool_in_memory, AuditLogRepository, DomainCacheRepository, FirewallDecisionRepository,
+        RouteStatisticsRepository, Storage,
     };
     use uuid::Uuid;
 
@@ -389,7 +392,12 @@ mod phase5_tests {
         };
         s.performance.insert(&snapshot).await.unwrap();
 
-        let latest = s.performance.latest().await.unwrap().expect("latest snapshot");
+        let latest = s
+            .performance
+            .latest()
+            .await
+            .unwrap()
+            .expect("latest snapshot");
         assert_eq!(latest.id, snapshot.id);
         let recent = s.performance.list_recent(5).await.unwrap();
         assert_eq!(recent.len(), 1);
@@ -437,8 +445,7 @@ mod phase5_tests {
     #[tokio::test]
     async fn phase6_validation_benchmark_security_repos() {
         use shared_types::{
-            BenchmarkSnapshot, SecurityFinding, SecuritySeverity, ValidationCheck,
-            ValidationStatus,
+            BenchmarkSnapshot, SecurityFinding, SecuritySeverity, ValidationCheck, ValidationStatus,
         };
 
         let s = storage().await;

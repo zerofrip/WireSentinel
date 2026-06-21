@@ -351,11 +351,7 @@ struct SseRegisterResponse {
     agent_id: Uuid,
 }
 
-async fn register_sse_agent(
-    http: &reqwest::Client,
-    base: &str,
-    token: &str,
-) -> Result<Uuid> {
+async fn register_sse_agent(http: &reqwest::Client, base: &str, token: &str) -> Result<Uuid> {
     let url = format!("{base}/api/v1/sse/agents/register");
     let resp = http
         .post(url)

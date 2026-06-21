@@ -81,29 +81,20 @@ impl LoopixProfileRepository for SqliteLoopixProfileRepository {
         .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         rows.into_iter()
-            .map(|r| {
-                parse_profile_row(
-                    r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9, r.10,
-                )
-            })
+            .map(|r| parse_profile_row(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9, r.10))
             .collect()
     }
 
     async fn get(&self, id: Uuid) -> Result<Option<LoopixProfile>> {
-        let row = sqlx::query_as::<_, LoopixProfileRow>(&format!(
-            "{LOOPIX_PROFILE_SELECT} WHERE id = ?"
-        ))
-        .bind(id.to_string())
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let row =
+            sqlx::query_as::<_, LoopixProfileRow>(&format!("{LOOPIX_PROFILE_SELECT} WHERE id = ?"))
+                .bind(id.to_string())
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
-        row.map(|r| {
-            parse_profile_row(
-                r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9, r.10,
-            )
-        })
-        .transpose()
+        row.map(|r| parse_profile_row(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9, r.10))
+            .transpose()
     }
 
     async fn insert(&self, profile: &LoopixProfile) -> Result<()> {

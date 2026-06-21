@@ -55,9 +55,8 @@ mod windows {
             };
 
             unsafe {
-                SetTcpEntry(&mut row).map_err(|e| {
-                    WireSentinelError::Internal(format!("SetTcpEntry v4: {e}"))
-                })?;
+                SetTcpEntry(&mut row)
+                    .map_err(|e| WireSentinelError::Internal(format!("SetTcpEntry v4: {e}")))?;
             }
             Ok(())
         }

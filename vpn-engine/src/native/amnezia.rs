@@ -56,15 +56,9 @@ mod imp {
                 Ok(Self {
                     create_adapter: *lib.get(b"WireGuardCreateAdapter\0").map_err(map_sym)?,
                     close_adapter: *lib.get(b"WireGuardCloseAdapter\0").map_err(map_sym)?,
-                    set_configuration: *lib
-                        .get(b"WireGuardSetConfiguration\0")
-                        .map_err(map_sym)?,
-                    set_adapter_state: *lib
-                        .get(b"WireGuardSetAdapterState\0")
-                        .map_err(map_sym)?,
-                    get_adapter_state: *lib
-                        .get(b"WireGuardGetAdapterState\0")
-                        .map_err(map_sym)?,
+                    set_configuration: *lib.get(b"WireGuardSetConfiguration\0").map_err(map_sym)?,
+                    set_adapter_state: *lib.get(b"WireGuardSetAdapterState\0").map_err(map_sym)?,
+                    get_adapter_state: *lib.get(b"WireGuardGetAdapterState\0").map_err(map_sym)?,
                     get_driver_version: *lib
                         .get(b"WireGuardGetRunningDriverVersion\0")
                         .map_err(map_sym)?,
@@ -112,7 +106,11 @@ mod imp {
             let wide_name = str_to_wide(name);
             let tunnel_type = str_to_wide("AmneziaWG");
             let handle = unsafe {
-                (self.dll.create_adapter)(wide_name.as_ptr(), tunnel_type.as_ptr(), std::ptr::null())
+                (self.dll.create_adapter)(
+                    wide_name.as_ptr(),
+                    tunnel_type.as_ptr(),
+                    std::ptr::null(),
+                )
             };
             if handle.is_null() {
                 return Err(awg_err("WireGuardCreateAdapter failed"));
@@ -132,9 +130,8 @@ mod imp {
             config: &WireGuardConfig,
         ) -> Result<()> {
             let blob = encode_awg_config(config)?;
-            let ok = unsafe {
-                (self.dll.set_configuration)(handle, blob.as_ptr(), blob.len() as u32)
-            };
+            let ok =
+                unsafe { (self.dll.set_configuration)(handle, blob.as_ptr(), blob.len() as u32) };
             if ok == 0 {
                 return Err(awg_err("WireGuardSetConfiguration failed"));
             }
@@ -142,11 +139,7 @@ mod imp {
         }
 
         fn set_state(&self, handle: WireGuardAdapterHandle, up: bool) -> Result<()> {
-            let state = if up {
-                WIREGUARD_ADAPTER_STATE_UP
-            } else {
-                0
-            };
+            let state = if up { WIREGUARD_ADAPTER_STATE_UP } else { 0 };
             let ok = unsafe { (self.dll.set_adapter_state)(handle, state) };
             if ok == 0 {
                 return Err(awg_err("WireGuardSetAdapterState failed"));
@@ -288,7 +281,9 @@ mod stub {
 
     impl NativeAmneziaWgBackend {
         pub fn new(dll_path: PathBuf) -> Result<Self> {
-            Ok(Self { _dll_path: dll_path })
+            Ok(Self {
+                _dll_path: dll_path,
+            })
         }
     }
 

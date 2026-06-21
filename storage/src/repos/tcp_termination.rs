@@ -35,7 +35,9 @@ fn mode_from_str(s: &str) -> Result<TcpTerminationMode> {
         "on_vpn_disconnect" => Ok(TcpTerminationMode::OnVpnDisconnect),
         "on_route_change" => Ok(TcpTerminationMode::OnRouteChange),
         "always" => Ok(TcpTerminationMode::Always),
-        other => Err(WireSentinelError::Config(format!("unknown tcp termination mode: {other}"))),
+        other => Err(WireSentinelError::Config(format!(
+            "unknown tcp termination mode: {other}"
+        ))),
     }
 }
 

@@ -66,20 +66,22 @@ impl AuditLogRepository for SqliteAuditLogRepository {
             .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         rows.into_iter()
-            .map(|(id, event_type, actor, target_type, target_id, detail_json, timestamp)| {
-                Ok(AuditLogEntry {
-                    id: Uuid::parse_str(&id)
-                        .map_err(|e| WireSentinelError::Config(e.to_string()))?,
-                    event_type,
-                    actor,
-                    target_type,
-                    target_id,
-                    detail_json,
-                    timestamp: chrono::DateTime::parse_from_rfc3339(&timestamp)
-                        .map_err(|e| WireSentinelError::Config(e.to_string()))?
-                        .with_timezone(&Utc),
-                })
-            })
+            .map(
+                |(id, event_type, actor, target_type, target_id, detail_json, timestamp)| {
+                    Ok(AuditLogEntry {
+                        id: Uuid::parse_str(&id)
+                            .map_err(|e| WireSentinelError::Config(e.to_string()))?,
+                        event_type,
+                        actor,
+                        target_type,
+                        target_id,
+                        detail_json,
+                        timestamp: chrono::DateTime::parse_from_rfc3339(&timestamp)
+                            .map_err(|e| WireSentinelError::Config(e.to_string()))?
+                            .with_timezone(&Utc),
+                    })
+                },
+            )
             .collect()
     }
 
@@ -89,13 +91,11 @@ impl AuditLogRepository for SqliteAuditLogRepository {
         since: chrono::DateTime<Utc>,
     ) -> Result<u64> {
         let row: (i64,) = if let Some(et) = event_type {
-            sqlx::query_as(
-                "SELECT COUNT(*) FROM audit_log WHERE event_type = ? AND timestamp >= ?",
-            )
-            .bind(et)
-            .bind(since.to_rfc3339())
-            .fetch_one(&self.pool)
-            .await
+            sqlx::query_as("SELECT COUNT(*) FROM audit_log WHERE event_type = ? AND timestamp >= ?")
+                .bind(et)
+                .bind(since.to_rfc3339())
+                .fetch_one(&self.pool)
+                .await
         } else {
             sqlx::query_as("SELECT COUNT(*) FROM audit_log WHERE timestamp >= ?")
                 .bind(since.to_rfc3339())

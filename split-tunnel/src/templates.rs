@@ -124,7 +124,13 @@ impl SplitTunnelTemplateManager {
 
     pub fn domain_rules(&self) -> Vec<DomainRule> {
         self.active_template()
-            .map(|t| t.domain_rules.iter().filter(|r| r.enabled).cloned().collect())
+            .map(|t| {
+                t.domain_rules
+                    .iter()
+                    .filter(|r| r.enabled)
+                    .cloned()
+                    .collect()
+            })
             .unwrap_or_default()
     }
 }

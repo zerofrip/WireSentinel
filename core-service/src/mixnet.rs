@@ -91,7 +91,9 @@ impl MixnetService {
             .mixnet_profiles
             .get(profile.id)
             .await?
-            .ok_or_else(|| WireSentinelError::Other(format!("mixnet profile {} not found", profile.id)))?;
+            .ok_or_else(|| {
+                WireSentinelError::Other(format!("mixnet profile {} not found", profile.id))
+            })?;
 
         self.security.validate_profile(&profile)?;
         let mut profile = profile;
@@ -100,10 +102,11 @@ impl MixnetService {
 
         if old.gateway_id != profile.gateway_id {
             if let Some(gateway_id) = &profile.gateway_id {
-                self.events.publish(ServiceEvent::now(ServiceEventInner::GatewayChanged {
-                    profile_id: profile.id,
-                    gateway_id: gateway_id.clone(),
-                }));
+                self.events
+                    .publish(ServiceEvent::now(ServiceEventInner::GatewayChanged {
+                        profile_id: profile.id,
+                        gateway_id: gateway_id.clone(),
+                    }));
             }
         }
 
@@ -121,7 +124,9 @@ impl MixnetService {
             .mixnet_profiles
             .get(profile_id)
             .await?
-            .ok_or_else(|| WireSentinelError::Other(format!("mixnet profile {profile_id} not found")))?;
+            .ok_or_else(|| {
+                WireSentinelError::Other(format!("mixnet profile {profile_id} not found"))
+            })?;
 
         self.security.validate_profile(&profile)?;
 
@@ -154,7 +159,9 @@ impl MixnetService {
                 let _ = self.storage.mixnet_sessions.insert(&session).await;
 
                 self.events
-                    .publish(ServiceEvent::now(ServiceEventInner::MixnetStarted { profile_id }));
+                    .publish(ServiceEvent::now(ServiceEventInner::MixnetStarted {
+                        profile_id,
+                    }));
                 Ok(profile)
             }
             Err(e) => {
@@ -162,10 +169,11 @@ impl MixnetService {
                 profile.last_error = Some(e.to_string());
                 profile.updated_at = Utc::now();
                 let _ = self.storage.mixnet_profiles.update(&profile).await;
-                self.events.publish(ServiceEvent::now(ServiceEventInner::MixnetFailed {
-                    profile_id,
-                    error: e.to_string(),
-                }));
+                self.events
+                    .publish(ServiceEvent::now(ServiceEventInner::MixnetFailed {
+                        profile_id,
+                        error: e.to_string(),
+                    }));
                 Err(e)
             }
         }
@@ -181,10 +189,11 @@ impl MixnetService {
             self.storage.mixnet_profiles.update(&profile).await?;
         }
 
-        self.events.publish(ServiceEvent::now(ServiceEventInner::MixnetStopped {
-            profile_id,
-            reason: reason.to_string(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::MixnetStopped {
+                profile_id,
+                reason: reason.to_string(),
+            }));
         Ok(())
     }
 
@@ -209,13 +218,14 @@ impl MixnetService {
         }
 
         if !health.healthy {
-            self.events.publish(ServiceEvent::now(ServiceEventInner::MixnetFailed {
-                profile_id,
-                error: health
-                    .message
-                    .clone()
-                    .unwrap_or_else(|| "health check failed".into()),
-            }));
+            self.events
+                .publish(ServiceEvent::now(ServiceEventInner::MixnetFailed {
+                    profile_id,
+                    error: health
+                        .message
+                        .clone()
+                        .unwrap_or_else(|| "health check failed".into()),
+                }));
         }
 
         Ok(health)
@@ -227,7 +237,9 @@ impl MixnetService {
             .mixnet_profiles
             .get(profile_id)
             .await?
-            .ok_or_else(|| WireSentinelError::Other(format!("mixnet profile {profile_id} not found")))?;
+            .ok_or_else(|| {
+                WireSentinelError::Other(format!("mixnet profile {profile_id} not found"))
+            })?;
 
         let core_profile = to_core_profile(&profile);
         let latency_ms = self.manager.measure_latency(&core_profile).await?;
@@ -252,7 +264,10 @@ impl MixnetService {
             .unwrap_or(false);
 
         let sessions = if let Some(id) = profile_id {
-            self.storage.mixnet_sessions.list_by_profile(id, 100).await?
+            self.storage
+                .mixnet_sessions
+                .list_by_profile(id, 100)
+                .await?
         } else {
             vec![]
         };
@@ -310,8 +325,8 @@ impl MixnetService {
         }
 
         self.start(profile_id).await?;
-        self.listen_ports.get(profile_id).ok_or_else(|| {
-            WireSentinelError::Other("mixnet listen port unavailable".into())
-        })
+        self.listen_ports
+            .get(profile_id)
+            .ok_or_else(|| WireSentinelError::Other("mixnet listen port unavailable".into()))
     }
 }

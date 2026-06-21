@@ -194,9 +194,7 @@ impl SplitTunnelEngine {
                     luid: 0,
                     socks_port,
                 });
-                self.wfp
-                    .route_connection(app, &route, anon_tunnel)
-                    .await?;
+                self.wfp.route_connection(app, &route, anon_tunnel).await?;
             }
             TrafficRoute::Proxy(_) | TrafficRoute::ProxyChain(_) => {
                 let socks_port = if let Some(proxy) = &self.proxy {
@@ -210,17 +208,13 @@ impl SplitTunnelEngine {
                     luid: 0,
                     socks_port,
                 });
-                self.wfp
-                    .route_connection(app, &route, proxy_tunnel)
-                    .await?;
+                self.wfp.route_connection(app, &route, proxy_tunnel).await?;
             }
         }
 
         if let Some(bridge) = &self.kernel_route_bridge {
             if bridge.is_active() {
-                bridge
-                    .sync_enforce(app, &route, tunnel.clone())
-                    .await?;
+                bridge.sync_enforce(app, &route, tunnel.clone()).await?;
             }
         }
         if let Some(redirect) = &self.proxy_redirect {
@@ -234,12 +228,7 @@ impl SplitTunnelEngine {
         let primary_filter_id = filter_ids.first().copied().unwrap_or(0);
 
         if let Err(e) = self
-            .persist_filter_state(
-                app,
-                &route,
-                decision.matched_rule_id,
-                primary_filter_id,
-            )
+            .persist_filter_state(app, &route, decision.matched_rule_id, primary_filter_id)
             .await
         {
             warn!(error = %e, app = %app.display_name(), "wfp filter state persist failed");
@@ -295,11 +284,7 @@ impl SplitTunnelEngine {
                     let app = AppIdentity::new(0, record);
                     let decision = Decision {
                         route: route.clone(),
-                        verdict: shared_types::Verdict::from_route(
-                            route,
-                            None,
-                            "vpn reconnected",
-                        ),
+                        verdict: shared_types::Verdict::from_route(route, None, "vpn reconnected"),
                         matched_rule_id: None,
                     };
                     Some((app, decision))
@@ -330,8 +315,7 @@ impl SplitTunnelEngine {
 
         let count = affected.len();
         for app_id in affected {
-            let mut record =
-                shared_types::AppRecord::new(std::path::PathBuf::from("unknown.exe"));
+            let mut record = shared_types::AppRecord::new(std::path::PathBuf::from("unknown.exe"));
             record.app_id = app_id;
             let app = AppIdentity::new(0, record);
             let blocked = Decision {

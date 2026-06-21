@@ -33,7 +33,9 @@ fn mode_from_str(s: &str) -> Result<TemplateMode> {
         "disabled" => Ok(TemplateMode::Disabled),
         "merge" => Ok(TemplateMode::Merge),
         "override" => Ok(TemplateMode::Override),
-        other => Err(WireSentinelError::Config(format!("unknown template mode: {other}"))),
+        other => Err(WireSentinelError::Config(format!(
+            "unknown template mode: {other}"
+        ))),
     }
 }
 
@@ -80,10 +82,8 @@ impl SplitTemplateRepository for SqliteSplitTemplateRepository {
                         description,
                         default_route: serde_json::from_str(&default_route_json)
                             .map_err(WireSentinelError::Serde)?,
-                        app_rules: serde_json::from_str(&app_rules_json)
-                            .unwrap_or_default(),
-                        domain_rules: serde_json::from_str(&domain_rules_json)
-                            .unwrap_or_default(),
+                        app_rules: serde_json::from_str(&app_rules_json).unwrap_or_default(),
+                        domain_rules: serde_json::from_str(&domain_rules_json).unwrap_or_default(),
                         enabled: enabled != 0,
                         created_at: DateTime::parse_from_rfc3339(&created_at)
                             .map_err(|e| WireSentinelError::Config(e.to_string()))?

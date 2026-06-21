@@ -26,10 +26,9 @@ impl TransformPipeline {
         let modules: Vec<Box<dyn TransformModule>> = match preset {
             ObfuscationPreset::Disabled => Vec::new(),
             ObfuscationPreset::Basic => vec![Box::new(PaddingTransform)],
-            ObfuscationPreset::Balanced => vec![
-                Box::new(PaddingTransform),
-                Box::new(JitterTransform),
-            ],
+            ObfuscationPreset::Balanced => {
+                vec![Box::new(PaddingTransform), Box::new(JitterTransform)]
+            }
             ObfuscationPreset::Aggressive => vec![
                 Box::new(FragmentTransform),
                 Box::new(PaddingTransform),

@@ -56,9 +56,9 @@ impl ProcessManager {
                 .stderr(Stdio::null())
                 .kill_on_drop(true);
 
-            let child = cmd
-                .spawn()
-                .map_err(|e| WireSentinelError::Other(format!("spawn {}: {e}", binary.display())))?;
+            let child = cmd.spawn().map_err(|e| {
+                WireSentinelError::Other(format!("spawn {}: {e}", binary.display()))
+            })?;
             let pid = child.id().unwrap_or(0);
 
             self.processes.write().insert(

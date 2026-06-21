@@ -51,16 +51,13 @@ pub async fn get_anonymity_entropy(State(state): State<Arc<AppState>>) -> impl I
         Ok(stats) => stats,
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     };
-    let route_types: Vec<&str> = route_stats
-        .iter()
-        .map(|s| s.route_type.as_str())
-        .collect();
+    let route_types: Vec<&str> = route_stats.iter().map(|s| s.route_type.as_str()).collect();
     let status = state.deps.anonymity.status().await.unwrap_or_default();
     let score = state.deps.anonymity_entropy.score_route_types(&route_types);
-    let anonymity_set_estimate = state.deps.anonymity_entropy.estimate_from_counts(
-        status.active_providers,
-        status.federated_active,
-    );
+    let anonymity_set_estimate = state
+        .deps
+        .anonymity_entropy
+        .estimate_from_counts(status.active_providers, status.federated_active);
     Json(EntropySnapshot {
         score,
         anonymity_set_estimate,

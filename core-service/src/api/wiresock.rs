@@ -60,7 +60,13 @@ async fn put_tcp_settings(
     Json(mut settings): Json<TcpTerminationSettings>,
 ) -> impl IntoResponse {
     settings.updated_at = Utc::now();
-    if let Err(e) = state.deps.storage.tcp_termination.set_settings(&settings).await {
+    if let Err(e) = state
+        .deps
+        .storage
+        .tcp_termination
+        .set_settings(&settings)
+        .await
+    {
         return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response();
     }
     let _ = state.deps.tcp_termination.reload_policy().await;

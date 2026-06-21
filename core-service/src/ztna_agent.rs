@@ -1,7 +1,6 @@
 //! ZTNA agent — connector registration, trust evaluation, controller heartbeat.
 
 use chrono::Utc;
-use ztna_connectors::{ApplicationConnector, ConnectorHealthMonitor};
 use event_bus::EventBus;
 use parking_lot::RwLock;
 use policy_engine::{ConnectionContext, ZtnaGateResult, ZtnaPolicyLookup};
@@ -16,9 +15,10 @@ use std::time::Duration;
 use storage::Storage;
 use tokio::sync::watch;
 use tracing::{info, warn};
-use ztna_trust::DeviceTrustEngine;
 use uuid::Uuid;
+use ztna_connectors::{ApplicationConnector, ConnectorHealthMonitor};
 use ztna_policy::ZtnaPolicyEngine;
+use ztna_trust::DeviceTrustEngine;
 
 const SETTINGS_KEY: &str = "ztna";
 
@@ -324,10 +324,7 @@ impl ZtnaPolicyLookup for ZtnaAgent {
 }
 
 fn connection_resource(ctx: &ConnectionContext) -> Resource {
-    let name = ctx
-        .domain
-        .clone()
-        .unwrap_or_else(|| "connection".into());
+    let name = ctx.domain.clone().unwrap_or_else(|| "connection".into());
     Resource {
         id: Uuid::new_v5(&Uuid::NAMESPACE_DNS, name.as_bytes()),
         name: name.clone(),

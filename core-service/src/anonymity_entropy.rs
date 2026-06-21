@@ -59,7 +59,11 @@ impl RouteEntropyBridge {
         }
     }
 
-    pub fn publish_score(&self, routes: &[AnonymityRoute], profiles: &[anonymity_core::AnonymityProfile]) -> Result<f64> {
+    pub fn publish_score(
+        &self,
+        routes: &[AnonymityRoute],
+        profiles: &[anonymity_core::AnonymityProfile],
+    ) -> Result<f64> {
         let score = self.score(routes);
         let estimate = self.anonymity_set_estimate(routes, profiles);
         self.events

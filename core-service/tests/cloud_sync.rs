@@ -23,9 +23,7 @@ async fn cloud_sync_config_load_save_round_trip() {
         .await
         .expect("save");
 
-    let loaded = CloudSyncAgent::load_config(&storage)
-        .await
-        .expect("load");
+    let loaded = CloudSyncAgent::load_config(&storage).await.expect("load");
 
     assert_eq!(loaded, cfg);
 }
@@ -35,9 +33,7 @@ async fn cloud_sync_config_load_default_when_missing() {
     let pool = init_pool_in_memory().await.expect("pool");
     let storage = Storage::new(pool);
 
-    let loaded = CloudSyncAgent::load_config(&storage)
-        .await
-        .expect("load");
+    let loaded = CloudSyncAgent::load_config(&storage).await.expect("load");
 
     assert_eq!(loaded, CloudSyncConfig::default());
 }

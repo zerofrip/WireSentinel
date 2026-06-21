@@ -62,9 +62,7 @@ impl BenchmarkRepository for SqliteBenchmarkRepository {
     }
 }
 
-fn parse_row(
-    row: (String, f64, f64, f64, f64, f64, String),
-) -> Result<BenchmarkSnapshot> {
+fn parse_row(row: (String, f64, f64, f64, f64, f64, String)) -> Result<BenchmarkSnapshot> {
     let (
         id,
         wfp_latency_ms,

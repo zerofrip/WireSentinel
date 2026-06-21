@@ -1,9 +1,7 @@
 use super::traits::{PluginRepository, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use shared_types::{
-    PluginFormat, PluginManifest, PluginRecord, PluginState, WireSentinelError,
-};
+use shared_types::{PluginFormat, PluginManifest, PluginRecord, PluginState, WireSentinelError};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -118,7 +116,20 @@ fn parse_row(
         Option<String>,
     ),
 ) -> Result<PluginRecord> {
-    let (id, _name, _version, _format, manifest_json, state, _perms, _path, _sha, error, installed_at, loaded_at) = row;
+    let (
+        id,
+        _name,
+        _version,
+        _format,
+        manifest_json,
+        state,
+        _perms,
+        _path,
+        _sha,
+        error,
+        installed_at,
+        loaded_at,
+    ) = row;
     let manifest: PluginManifest = serde_json::from_str(&manifest_json)
         .map_err(|e| WireSentinelError::Config(e.to_string()))?;
     let state = match state.as_str() {

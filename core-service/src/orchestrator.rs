@@ -4,23 +4,23 @@ use crate::api::AppState;
 use crate::auth;
 use crate::benchmark::{self, BenchmarkService};
 use crate::deps::ServiceDeps;
+use crate::performance::PerformanceMonitor;
 use crate::privacy::PrivacyScoreService;
 use crate::privacy_analytics::PrivacyAnalyticsService;
-use crate::performance::PerformanceMonitor;
 use async_trait::async_trait;
 use chrono::Utc;
 use event_bus::EventBus;
+use parking_lot::RwLock;
 use policy_engine::ConnectionContext;
 use shared_types::{
     ConnectionSnapshot, Direction, ServiceEvent, ServiceEventInner, ServiceStatus, TrafficEvent,
     ValidationStatus,
 };
-use parking_lot::RwLock;
 use std::sync::Arc;
 use storage::Storage;
 use tokio::sync::watch;
 use tracing::{info, warn};
-use traffic_monitor::{ConnectionHandler, spawn_monitor};
+use traffic_monitor::{spawn_monitor, ConnectionHandler};
 
 pub struct Orchestrator {
     deps: Arc<ServiceDeps>,
@@ -45,10 +45,7 @@ impl ConnectionHandler for OrchestratorHandler {
 }
 
 impl ServiceDeps {
-    pub async fn process_connection(
-        &self,
-        conn: ConnectionSnapshot,
-    ) -> shared_types::Result<()> {
+    pub async fn process_connection(&self, conn: ConnectionSnapshot) -> shared_types::Result<()> {
         let (app, _discovered) = self.app_registry.resolve_or_register(conn.pid).await?;
         self.traffic.register_app(app.clone());
 
@@ -128,11 +125,7 @@ impl ServiceDeps {
 
         if let Some(dst) = &event.destination_ip {
             if event.remote_domain.is_none() {
-                if let Ok(Some(resolved)) = self
-                    .correlator
-                    .on_traffic(Some(app.id()), dst)
-                    .await
-                {
+                if let Ok(Some(resolved)) = self.correlator.on_traffic(Some(app.id()), dst).await {
                     event.remote_domain = Some(resolved);
                 }
             }
@@ -183,11 +176,16 @@ impl ServiceDeps {
             )
             .await?;
 
-        self.events.publish(
-            ServiceEventInner::RouteUsageUpdated { stats }.with_timestamp(ts),
-        );
+        self.events
+            .publish(ServiceEventInner::RouteUsageUpdated { stats }.with_timestamp(ts));
 
-        if self.storage.settings.store_traffic_logs().await.unwrap_or(true) {
+        if self
+            .storage
+            .settings
+            .store_traffic_logs()
+            .await
+            .unwrap_or(true)
+        {
             let _ = self.storage.traffic_logs.insert(&event).await;
         }
 
@@ -205,21 +203,16 @@ impl ServiceDeps {
             .into_iter()
             .find(|s| s.app_id == app.id())
         {
-            self.events.publish(
-                ServiceEventInner::BandwidthUpdated { snapshot }.with_timestamp(ts),
-            );
+            self.events
+                .publish(ServiceEventInner::BandwidthUpdated { snapshot }.with_timestamp(ts));
         }
 
         if route.is_blocked() {
-            self.events.publish(
-                ServiceEventInner::TrafficBlocked {
-                    event,
-                    route,
-                }
-                .with_timestamp(ts),
-            );
+            self.events
+                .publish(ServiceEventInner::TrafficBlocked { event, route }.with_timestamp(ts));
         } else {
-            self.events.publish(ServiceEventInner::TrafficAllowed { event }.with_timestamp(ts));
+            self.events
+                .publish(ServiceEventInner::TrafficAllowed { event }.with_timestamp(ts));
         }
 
         Ok(())
@@ -279,8 +272,7 @@ impl Orchestrator {
             warn!(error = %e, "WFP filter reconcile failed");
         }
 
-        self.deps
-            .start_domain_cache_purge(self.shutdown_rx.clone());
+        self.deps.start_domain_cache_purge(self.shutdown_rx.clone());
         self.deps.start_filter_scheduler().await;
 
         if let Err(e) = self.deps.plugins.discover().await {
@@ -359,9 +351,7 @@ impl Orchestrator {
                         new_route,
                         ..
                     } => {
-                        if let Err(e) = tcp_term
-                            .on_route_change(app_id, old_route, new_route)
-                            .await
+                        if let Err(e) = tcp_term.on_route_change(app_id, old_route, new_route).await
                         {
                             warn!(error = %e, %app_id, "tcp termination on route change failed");
                         }
@@ -371,7 +361,13 @@ impl Orchestrator {
             }
         }));
 
-        let port = self.deps.storage.settings.get_api_port().await.unwrap_or(8170);
+        let port = self
+            .deps
+            .storage
+            .settings
+            .get_api_port()
+            .await
+            .unwrap_or(8170);
         let state = AppState::from_deps(Arc::clone(&self.deps));
         let handle = tokio::spawn(async move {
             if let Err(e) = crate::api::serve(state, port).await {
@@ -382,15 +378,17 @@ impl Orchestrator {
 
         info!(port, "WireSentinel service started");
 
-        let recovery_enabled = self.deps.storage.settings.recovery_enabled().await.unwrap_or(true);
+        let recovery_enabled = self
+            .deps
+            .storage
+            .settings
+            .recovery_enabled()
+            .await
+            .unwrap_or(true);
         let _ = self
             .deps
             .recovery
-            .recover_all(
-                &self.deps.vpn,
-                &self.deps.transport,
-                recovery_enabled,
-            )
+            .recover_all(&self.deps.vpn, &self.deps.transport, recovery_enabled)
             .await;
 
         let metrics_interval = self
@@ -419,7 +417,9 @@ impl Orchestrator {
             self.shutdown_rx.clone(),
         );
 
-        if let Ok(agent_cfg) = crate::controller_agent::ControllerAgent::load_config(&self.deps.storage).await {
+        if let Ok(agent_cfg) =
+            crate::controller_agent::ControllerAgent::load_config(&self.deps.storage).await
+        {
             if agent_cfg.enabled {
                 crate::controller_agent::ControllerAgent::spawn(
                     Arc::clone(&self.deps.storage),
@@ -471,7 +471,9 @@ impl Orchestrator {
             }
         }
 
-        if let Ok(sync_cfg) = crate::cloud_sync::CloudSyncAgent::load_config(&self.deps.storage).await {
+        if let Ok(sync_cfg) =
+            crate::cloud_sync::CloudSyncAgent::load_config(&self.deps.storage).await
+        {
             if sync_cfg.enabled {
                 crate::cloud_sync::CloudSyncAgent::spawn(
                     Arc::clone(&self.deps.storage),
@@ -483,7 +485,9 @@ impl Orchestrator {
             }
         }
 
-        if let Ok(cfg) = crate::cloud_usage_reporter::CloudUsageReporter::load_config(&self.deps.storage).await {
+        if let Ok(cfg) =
+            crate::cloud_usage_reporter::CloudUsageReporter::load_config(&self.deps.storage).await
+        {
             if cfg.enabled {
                 crate::cloud_usage_reporter::CloudUsageReporter::spawn(
                     Arc::clone(&self.deps.storage),
@@ -496,7 +500,8 @@ impl Orchestrator {
         }
 
         if let Ok(cfg) =
-            crate::cloud_telemetry_reporter::CloudTelemetryReporter::load_config(&self.deps.storage).await
+            crate::cloud_telemetry_reporter::CloudTelemetryReporter::load_config(&self.deps.storage)
+                .await
         {
             if cfg.enabled {
                 crate::cloud_telemetry_reporter::CloudTelemetryReporter::spawn(
@@ -509,7 +514,9 @@ impl Orchestrator {
             }
         }
 
-        if let Ok(cfg) = crate::cloud_backup_reporter::CloudBackupReporter::load_config(&self.deps.storage).await {
+        if let Ok(cfg) =
+            crate::cloud_backup_reporter::CloudBackupReporter::load_config(&self.deps.storage).await
+        {
             if cfg.enabled {
                 crate::cloud_backup_reporter::CloudBackupReporter::spawn(
                     Arc::clone(&self.deps.storage),

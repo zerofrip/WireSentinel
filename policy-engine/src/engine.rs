@@ -35,7 +35,10 @@ pub struct PolicyEngine {
 
 impl Default for PolicyEngine {
     fn default() -> Self {
-        Self::new(Ruleset::default(), Arc::new(crate::lookup::EmptyProfileLookup))
+        Self::new(
+            Ruleset::default(),
+            Arc::new(crate::lookup::EmptyProfileLookup),
+        )
     }
 }
 
@@ -167,7 +170,11 @@ impl PolicyEngine {
                     return (
                         Decision {
                             route: route.clone(),
-                            verdict: Verdict::from_route(&route, None, "template override app/domain rule"),
+                            verdict: Verdict::from_route(
+                                &route,
+                                None,
+                                "template override app/domain rule",
+                            ),
                             matched_rule_id: None,
                         },
                         trace,
@@ -213,7 +220,10 @@ impl PolicyEngine {
         (decision, trace)
     }
 
-    fn match_template_rules(ctx: &ConnectionContext, tmpl: &ResolvedTemplate) -> Option<TrafficRoute> {
+    fn match_template_rules(
+        ctx: &ConnectionContext,
+        tmpl: &ResolvedTemplate,
+    ) -> Option<TrafficRoute> {
         for rule in &tmpl.app_rules {
             if rule.enabled && rule.app_id == ctx.app_id {
                 return Some(rule.route.clone());
@@ -237,11 +247,7 @@ impl PolicyEngine {
             .filter(|r| r.enabled && filter.matches(&r.scope))
             .collect();
 
-        candidates.sort_by(|a, b| {
-            b.priority
-                .cmp(&a.priority)
-                .then_with(|| a.id.cmp(&b.id))
-        });
+        candidates.sort_by(|a, b| b.priority.cmp(&a.priority).then_with(|| a.id.cmp(&b.id)));
 
         candidates.first().map(|rule| {
             let route = self.action_to_route(&rule.action, ctx);
@@ -343,7 +349,10 @@ mod tests {
         }
     }
 
-    fn engine_with_profiles(ruleset: Ruleset, profiles: HashMap<Uuid, VpnBackendKind>) -> PolicyEngine {
+    fn engine_with_profiles(
+        ruleset: Ruleset,
+        profiles: HashMap<Uuid, VpnBackendKind>,
+    ) -> PolicyEngine {
         PolicyEngine::new(ruleset, Arc::new(HashMapProfileLookup::new(profiles)))
     }
 
@@ -361,7 +370,9 @@ mod tests {
         let app_b = Uuid::new_v4();
         let mut ruleset = Ruleset::default();
         ruleset.rules.push(Rule::global(10, RuleAction::Block));
-        ruleset.rules.push(Rule::for_app(app_a, 20, RuleAction::Allow));
+        ruleset
+            .rules
+            .push(Rule::for_app(app_a, 20, RuleAction::Allow));
 
         let engine = PolicyEngine::new(ruleset, Arc::new(EmptyProfileLookup));
         let allow = engine.decide(&ConnectionContext {

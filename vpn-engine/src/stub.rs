@@ -1,8 +1,8 @@
 use crate::backend::VpnBackend;
 use async_trait::async_trait;
+use parking_lot::RwLock;
 use shared_types::{Result, VPNProfile, VpnState, VpnStats, VpnStatus, WireSentinelError};
 use std::collections::HashMap;
-use parking_lot::RwLock;
 use tracing::info;
 use uuid::Uuid;
 
@@ -29,9 +29,7 @@ impl Default for StubVpnBackend {
 impl VpnBackend for StubVpnBackend {
     async fn connect(&self, profile: &VPNProfile) -> Result<()> {
         info!(name = %profile.name, "stub VPN connect");
-        self.active
-            .write()
-            .insert(profile.id, VpnStatus::Connected);
+        self.active.write().insert(profile.id, VpnStatus::Connected);
         Ok(())
     }
 

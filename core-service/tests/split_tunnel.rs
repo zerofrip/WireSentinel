@@ -22,7 +22,7 @@ async fn enforce_blocked_applies_wfp_block() {
     ));
     let vpn = Arc::new(VpnManager::new(factory));
     let domain_cache = Arc::new(DomainResolverCache::new(
-        Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>,
+        Arc::clone(&storage.domain_cache) as Arc<dyn storage::DomainCacheRepository>
     ));
     let engine = SplitTunnelEngine::new(
         Arc::clone(&wfp),

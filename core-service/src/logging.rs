@@ -96,8 +96,8 @@ pub fn zip_log_files(log_dir: &PathBuf) -> shared_types::Result<Vec<u8>> {
     let mut buffer = Cursor::new(Vec::new());
     {
         let mut zip = zip::ZipWriter::new(&mut buffer);
-        let options =
-            zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Stored);
 
         if log_dir.exists() {
             for entry in std::fs::read_dir(log_dir).map_err(WireSentinelError::Io)? {

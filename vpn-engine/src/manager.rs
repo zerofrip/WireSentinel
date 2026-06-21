@@ -1,10 +1,10 @@
 use crate::backend::VpnBackend;
 use crate::factory::VpnBackendFactory;
 use async_trait::async_trait;
-use shared_types::{Result, TunnelIface, VPNProfile, VpnState, VpnStatus};
-use event_bus::EventBus;
 use chrono::Utc;
+use event_bus::EventBus;
 use parking_lot::RwLock;
+use shared_types::{Result, TunnelIface, VPNProfile, VpnState, VpnStatus};
 use shared_types::{ServiceEventInner, WireSentinelError};
 use std::collections::HashMap;
 use std::sync::Arc;

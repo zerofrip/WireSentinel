@@ -67,7 +67,12 @@ pub async fn stop_mixnet(
     State(state): State<Arc<AppState>>,
     Json(body): Json<MixnetProfileAction>,
 ) -> impl IntoResponse {
-    match state.deps.mixnet.stop(body.profile_id, "user requested").await {
+    match state
+        .deps
+        .mixnet
+        .stop(body.profile_id, "user requested")
+        .await
+    {
         Ok(()) => Json(serde_json::json!({"ok": true})).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
@@ -88,7 +93,11 @@ pub async fn get_anonymous_route(
 ) -> impl IntoResponse {
     match state.deps.storage.anonymous_chains.get(id).await {
         Ok(Some(chain)) => Json(chain).into_response(),
-        Ok(None) => (StatusCode::NOT_FOUND, "anonymous chain not found".to_string()).into_response(),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            "anonymous chain not found".to_string(),
+        )
+            .into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
 }
@@ -151,7 +160,11 @@ pub async fn start_anonymous_route(
     {
         Ok(_port) => match state.deps.storage.anonymous_chains.get(id).await {
             Ok(Some(chain)) => Json(chain).into_response(),
-            Ok(None) => (StatusCode::NOT_FOUND, "anonymous chain not found".to_string()).into_response(),
+            Ok(None) => (
+                StatusCode::NOT_FOUND,
+                "anonymous chain not found".to_string(),
+            )
+                .into_response(),
             Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
         },
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
@@ -163,10 +176,12 @@ pub async fn stop_anonymous_route(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
-    state.deps.events.publish(ServiceEvent::now(ServiceEventInner::AnonymousChainStopped {
-        chain_id: id,
-        reason: "user requested".to_string(),
-    }));
+    state.deps.events.publish(ServiceEvent::now(
+        ServiceEventInner::AnonymousChainStopped {
+            chain_id: id,
+            reason: "user requested".to_string(),
+        },
+    ));
     Json(serde_json::json!({"ok": true})).into_response()
 }
 

@@ -28,7 +28,10 @@ impl WfpLifecycleManager {
         }
         let state = wfp.driver_state().await;
         events.publish(
-            ServiceEventInner::DriverStateChanged { state: state.clone() }.with_timestamp(Utc::now()),
+            ServiceEventInner::DriverStateChanged {
+                state: state.clone(),
+            }
+            .with_timestamp(Utc::now()),
         );
         if state.engine == "kernel" && state.state == "running" {
             events.publish(

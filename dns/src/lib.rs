@@ -11,7 +11,7 @@ pub use failover::DnsProviderRegistry;
 pub use layer::DnsLayer;
 pub use policy::{evaluate_domain, DomainDecision};
 pub use provider::DnsProvider;
-pub use providers::{DohProvider, DotProvider, DoqProvider, from_record, parse_dot_endpoint};
+pub use providers::{from_record, parse_dot_endpoint, DohProvider, DoqProvider, DotProvider};
 pub use proxy::{spawn_proxy, DnsLogHandler, DnsProxyHandle, UpstreamLookup};
 
 // Backward-compatible aliases

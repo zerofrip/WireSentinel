@@ -140,9 +140,10 @@ impl AnonymityService {
                 profile.updated_at = Utc::now();
                 self.storage.katzenpost_profiles.update(&profile).await?;
                 self.federation.register(Arc::clone(&backend));
-                self.events.publish(ServiceEvent::now(ServiceEventInner::KatzenpostStarted {
-                    profile_id,
-                }));
+                self.events
+                    .publish(ServiceEvent::now(ServiceEventInner::KatzenpostStarted {
+                        profile_id,
+                    }));
                 Ok(profile)
             }
             Err(e) => {
@@ -150,10 +151,11 @@ impl AnonymityService {
                 profile.last_error = Some(e.to_string());
                 profile.updated_at = Utc::now();
                 let _ = self.storage.katzenpost_profiles.update(&profile).await;
-                self.events.publish(ServiceEvent::now(ServiceEventInner::KatzenpostFailed {
-                    profile_id,
-                    error: e.to_string(),
-                }));
+                self.events
+                    .publish(ServiceEvent::now(ServiceEventInner::KatzenpostFailed {
+                        profile_id,
+                        error: e.to_string(),
+                    }));
                 Err(e)
             }
         }
@@ -167,10 +169,11 @@ impl AnonymityService {
             profile.updated_at = Utc::now();
             self.storage.katzenpost_profiles.update(&profile).await?;
         }
-        self.events.publish(ServiceEvent::now(ServiceEventInner::KatzenpostStopped {
-            profile_id,
-            reason: reason.to_string(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::KatzenpostStopped {
+                profile_id,
+                reason: reason.to_string(),
+            }));
         Ok(())
     }
 
@@ -180,7 +183,9 @@ impl AnonymityService {
             .loopix_profiles
             .get(profile_id)
             .await?
-            .ok_or_else(|| WireSentinelError::Other(format!("loopix profile {profile_id} not found")))?;
+            .ok_or_else(|| {
+                WireSentinelError::Other(format!("loopix profile {profile_id} not found"))
+            })?;
 
         self.security.validate_loopix(&profile)?;
         let backend = self.loopix_backend(&profile)?;
@@ -195,7 +200,9 @@ impl AnonymityService {
                 self.storage.loopix_profiles.update(&profile).await?;
                 self.federation.register(Arc::clone(&backend));
                 self.events
-                    .publish(ServiceEvent::now(ServiceEventInner::LoopixStarted { profile_id }));
+                    .publish(ServiceEvent::now(ServiceEventInner::LoopixStarted {
+                        profile_id,
+                    }));
                 Ok(profile)
             }
             Err(e) => {
@@ -203,10 +210,11 @@ impl AnonymityService {
                 profile.last_error = Some(e.to_string());
                 profile.updated_at = Utc::now();
                 let _ = self.storage.loopix_profiles.update(&profile).await;
-                self.events.publish(ServiceEvent::now(ServiceEventInner::LoopixFailed {
-                    profile_id,
-                    error: e.to_string(),
-                }));
+                self.events
+                    .publish(ServiceEvent::now(ServiceEventInner::LoopixFailed {
+                        profile_id,
+                        error: e.to_string(),
+                    }));
                 Err(e)
             }
         }
@@ -220,10 +228,11 @@ impl AnonymityService {
             profile.updated_at = Utc::now();
             self.storage.loopix_profiles.update(&profile).await?;
         }
-        self.events.publish(ServiceEvent::now(ServiceEventInner::LoopixStopped {
-            profile_id,
-            reason: reason.to_string(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::LoopixStopped {
+                profile_id,
+                reason: reason.to_string(),
+            }));
         Ok(())
     }
 
@@ -235,11 +244,12 @@ impl AnonymityService {
             .ok_or_else(|| WireSentinelError::Other("no federated providers registered".into()))?;
         let port = route.socks_port.unwrap_or(9360);
         self.listen_ports.set(config.profile_id, port);
-        self.events
-            .publish(ServiceEvent::now(ServiceEventInner::MixnetFederationUpdated {
+        self.events.publish(ServiceEvent::now(
+            ServiceEventInner::MixnetFederationUpdated {
                 profile_id: config.profile_id,
                 providers: config.providers,
-            }));
+            },
+        ));
         Ok(port)
     }
 
@@ -273,9 +283,9 @@ impl AnonymityService {
             return Ok(port);
         }
         self.start_katzenpost(profile_id).await?;
-        self.listen_ports.get(profile_id).ok_or_else(|| {
-            WireSentinelError::Other("katzenpost listen port unavailable".into())
-        })
+        self.listen_ports
+            .get(profile_id)
+            .ok_or_else(|| WireSentinelError::Other("katzenpost listen port unavailable".into()))
     }
 
     async fn ensure_loopix_ready(&self, profile_id: Uuid) -> Result<u16> {
@@ -283,9 +293,9 @@ impl AnonymityService {
             return Ok(port);
         }
         self.start_loopix(profile_id).await?;
-        self.listen_ports.get(profile_id).ok_or_else(|| {
-            WireSentinelError::Other("loopix listen port unavailable".into())
-        })
+        self.listen_ports
+            .get(profile_id)
+            .ok_or_else(|| WireSentinelError::Other("loopix listen port unavailable".into()))
     }
 
     async fn ensure_federated_ready(&self, profile_id: Uuid) -> Result<u16> {

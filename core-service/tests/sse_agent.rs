@@ -20,9 +20,7 @@ async fn sse_agent_config_round_trip() {
         device_id: Some(Uuid::new_v4().to_string()),
         telemetry_interval_secs: 45,
     };
-    SseAgent::save_config(&storage, &cfg)
-        .await
-        .expect("save");
+    SseAgent::save_config(&storage, &cfg).await.expect("save");
     let loaded = SseAgent::load_config(&storage).await.expect("load");
     assert_eq!(loaded, cfg);
 }

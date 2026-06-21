@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use filter_lists::FilterListProvider;
 use parking_lot::RwLock;
 use shared_types::{
-    DnsProviderRecord, DnsSettings, DnsTransport, DNSQueryLog, Result, WireSentinelError,
+    DNSQueryLog, DnsProviderRecord, DnsSettings, DnsTransport, Result, WireSentinelError,
 };
 use std::sync::Arc;
 use tokio::sync::broadcast;
@@ -98,7 +98,11 @@ impl DnsLayer {
 
         let mut providers = Vec::new();
         for record in &sorted {
-            providers.push(from_record(&record.name, record.transport, &record.endpoint)?);
+            providers.push(from_record(
+                &record.name,
+                record.transport,
+                &record.endpoint,
+            )?);
         }
 
         if providers.is_empty() {
@@ -124,7 +128,11 @@ impl DnsLayer {
                 )?,
                 DnsTransport::Dot => {
                     let (host, port) = parse_dot_endpoint(&settings.upstream_url)?;
-                    from_record(&settings.provider, DnsTransport::Dot, &format!("{host}:{port}"))?
+                    from_record(
+                        &settings.provider,
+                        DnsTransport::Dot,
+                        &format!("{host}:{port}"),
+                    )?
                 }
                 DnsTransport::Doq => from_record(
                     &settings.provider,
@@ -187,11 +195,7 @@ impl DnsLayer {
         let filter_provider = self.filter.read().clone();
         let correlation_id = Uuid::new_v4();
 
-        let decision = evaluate_domain(
-            qname,
-            settings.filter_mode,
-            filter_provider.as_deref(),
-        );
+        let decision = evaluate_domain(qname, settings.filter_mode, filter_provider.as_deref());
 
         if decision == DomainDecision::Block {
             let log = DNSQueryLog {

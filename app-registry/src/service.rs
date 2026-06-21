@@ -4,7 +4,7 @@ use chrono::Utc;
 use event_bus::EventBus;
 use shared_types::{AppIdentity, AppRecord, ServiceEvent, ServiceEventInner, WireSentinelError};
 use std::sync::Arc;
-use storage::{AppRepository, AppFilter};
+use storage::{AppFilter, AppRepository};
 use tracing::debug;
 use uuid::Uuid;
 
@@ -18,7 +18,10 @@ impl AppRegistryService {
         Self { apps, events }
     }
 
-    pub async fn resolve_or_register(&self, pid: u32) -> Result<(AppIdentity, bool), WireSentinelError> {
+    pub async fn resolve_or_register(
+        &self,
+        pid: u32,
+    ) -> Result<(AppIdentity, bool), WireSentinelError> {
         let exe_path = exe_path_for_pid(pid)?;
         let sha256 = file_sha256(&exe_path).ok();
 
@@ -39,7 +42,12 @@ impl AppRegistryService {
             record.touch();
             self.apps.upsert(&record).await?;
             if updated {
-                self.events.publish(ServiceEventInner::AppUpdated { app: record.clone() }.with_timestamp(Utc::now()));
+                self.events.publish(
+                    ServiceEventInner::AppUpdated {
+                        app: record.clone(),
+                    }
+                    .with_timestamp(Utc::now()),
+                );
             }
             return Ok((AppIdentity::new(pid, record), false));
         }
@@ -50,14 +58,21 @@ impl AppRegistryService {
         record.icon_path = icon_path_for_exe(&exe_path);
         self.apps.upsert(&record).await?;
         debug!(app = %record.display_name, pid, "app discovered");
-        self.events.publish(ServiceEventInner::AppDiscovered { app: record.clone() }.with_timestamp(Utc::now()));
+        self.events.publish(
+            ServiceEventInner::AppDiscovered {
+                app: record.clone(),
+            }
+            .with_timestamp(Utc::now()),
+        );
         Ok((AppIdentity::new(pid, record), true))
     }
 
-    pub async fn list(&self, search: Option<String>, limit: Option<u32>) -> Result<Vec<AppRecord>, WireSentinelError> {
-        self.apps
-            .list(AppFilter { search, limit })
-            .await
+    pub async fn list(
+        &self,
+        search: Option<String>,
+        limit: Option<u32>,
+    ) -> Result<Vec<AppRecord>, WireSentinelError> {
+        self.apps.list(AppFilter { search, limit }).await
     }
 
     pub async fn get(&self, id: Uuid) -> Result<Option<AppRecord>, WireSentinelError> {
@@ -77,7 +92,12 @@ impl AppRegistryService {
         record.default_route = route;
         record.touch();
         self.apps.upsert(&record).await?;
-        self.events.publish(ServiceEventInner::AppUpdated { app: record.clone() }.with_timestamp(Utc::now()));
+        self.events.publish(
+            ServiceEventInner::AppUpdated {
+                app: record.clone(),
+            }
+            .with_timestamp(Utc::now()),
+        );
         Ok(Some(record))
     }
 }

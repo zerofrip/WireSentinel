@@ -6,12 +6,11 @@ use std::sync::Arc;
 use storage::{init_pool_in_memory, Storage};
 use wfp::{StubNdisEngine, UserspaceWfpEngine, WfpEngine};
 
-fn test_hybrid(storage: Arc<Storage>, ndis: Arc<dyn wfp::NdisEngine>) -> Arc<GuardianHybridService> {
-    Arc::new(GuardianHybridService::new(
-        storage,
-        ndis,
-        EventBus::new(),
-    ))
+fn test_hybrid(
+    storage: Arc<Storage>,
+    ndis: Arc<dyn wfp::NdisEngine>,
+) -> Arc<GuardianHybridService> {
+    Arc::new(GuardianHybridService::new(storage, ndis, EventBus::new()))
 }
 
 #[tokio::test]
@@ -48,18 +47,12 @@ async fn kernel_telemetry_persist_snapshot_writes_row() {
     let wfp = Arc::new(UserspaceWfpEngine::new()) as Arc<dyn WfpEngine>;
     let ndis = Arc::new(StubNdisEngine::new()) as Arc<dyn wfp::NdisEngine>;
     let hybrid = test_hybrid(Arc::clone(&storage), Arc::clone(&ndis));
-    let telemetry = KernelTelemetryService::new(
-        Arc::clone(&storage),
-        wfp,
-        ndis,
-        hybrid,
-    );
+    let telemetry = KernelTelemetryService::new(Arc::clone(&storage), wfp, ndis, hybrid);
 
     telemetry.persist_snapshot().await.unwrap();
-    let count: (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM kernel_telemetry_snapshots")
-            .fetch_one(&storage.pool)
-            .await
-            .unwrap();
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM kernel_telemetry_snapshots")
+        .fetch_one(&storage.pool)
+        .await
+        .unwrap();
     assert_eq!(count.0, 1);
 }

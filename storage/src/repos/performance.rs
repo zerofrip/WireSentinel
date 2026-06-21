@@ -62,11 +62,16 @@ impl PerformanceRepository for SqlitePerformanceRepository {
     }
 }
 
-fn parse_row(
-    row: (String, f64, i64, f64, f64, f64, String),
-) -> Result<PerformanceSnapshot> {
-    let (id, cpu_percent, memory_bytes, api_latency_ms, wfp_latency_ms, event_throughput, timestamp) =
-        row;
+fn parse_row(row: (String, f64, i64, f64, f64, f64, String)) -> Result<PerformanceSnapshot> {
+    let (
+        id,
+        cpu_percent,
+        memory_bytes,
+        api_latency_ms,
+        wfp_latency_ms,
+        event_throughput,
+        timestamp,
+    ) = row;
     Ok(PerformanceSnapshot {
         id: Uuid::parse_str(&id).map_err(|e| WireSentinelError::Config(e.to_string()))?,
         cpu_percent,

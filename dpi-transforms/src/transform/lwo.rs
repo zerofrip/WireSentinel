@@ -10,10 +10,8 @@ impl TransformModule for LightweightWireGuardObfuscation {
     }
 
     fn apply_outbound(&self, ctx: &mut TransformContext) {
-        ctx.outbound.insert(
-            "padding".into(),
-            json!({ "enabled": true, "size": 32 }),
-        );
+        ctx.outbound
+            .insert("padding".into(), json!({ "enabled": true, "size": 32 }));
         ctx.outbound.insert(
             "tls".into(),
             json!({
@@ -28,10 +26,8 @@ impl TransformModule for LightweightWireGuardObfuscation {
     }
 
     fn apply_inbound(&self, ctx: &mut TransformContext) {
-        ctx.inbound.insert(
-            "padding".into(),
-            json!({ "enabled": true, "size": 32 }),
-        );
+        ctx.inbound
+            .insert("padding".into(), json!({ "enabled": true, "size": 32 }));
         ctx.inbound.insert(
             "lwo".into(),
             json!({ "enabled": true, "mode": "lightweight" }),

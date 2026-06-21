@@ -2,7 +2,9 @@
 
 use chrono::Utc;
 use event_bus::EventBus;
-use shared_types::{Result, ServiceEvent, ServiceEventInner, TailnetProfile, TailscaleStatus, WireSentinelError};
+use shared_types::{
+    Result, ServiceEvent, ServiceEventInner, TailnetProfile, TailscaleStatus, WireSentinelError,
+};
 use std::sync::Arc;
 use storage::Storage;
 use uuid::Uuid;
@@ -48,16 +50,19 @@ impl TailscaleService {
             .tailnet_profiles
             .get(profile_id)
             .await?
-            .ok_or_else(|| WireSentinelError::Config(format!("tailnet profile {profile_id} not found")))?;
+            .ok_or_else(|| {
+                WireSentinelError::Config(format!("tailnet profile {profile_id} not found"))
+            })?;
 
         profile.connected = true;
         profile.updated_at = Utc::now();
         self.storage.tailnet_profiles.update(&profile).await?;
 
-        self.events.publish(ServiceEvent::now(ServiceEventInner::TailnetJoined {
-            profile_id,
-            hostname: profile.hostname.clone(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::TailnetJoined {
+                profile_id,
+                hostname: profile.hostname.clone(),
+            }));
 
         Ok(profile)
     }
@@ -69,17 +74,16 @@ impl TailscaleService {
             self.storage.tailnet_profiles.update(&profile).await?;
         }
 
-        self.events.publish(ServiceEvent::now(ServiceEventInner::TailnetLeft {
-            profile_id,
-            reason: reason.to_string(),
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::TailnetLeft {
+                profile_id,
+                reason: reason.to_string(),
+            }));
         Ok(())
     }
 
     pub async fn set_exit_node(&self, profile_id: Uuid, exit_node: Option<String>) -> Result<()> {
-        self.backend
-            .set_exit_node(exit_node.as_deref())
-            .await?;
+        self.backend.set_exit_node(exit_node.as_deref()).await?;
 
         if let Some(mut profile) = self.storage.tailnet_profiles.get(profile_id).await? {
             profile.exit_node = exit_node.clone();
@@ -87,14 +91,17 @@ impl TailscaleService {
             self.storage.tailnet_profiles.update(&profile).await?;
         }
 
-        self.events.publish(ServiceEvent::now(ServiceEventInner::ExitNodeChanged {
-            profile_id,
-            exit_node,
-        }));
+        self.events
+            .publish(ServiceEvent::now(ServiceEventInner::ExitNodeChanged {
+                profile_id,
+                exit_node,
+            }));
         Ok(())
     }
 
-    pub fn runtime_status(&self) -> impl std::future::Future<Output = TailscaleRuntimeStatus> + Send {
+    pub fn runtime_status(
+        &self,
+    ) -> impl std::future::Future<Output = TailscaleRuntimeStatus> + Send {
         let backend = Arc::clone(&self.backend);
         async move { backend.query_status().await }
     }

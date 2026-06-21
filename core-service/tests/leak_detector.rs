@@ -41,12 +41,7 @@ async fn detects_dns_leak_on_port_53() {
     let app_id = Uuid::new_v4();
 
     deps.leak_detector
-        .check_connection(
-            &sample_conn(53),
-            app_id,
-            &TrafficRoute::Direct,
-            true,
-        )
+        .check_connection(&sample_conn(53), app_id, &TrafficRoute::Direct, true)
         .await
         .expect("check");
 
@@ -70,12 +65,7 @@ async fn detects_route_leak_with_kill_switch() {
     let app_id = Uuid::new_v4();
 
     deps.leak_detector
-        .check_connection(
-            &sample_conn(443),
-            app_id,
-            &TrafficRoute::Direct,
-            true,
-        )
+        .check_connection(&sample_conn(443), app_id, &TrafficRoute::Direct, true)
         .await
         .expect("check");
 
@@ -85,7 +75,9 @@ async fn detects_route_leak_with_kill_switch() {
         .list_recent(10)
         .await
         .expect("list");
-    assert!(incidents.iter().any(|i| i.leak_type == shared_types::LeakType::Route));
+    assert!(incidents
+        .iter()
+        .any(|i| i.leak_type == shared_types::LeakType::Route));
 }
 
 #[tokio::test]
@@ -99,12 +91,7 @@ async fn no_leak_when_detection_disabled() {
     let app_id = Uuid::new_v4();
 
     deps.leak_detector
-        .check_connection(
-            &sample_conn(53),
-            app_id,
-            &TrafficRoute::Direct,
-            true,
-        )
+        .check_connection(&sample_conn(53), app_id, &TrafficRoute::Direct, true)
         .await
         .expect("check");
 

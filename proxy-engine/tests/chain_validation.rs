@@ -22,6 +22,9 @@ fn validates_ordered_hops() {
 
 #[test]
 fn rejects_https_followed_by_http() {
-    let hops = vec![hop(ProxyChainHopKind::Https, 0), hop(ProxyChainHopKind::Http, 1)];
+    let hops = vec![
+        hop(ProxyChainHopKind::Https, 0),
+        hop(ProxyChainHopKind::Http, 1),
+    ];
     assert!(validate_hop_sequence(&hops).is_err());
 }

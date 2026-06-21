@@ -36,9 +36,7 @@ impl VpnBackend for TailscaleBackend {
                 .status()
                 .await;
         }
-        self.active
-            .write()
-            .insert(profile.id, VpnStatus::Connected);
+        self.active.write().insert(profile.id, VpnStatus::Connected);
         Ok(())
     }
 

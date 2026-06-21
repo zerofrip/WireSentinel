@@ -1,10 +1,10 @@
 mod doh;
-mod dot;
 mod doq;
+mod dot;
 
 pub use doh::DohProvider;
-pub use dot::DotProvider;
 pub use doq::DoqProvider;
+pub use dot::DotProvider;
 
 use shared_types::{DnsTransport, Result, WireSentinelError};
 use std::sync::Arc;

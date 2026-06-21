@@ -129,7 +129,10 @@ impl TransportBackend for SingBoxTransport {
             healthy: running,
             latency_ms: if running { Some(1) } else { None },
             message: Some(if running {
-                format!("sing-box listening on 127.0.0.1:{}", *self.listen_port.read())
+                format!(
+                    "sing-box listening on 127.0.0.1:{}",
+                    *self.listen_port.read()
+                )
             } else {
                 "process not running".into()
             }),

@@ -26,11 +26,15 @@ fn scope_from_db(scope_type: &str, scope_value: Option<String>) -> Result<RuleSc
     match scope_type {
         "global" => Ok(RuleScope::Global),
         "app" => {
-            let id = scope_value.ok_or_else(|| WireSentinelError::Config("missing app id".into()))?;
-            Ok(RuleScope::App(Uuid::parse_str(&id).map_err(|e| WireSentinelError::Config(e.to_string()))?))
+            let id =
+                scope_value.ok_or_else(|| WireSentinelError::Config("missing app id".into()))?;
+            Ok(RuleScope::App(
+                Uuid::parse_str(&id).map_err(|e| WireSentinelError::Config(e.to_string()))?,
+            ))
         }
         "domain" => {
-            let d = scope_value.ok_or_else(|| WireSentinelError::Config("missing domain".into()))?;
+            let d =
+                scope_value.ok_or_else(|| WireSentinelError::Config("missing domain".into()))?;
             Ok(RuleScope::Domain(d))
         }
         other => Err(WireSentinelError::Config(format!("unknown scope: {other}"))),
@@ -48,16 +52,20 @@ impl RuleRepository for SqliteRuleRepository {
         .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         rows.into_iter()
-            .map(|(id, priority, scope_type, scope_value, action_json, enabled, description)| {
-                Ok(Rule {
-                    id: Uuid::parse_str(&id).map_err(|e| WireSentinelError::Config(e.to_string()))?,
-                    priority,
-                    scope: scope_from_db(&scope_type, scope_value)?,
-                    action: serde_json::from_str(&action_json).map_err(WireSentinelError::Serde)?,
-                    enabled: enabled != 0,
-                    description,
-                })
-            })
+            .map(
+                |(id, priority, scope_type, scope_value, action_json, enabled, description)| {
+                    Ok(Rule {
+                        id: Uuid::parse_str(&id)
+                            .map_err(|e| WireSentinelError::Config(e.to_string()))?,
+                        priority,
+                        scope: scope_from_db(&scope_type, scope_value)?,
+                        action: serde_json::from_str(&action_json)
+                            .map_err(WireSentinelError::Serde)?,
+                        enabled: enabled != 0,
+                        description,
+                    })
+                },
+            )
             .collect()
     }
 

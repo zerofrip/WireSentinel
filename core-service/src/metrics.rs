@@ -15,7 +15,11 @@ pub struct MetricsService {
 }
 
 impl MetricsService {
-    pub fn new(storage: Arc<Storage>, vpn: Arc<VpnManager>, transport: Arc<TransportManager>) -> Self {
+    pub fn new(
+        storage: Arc<Storage>,
+        vpn: Arc<VpnManager>,
+        transport: Arc<TransportManager>,
+    ) -> Self {
         Self {
             storage,
             vpn,

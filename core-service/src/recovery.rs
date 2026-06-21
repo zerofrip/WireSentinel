@@ -124,7 +124,10 @@ impl RecoveryService {
             let Ok(state) = serde_json::from_str::<serde_json::Value>(&record.state_json) else {
                 continue;
             };
-            let connected = state.get("connected").and_then(|v| v.as_bool()).unwrap_or(false);
+            let connected = state
+                .get("connected")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             if !connected {
                 continue;
             }
@@ -149,7 +152,11 @@ impl RecoveryService {
                     continue;
                 }
             };
-            if vpn.connect_with_config(profile_id, config_path).await.is_ok() {
+            if vpn
+                .connect_with_config(profile_id, config_path)
+                .await
+                .is_ok()
+            {
                 count += 1;
             } else {
                 self.emit_failed("vpn", format!("connect failed for {profile_id}"));
@@ -169,7 +176,11 @@ impl RecoveryService {
             let Ok(state) = serde_json::from_str::<serde_json::Value>(&record.state_json) else {
                 continue;
             };
-            if !state.get("running").and_then(|v| v.as_bool()).unwrap_or(false) {
+            if !state
+                .get("running")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
+            {
                 continue;
             }
             let Ok(chain_id) = Uuid::parse_str(&record.entity_id) else {
@@ -202,7 +213,11 @@ impl RecoveryService {
         );
     }
 
-    pub async fn flush_before_stop(&self, vpn: &VpnManager, transport: &TransportManager) -> Result<()> {
+    pub async fn flush_before_stop(
+        &self,
+        vpn: &VpnManager,
+        transport: &TransportManager,
+    ) -> Result<()> {
         for profile in vpn.profiles() {
             let connected = vpn
                 .state(profile.id)
@@ -216,8 +231,9 @@ impl RecoveryService {
                 .status()
                 .await
                 .map(|rows| {
-                    rows.iter()
-                        .any(|r| r.id == chain.id && r.state == shared_types::TransportState::Running)
+                    rows.iter().any(|r| {
+                        r.id == chain.id && r.state == shared_types::TransportState::Running
+                    })
                 })
                 .unwrap_or(false);
             self.persist_chain(chain.id, running).await?;

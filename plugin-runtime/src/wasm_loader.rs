@@ -2,10 +2,10 @@ use crate::traits::{
     DnsProviderPlugin, FilterEnginePlugin, MetricsProviderPlugin, PolicyProviderPlugin,
     TransformModulePlugin, TransportBackendPlugin, WireSentinelPlugin,
 };
+use sha2::{Digest, Sha256};
 use shared_types::{
     PluginManifest, PluginPermission, PluginRecord, PluginSecurityPolicy, Result, WireSentinelError,
 };
-use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -197,8 +197,7 @@ impl PluginLoader {
         }
 
         let bytes = std::fs::read(&path).map_err(WireSentinelError::Io)?;
-        self.enforcer
-            .validate_wasm_bytes(&path, &bytes, manifest)?;
+        self.enforcer.validate_wasm_bytes(&path, &bytes, manifest)?;
 
         let module = Module::new(&self.engine, &bytes)
             .map_err(|e| WireSentinelError::Other(format!("wasm compile: {e}")))?;

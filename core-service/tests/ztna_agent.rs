@@ -1,9 +1,7 @@
 use core_service::ztna_agent::{ZtnaAgent, ZtnaAgentConfig};
 use core_service::ztna_policy_hook::evaluate_ztna_gate;
 use policy_engine::{ConnectionContext, ZtnaPolicyLookup};
-use shared_types::{
-    Action, Subject, SubjectKind, ZtnaPolicyBundle, ZtnaSecurityPolicy,
-};
+use shared_types::{Action, Subject, SubjectKind, ZtnaPolicyBundle, ZtnaSecurityPolicy};
 use std::sync::Arc;
 use storage::{init_pool_in_memory, Storage};
 use uuid::Uuid;
@@ -22,9 +20,7 @@ async fn ztna_agent_config_round_trip() {
         connector_endpoint: "https://edge.example.test:8443".into(),
         heartbeat_interval_secs: 45,
     };
-    ZtnaAgent::save_config(&storage, &cfg)
-        .await
-        .expect("save");
+    ZtnaAgent::save_config(&storage, &cfg).await.expect("save");
     let loaded = ZtnaAgent::load_config(&storage).await.expect("load");
     assert_eq!(loaded, cfg);
 }

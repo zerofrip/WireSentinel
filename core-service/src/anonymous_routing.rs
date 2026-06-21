@@ -84,15 +84,20 @@ impl AnonymousRoutingService {
             }
             AnonymousRoute::FutureMixnet(id) => self.mixnet.ensure_profile_ready(*id).await,
             AnonymousRoute::Katzenpost(id) => {
-                self.anonymity.ensure_route_ready(&TrafficRoute::Katzenpost(*id)).await
+                self.anonymity
+                    .ensure_route_ready(&TrafficRoute::Katzenpost(*id))
+                    .await
             }
             AnonymousRoute::Loopix(id) => {
-                self.anonymity.ensure_route_ready(&TrafficRoute::Loopix(*id)).await
+                self.anonymity
+                    .ensure_route_ready(&TrafficRoute::Loopix(*id))
+                    .await
             }
-            AnonymousRoute::FederatedMixnet { profile_id, .. } => self
-                .anonymity
-                .ensure_route_ready(&TrafficRoute::FederatedMixnet(*profile_id))
-                .await,
+            AnonymousRoute::FederatedMixnet { profile_id, .. } => {
+                self.anonymity
+                    .ensure_route_ready(&TrafficRoute::FederatedMixnet(*profile_id))
+                    .await
+            }
             AnonymousRoute::MultiHop(ids) => {
                 if ids.len() >= 2 {
                     let _ = self.tor.start(ids[0]).await?;
@@ -114,7 +119,9 @@ impl AnonymousRoutingService {
             .anonymous_chains
             .get(chain_id)
             .await?
-            .ok_or_else(|| WireSentinelError::Other(format!("anonymous chain {chain_id} not found")))?;
+            .ok_or_else(|| {
+                WireSentinelError::Other(format!("anonymous chain {chain_id} not found"))
+            })?;
 
         if !chain.enabled {
             return Err(WireSentinelError::Policy(format!(
@@ -127,10 +134,12 @@ impl AnonymousRoutingService {
             last_port = Some(self.ensure_hop_ready(hop).await?);
         }
 
-        self.events.publish(ServiceEvent::now(ServiceEventInner::AnonymousChainStarted {
-            chain_id,
-            name: chain.name.clone(),
-        }));
+        self.events.publish(ServiceEvent::now(
+            ServiceEventInner::AnonymousChainStarted {
+                chain_id,
+                name: chain.name.clone(),
+            },
+        ));
 
         last_port.ok_or_else(|| WireSentinelError::Other("anonymous chain has no hops".into()))
     }
@@ -141,14 +150,16 @@ impl AnonymousRoutingService {
                 let profile = self.tor.start(hop.profile_id).await?;
                 Ok(profile.socks_port)
             }
-    AnonymousChainHopKind::Mixnet => {
-                self.mixnet.ensure_profile_ready(hop.profile_id).await
-            }
+            AnonymousChainHopKind::Mixnet => self.mixnet.ensure_profile_ready(hop.profile_id).await,
             AnonymousChainHopKind::Katzenpost => {
-                self.anonymity.ensure_route_ready(&TrafficRoute::Katzenpost(hop.profile_id)).await
+                self.anonymity
+                    .ensure_route_ready(&TrafficRoute::Katzenpost(hop.profile_id))
+                    .await
             }
             AnonymousChainHopKind::Loopix => {
-                self.anonymity.ensure_route_ready(&TrafficRoute::Loopix(hop.profile_id)).await
+                self.anonymity
+                    .ensure_route_ready(&TrafficRoute::Loopix(hop.profile_id))
+                    .await
             }
             AnonymousChainHopKind::FederatedMixnet => {
                 self.anonymity
@@ -175,9 +186,10 @@ impl AnonymousRoutingService {
 fn resolve_anonymous_route(route: &AnonymousRoute) -> Result<Vec<AnonymousChainHop>> {
     match route {
         AnonymousRoute::Tor(_) => Ok(vec![AnonymousChainHop::Tor, AnonymousChainHop::Mixnet]),
-        AnonymousRoute::TorBridge(_) => {
-            Ok(vec![AnonymousChainHop::TorBridge, AnonymousChainHop::Mixnet])
-        }
+        AnonymousRoute::TorBridge(_) => Ok(vec![
+            AnonymousChainHop::TorBridge,
+            AnonymousChainHop::Mixnet,
+        ]),
         AnonymousRoute::FutureMixnet(_) => Ok(vec![AnonymousChainHop::Mixnet]),
         AnonymousRoute::Katzenpost(_) => Ok(vec![AnonymousChainHop::Katzenpost]),
         AnonymousRoute::Loopix(_) => Ok(vec![AnonymousChainHop::Loopix]),

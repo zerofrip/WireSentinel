@@ -1,20 +1,19 @@
 use crate::{
-    AppRecord, BandwidthSnapshot, BehaviorAnomaly, BeaconingFinding, CasbFinding, ChainProfile,
-    ComplianceCheckKind, ConditionalAccessResult, DetectionTrigger, DevicePosture, DeviceTrustRecord,
-    DNSQueryLog, DlpIncident, DriverState, FirewallDecisionRecord, GatewayConnectionResult,
-    IdentityProviderKind, IdentityThreat, Incident, IsolationSession, LateralMovementFinding,
-    LeakIncident, MaliciousExecution, NetworkThreat, ObfuscationPreset, PerformanceSnapshot,
-    PersistenceFinding, PlaybookExecution, PluginRecord, PrivacyAnalyticsSnapshot,
-    PrivacyScoreSnapshot, ProcessAnomaly, ProxyProfile, ResponseActionResult, RiskScore,
-    RouteStatisticsRecord, Rule, SecurityAuditEntry, SecurityFinding, SegmentPolicyResult,
-    ShadowItRecord, SiemExportJob, SyncMode, TailnetProfile, TechniqueDetection, ThreatMatch,
-    TrafficEvent, TrafficRoute, TrustScoreSnapshot, UserIdentity, WebAccessResult,
-    AffectedAsset, CloudAttackPath, CnappSeverity, ComplianceControl, ComplianceScore,
-    ContainerFinding, DependencyRecord, IacFinding, KubernetesFinding, PostureFinding,
-    SbomDocument, SecretFinding, Vulnerability, WorkloadRecord,
-    AiRecommendation, AiRiskScore, CopilotResponse, CorrelatedThreat,
-    ExecutiveReport, InvestigationReport,
-    TcpTerminationMode, TemplateMode,
+    AffectedAsset, AiRecommendation, AiRiskScore, AppRecord, BandwidthSnapshot, BeaconingFinding,
+    BehaviorAnomaly, CasbFinding, ChainProfile, CloudAttackPath, CnappSeverity,
+    ComplianceCheckKind, ComplianceControl, ComplianceScore, ConditionalAccessResult,
+    ContainerFinding, CopilotResponse, CorrelatedThreat, DNSQueryLog, DependencyRecord,
+    DetectionTrigger, DevicePosture, DeviceTrustRecord, DlpIncident, DriverState, ExecutiveReport,
+    FirewallDecisionRecord, GatewayConnectionResult, IacFinding, IdentityProviderKind,
+    IdentityThreat, Incident, InvestigationReport, IsolationSession, KubernetesFinding,
+    LateralMovementFinding, LeakIncident, MaliciousExecution, NetworkThreat, ObfuscationPreset,
+    PerformanceSnapshot, PersistenceFinding, PlaybookExecution, PluginRecord, PostureFinding,
+    PrivacyAnalyticsSnapshot, PrivacyScoreSnapshot, ProcessAnomaly, ProxyProfile,
+    ResponseActionResult, RiskScore, RouteStatisticsRecord, Rule, SbomDocument, SecretFinding,
+    SecurityAuditEntry, SecurityFinding, SegmentPolicyResult, ShadowItRecord, SiemExportJob,
+    SyncMode, TailnetProfile, TcpTerminationMode, TechniqueDetection, TemplateMode, ThreatMatch,
+    TrafficEvent, TrafficRoute, TrustScoreSnapshot, UserIdentity, Vulnerability, WebAccessResult,
+    WorkloadRecord,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -962,31 +961,76 @@ impl ServiceEvent {
 
 /// Helper to build events with explicit payloads.
 pub enum ServiceEventInner {
-    VpnConnected { profile_id: Uuid, profile_name: String },
-    VpnDisconnected { profile_id: Uuid, reason: String },
-    TrafficObserved { event: TrafficEvent },
-    TrafficBlocked { event: TrafficEvent, route: TrafficRoute },
-    RuleCreated { rule: Rule },
-    RuleUpdated { rule: Rule },
-    RuleDeleted { rule_id: Uuid },
-    DnsQueryObserved { log: DNSQueryLog },
-    DnsQueryBlocked { log: DNSQueryLog },
-    AppDiscovered { app: AppRecord },
-    AppUpdated { app: AppRecord },
-    BandwidthUpdated { snapshot: BandwidthSnapshot },
-    SystemWarning { message: String },
-    SystemError { message: String },
-    ServiceStatus { status: crate::ServiceStatus },
-    VpnError { profile_id: Uuid, message: String },
+    VpnConnected {
+        profile_id: Uuid,
+        profile_name: String,
+    },
+    VpnDisconnected {
+        profile_id: Uuid,
+        reason: String,
+    },
+    TrafficObserved {
+        event: TrafficEvent,
+    },
+    TrafficBlocked {
+        event: TrafficEvent,
+        route: TrafficRoute,
+    },
+    RuleCreated {
+        rule: Rule,
+    },
+    RuleUpdated {
+        rule: Rule,
+    },
+    RuleDeleted {
+        rule_id: Uuid,
+    },
+    DnsQueryObserved {
+        log: DNSQueryLog,
+    },
+    DnsQueryBlocked {
+        log: DNSQueryLog,
+    },
+    AppDiscovered {
+        app: AppRecord,
+    },
+    AppUpdated {
+        app: AppRecord,
+    },
+    BandwidthUpdated {
+        snapshot: BandwidthSnapshot,
+    },
+    SystemWarning {
+        message: String,
+    },
+    SystemError {
+        message: String,
+    },
+    ServiceStatus {
+        status: crate::ServiceStatus,
+    },
+    VpnError {
+        profile_id: Uuid,
+        message: String,
+    },
     FilterListUpdated {
         list_id: Uuid,
         name: String,
         entry_count: u32,
     },
-    FilterListFailed { list_id: Uuid, error: String },
-    TrafficAllowed { event: TrafficEvent },
-    FirewallDecision { decision: FirewallDecisionRecord },
-    RouteUsageUpdated { stats: RouteStatisticsRecord },
+    FilterListFailed {
+        list_id: Uuid,
+        error: String,
+    },
+    TrafficAllowed {
+        event: TrafficEvent,
+    },
+    FirewallDecision {
+        decision: FirewallDecisionRecord,
+    },
+    RouteUsageUpdated {
+        stats: RouteStatisticsRecord,
+    },
     PolicyChanged {
         field: String,
         old_value: Option<String>,
@@ -1102,46 +1146,117 @@ pub enum ServiceEventInner {
         bridge_id: Uuid,
         error: String,
     },
-    PluginInstalled { plugin: PluginRecord },
-    PluginLoaded { plugin_id: Uuid, name: String },
-    PluginUnloaded { plugin_id: Uuid, reason: String },
-    PluginFailed { plugin_id: Uuid, error: String },
+    PluginInstalled {
+        plugin: PluginRecord,
+    },
+    PluginLoaded {
+        plugin_id: Uuid,
+        name: String,
+    },
+    PluginUnloaded {
+        plugin_id: Uuid,
+        reason: String,
+    },
+    PluginFailed {
+        plugin_id: Uuid,
+        error: String,
+    },
     PluginSecurityViolation {
         plugin_id: Uuid,
         violation_type: String,
         detail: String,
     },
-    TailnetProfileUpdated { profile: TailnetProfile },
-    TorBootstrapProgress { profile_id: Uuid, progress: u8 },
-    TransportChainUpdated { chain: ChainProfile },
-    TransportChainStarted { chain_id: Uuid, name: String },
-    TransportChainStopped { chain_id: Uuid, reason: String },
-    ProxyProfileCreated { profile: ProxyProfile },
-    ProxyProfileUpdated { profile: ProxyProfile },
-    ProxyLatencyMeasured { profile_id: Uuid, latency_ms: u64 },
-    ProxyConnected { profile_id: Uuid, listen_port: u16 },
-    ProxyDisconnected { profile_id: Uuid, reason: String },
-    ProxyFailed { profile_id: Uuid, error: String },
-    ProxyChainStarted { chain_id: Uuid, name: String },
-    ProxyChainStopped { chain_id: Uuid, reason: String },
-    AgentEnrolled { agent_id: Uuid, name: String },
-    AgentRevoked { agent_id: Uuid, reason: String },
+    TailnetProfileUpdated {
+        profile: TailnetProfile,
+    },
+    TorBootstrapProgress {
+        profile_id: Uuid,
+        progress: u8,
+    },
+    TransportChainUpdated {
+        chain: ChainProfile,
+    },
+    TransportChainStarted {
+        chain_id: Uuid,
+        name: String,
+    },
+    TransportChainStopped {
+        chain_id: Uuid,
+        reason: String,
+    },
+    ProxyProfileCreated {
+        profile: ProxyProfile,
+    },
+    ProxyProfileUpdated {
+        profile: ProxyProfile,
+    },
+    ProxyLatencyMeasured {
+        profile_id: Uuid,
+        latency_ms: u64,
+    },
+    ProxyConnected {
+        profile_id: Uuid,
+        listen_port: u16,
+    },
+    ProxyDisconnected {
+        profile_id: Uuid,
+        reason: String,
+    },
+    ProxyFailed {
+        profile_id: Uuid,
+        error: String,
+    },
+    ProxyChainStarted {
+        chain_id: Uuid,
+        name: String,
+    },
+    ProxyChainStopped {
+        chain_id: Uuid,
+        reason: String,
+    },
+    AgentEnrolled {
+        agent_id: Uuid,
+        name: String,
+    },
+    AgentRevoked {
+        agent_id: Uuid,
+        reason: String,
+    },
     ObfuscationProfileApplied {
         chain_id: Uuid,
         profile_id: Uuid,
         preset: ObfuscationPreset,
     },
-    MixnetStarted { profile_id: Uuid },
-    MixnetStopped { profile_id: Uuid, reason: String },
-    MixnetFailed { profile_id: Uuid, error: String },
+    MixnetStarted {
+        profile_id: Uuid,
+    },
+    MixnetStopped {
+        profile_id: Uuid,
+        reason: String,
+    },
+    MixnetFailed {
+        profile_id: Uuid,
+        error: String,
+    },
     GatewayChanged {
         profile_id: Uuid,
         gateway_id: String,
     },
-    CoverTrafficStarted { profile_id: Uuid },
-    CoverTrafficStopped { profile_id: Uuid, reason: String },
-    AnonymousChainStarted { chain_id: Uuid, name: String },
-    AnonymousChainStopped { chain_id: Uuid, reason: String },
+    CoverTrafficStarted {
+        profile_id: Uuid,
+    },
+    CoverTrafficStopped {
+        profile_id: Uuid,
+        reason: String,
+    },
+    AnonymousChainStarted {
+        chain_id: Uuid,
+        name: String,
+    },
+    AnonymousChainStopped {
+        chain_id: Uuid,
+        reason: String,
+    },
     PrivacyAnalyticsUpdated {
         snapshot: PrivacyAnalyticsSnapshot,
     },
@@ -1207,17 +1322,35 @@ pub enum ServiceEventInner {
         driver: String,
         detail: String,
     },
-    KatzenpostStarted { profile_id: Uuid },
-    KatzenpostStopped { profile_id: Uuid, reason: String },
-    KatzenpostFailed { profile_id: Uuid, error: String },
-    LoopixStarted { profile_id: Uuid },
-    LoopixStopped { profile_id: Uuid, reason: String },
-    LoopixFailed { profile_id: Uuid, error: String },
+    KatzenpostStarted {
+        profile_id: Uuid,
+    },
+    KatzenpostStopped {
+        profile_id: Uuid,
+        reason: String,
+    },
+    KatzenpostFailed {
+        profile_id: Uuid,
+        error: String,
+    },
+    LoopixStarted {
+        profile_id: Uuid,
+    },
+    LoopixStopped {
+        profile_id: Uuid,
+        reason: String,
+    },
+    LoopixFailed {
+        profile_id: Uuid,
+        error: String,
+    },
     MixnetFederationUpdated {
         profile_id: Uuid,
         providers: Vec<String>,
     },
-    AdaptiveCoverUpdated { adaptive: bool },
+    AdaptiveCoverUpdated {
+        adaptive: bool,
+    },
     EntropyScoreUpdated {
         score: f64,
         anonymity_set_estimate: f64,
@@ -1266,31 +1399,41 @@ pub enum ServiceEventInner {
         provider: IdentityProviderKind,
         enabled: bool,
     },
-    DeviceTrustUpdated { record: DeviceTrustRecord },
+    DeviceTrustUpdated {
+        record: DeviceTrustRecord,
+    },
     DevicePostureChanged {
         device_id: Uuid,
         posture: DevicePosture,
     },
-    ConditionalAccessEvaluated { result: ConditionalAccessResult },
+    ConditionalAccessEvaluated {
+        result: ConditionalAccessResult,
+    },
     AccessDenied {
         subject_id: Uuid,
         resource_id: Uuid,
         reason: String,
     },
-    GatewayConnectionEstablished { result: GatewayConnectionResult },
+    GatewayConnectionEstablished {
+        result: GatewayConnectionResult,
+    },
     GatewayConnectionDenied {
         gateway_id: Uuid,
         subject_id: Uuid,
         resource_id: Uuid,
         reason: String,
     },
-    SegmentPolicyApplied { result: SegmentPolicyResult },
+    SegmentPolicyApplied {
+        result: SegmentPolicyResult,
+    },
     SegmentPolicyDenied {
         segment_id: Uuid,
         subject_id: Uuid,
         reason: String,
     },
-    TrustScoreUpdated { snapshot: TrustScoreSnapshot },
+    TrustScoreUpdated {
+        snapshot: TrustScoreSnapshot,
+    },
     ZtnaSecurityViolation {
         violation_type: String,
         detail: String,
@@ -1305,101 +1448,209 @@ pub enum ServiceEventInner {
         threshold: f64,
         current: f64,
     },
-    WebAccessAllowed { result: WebAccessResult },
-    WebAccessBlocked { result: WebAccessResult },
-    WebAccessViolation { result: WebAccessResult },
-    ShadowItDetected { record: ShadowItRecord },
-    CasbViolation { finding: CasbFinding },
-    DlpViolation { incident: DlpIncident },
-    SensitiveDataDetected { incident: DlpIncident },
-    IsolationStarted { session: IsolationSession },
-    IsolationTerminated { session: IsolationSession },
-    ThreatDetected { threat: ThreatMatch },
-    ThreatBlocked { threat: ThreatMatch },
-    AnomalyDetected { anomaly: BehaviorAnomaly },
+    WebAccessAllowed {
+        result: WebAccessResult,
+    },
+    WebAccessBlocked {
+        result: WebAccessResult,
+    },
+    WebAccessViolation {
+        result: WebAccessResult,
+    },
+    ShadowItDetected {
+        record: ShadowItRecord,
+    },
+    CasbViolation {
+        finding: CasbFinding,
+    },
+    DlpViolation {
+        incident: DlpIncident,
+    },
+    SensitiveDataDetected {
+        incident: DlpIncident,
+    },
+    IsolationStarted {
+        session: IsolationSession,
+    },
+    IsolationTerminated {
+        session: IsolationSession,
+    },
+    ThreatDetected {
+        threat: ThreatMatch,
+    },
+    ThreatBlocked {
+        threat: ThreatMatch,
+    },
+    AnomalyDetected {
+        anomaly: BehaviorAnomaly,
+    },
     RiskElevated {
         score: RiskScore,
         previous_level: crate::RiskLevel,
     },
-    RiskScoreUpdated { score: RiskScore },
+    RiskScoreUpdated {
+        score: RiskScore,
+    },
     RiskThresholdExceeded {
         score: RiskScore,
         threshold: u8,
     },
-    SiemExportStarted { job: SiemExportJob },
-    SiemExportCompleted { job: SiemExportJob },
-    SiemExportFailed { job: SiemExportJob },
+    SiemExportStarted {
+        job: SiemExportJob,
+    },
+    SiemExportCompleted {
+        job: SiemExportJob,
+    },
+    SiemExportFailed {
+        job: SiemExportJob,
+    },
     SseSecurityViolation {
         violation_type: String,
         detail: String,
     },
-    ProcessAnomalyDetected { anomaly: ProcessAnomaly },
-    PersistenceDetected { finding: PersistenceFinding },
-    MaliciousExecutionDetected { execution: MaliciousExecution },
-    NetworkThreatDetected { threat: NetworkThreat },
-    BeaconingDetected { finding: BeaconingFinding },
-    LateralMovementDetected { finding: LateralMovementFinding },
-    IdentityThreatDetected { threat: IdentityThreat },
-    IdentityCompromiseSuspected { threat: IdentityThreat },
-    DetectionTriggered { trigger: DetectionTrigger },
-    IncidentCreated { incident: Incident },
-    IncidentEscalated { incident: Incident },
-    IncidentResolved { incident: Incident },
-    PlaybookStarted { execution: PlaybookExecution },
-    PlaybookCompleted { execution: PlaybookExecution },
-    PlaybookFailed { execution: PlaybookExecution },
-    TechniqueDetected { detection: TechniqueDetection },
-    ResponseActionExecuted { result: ResponseActionResult },
-    ResponseActionFailed { result: ResponseActionResult },
+    ProcessAnomalyDetected {
+        anomaly: ProcessAnomaly,
+    },
+    PersistenceDetected {
+        finding: PersistenceFinding,
+    },
+    MaliciousExecutionDetected {
+        execution: MaliciousExecution,
+    },
+    NetworkThreatDetected {
+        threat: NetworkThreat,
+    },
+    BeaconingDetected {
+        finding: BeaconingFinding,
+    },
+    LateralMovementDetected {
+        finding: LateralMovementFinding,
+    },
+    IdentityThreatDetected {
+        threat: IdentityThreat,
+    },
+    IdentityCompromiseSuspected {
+        threat: IdentityThreat,
+    },
+    DetectionTriggered {
+        trigger: DetectionTrigger,
+    },
+    IncidentCreated {
+        incident: Incident,
+    },
+    IncidentEscalated {
+        incident: Incident,
+    },
+    IncidentResolved {
+        incident: Incident,
+    },
+    PlaybookStarted {
+        execution: PlaybookExecution,
+    },
+    PlaybookCompleted {
+        execution: PlaybookExecution,
+    },
+    PlaybookFailed {
+        execution: PlaybookExecution,
+    },
+    TechniqueDetected {
+        detection: TechniqueDetection,
+    },
+    ResponseActionExecuted {
+        result: ResponseActionResult,
+    },
+    ResponseActionFailed {
+        result: ResponseActionResult,
+    },
     XdrSecurityViolation {
         violation_type: String,
         detail: String,
     },
-    CloudMisconfigurationDetected { finding: PostureFinding },
+    CloudMisconfigurationDetected {
+        finding: PostureFinding,
+    },
     CloudRiskIncreased {
         tenant_id: Uuid,
         previous_score: f64,
         current_score: f64,
     },
-    CloudPolicyViolation { finding: PostureFinding },
+    CloudPolicyViolation {
+        finding: PostureFinding,
+    },
     WorkloadThreatDetected {
         workload: WorkloadRecord,
         severity: CnappSeverity,
     },
-    WorkloadCompromised { workload: WorkloadRecord },
-    KubernetesRiskDetected { finding: KubernetesFinding },
-    ClusterCompromiseSuspected { finding: KubernetesFinding },
-    ContainerRiskDetected { finding: ContainerFinding },
-    ContainerThreatDetected { finding: ContainerFinding },
-    IacFindingDetected { finding: IacFinding },
-    SecretExposed { finding: SecretFinding },
+    WorkloadCompromised {
+        workload: WorkloadRecord,
+    },
+    KubernetesRiskDetected {
+        finding: KubernetesFinding,
+    },
+    ClusterCompromiseSuspected {
+        finding: KubernetesFinding,
+    },
+    ContainerRiskDetected {
+        finding: ContainerFinding,
+    },
+    ContainerThreatDetected {
+        finding: ContainerFinding,
+    },
+    IacFindingDetected {
+        finding: IacFinding,
+    },
+    SecretExposed {
+        finding: SecretFinding,
+    },
     DependencyRiskDetected {
         dependency: DependencyRecord,
         severity: CnappSeverity,
     },
-    SupplyChainThreatDetected { dependency: DependencyRecord },
-    SbomGenerated { document: SbomDocument },
-    SbomImported { document: SbomDocument },
+    SupplyChainThreatDetected {
+        dependency: DependencyRecord,
+    },
+    SbomGenerated {
+        document: SbomDocument,
+    },
+    SbomImported {
+        document: SbomDocument,
+    },
     CriticalVulnerabilityDetected {
         vulnerability: Vulnerability,
         asset: AffectedAsset,
     },
-    AttackPathDiscovered { path: CloudAttackPath },
+    AttackPathDiscovered {
+        path: CloudAttackPath,
+    },
     ComplianceViolation {
         control: ComplianceControl,
         severity: CnappSeverity,
     },
-    ComplianceScoreUpdated { score: ComplianceScore },
+    ComplianceScoreUpdated {
+        score: ComplianceScore,
+    },
     CnappSecurityViolation {
         violation_type: String,
         detail: String,
     },
-    CopilotQueryExecuted { response: CopilotResponse },
-    InvestigationCompleted { report: InvestigationReport },
-    ThreatCorrelated { threat: CorrelatedThreat },
-    AiRiskScoreUpdated { score: AiRiskScore },
-    AiRecommendationGenerated { recommendation: AiRecommendation },
-    ExecutiveReportGenerated { report: ExecutiveReport },
+    CopilotQueryExecuted {
+        response: CopilotResponse,
+    },
+    InvestigationCompleted {
+        report: InvestigationReport,
+    },
+    ThreatCorrelated {
+        threat: CorrelatedThreat,
+    },
+    AiRiskScoreUpdated {
+        score: AiRiskScore,
+    },
+    AiRecommendationGenerated {
+        recommendation: AiRecommendation,
+    },
+    ExecutiveReportGenerated {
+        report: ExecutiveReport,
+    },
     AiSecurityViolation {
         violation_type: String,
         detail: String,
@@ -1443,7 +1694,10 @@ pub enum ServiceEventInner {
 impl ServiceEventInner {
     pub fn with_timestamp(self, timestamp: DateTime<Utc>) -> ServiceEvent {
         match self {
-            Self::VpnConnected { profile_id, profile_name } => ServiceEvent::VpnConnected {
+            Self::VpnConnected {
+                profile_id,
+                profile_name,
+            } => ServiceEvent::VpnConnected {
                 profile_id,
                 profile_name,
                 timestamp,
@@ -1454,9 +1708,11 @@ impl ServiceEventInner {
                 timestamp,
             },
             Self::TrafficObserved { event } => ServiceEvent::TrafficObserved { event, timestamp },
-            Self::TrafficBlocked { event, route } => {
-                ServiceEvent::TrafficBlocked { event, route, timestamp }
-            }
+            Self::TrafficBlocked { event, route } => ServiceEvent::TrafficBlocked {
+                event,
+                route,
+                timestamp,
+            },
             Self::RuleCreated { rule } => ServiceEvent::RuleCreated { rule, timestamp },
             Self::RuleUpdated { rule } => ServiceEvent::RuleUpdated { rule, timestamp },
             Self::RuleDeleted { rule_id } => ServiceEvent::RuleDeleted { rule_id, timestamp },
@@ -1464,19 +1720,21 @@ impl ServiceEventInner {
             Self::DnsQueryBlocked { log } => ServiceEvent::DnsQueryBlocked { log, timestamp },
             Self::AppDiscovered { app } => ServiceEvent::AppDiscovered { app, timestamp },
             Self::AppUpdated { app } => ServiceEvent::AppUpdated { app, timestamp },
-            Self::BandwidthUpdated { snapshot } => {
-                ServiceEvent::BandwidthUpdated { snapshot, timestamp }
-            }
+            Self::BandwidthUpdated { snapshot } => ServiceEvent::BandwidthUpdated {
+                snapshot,
+                timestamp,
+            },
             Self::SystemWarning { message } => ServiceEvent::SystemWarning { message, timestamp },
             Self::SystemError { message } => ServiceEvent::SystemError { message, timestamp },
             Self::ServiceStatus { status } => ServiceEvent::ServiceStatus { status, timestamp },
-            Self::VpnError { profile_id, message } => {
-                ServiceEvent::VpnError {
-                    profile_id,
-                    message,
-                    timestamp,
-                }
-            }
+            Self::VpnError {
+                profile_id,
+                message,
+            } => ServiceEvent::VpnError {
+                profile_id,
+                message,
+                timestamp,
+            },
             Self::FilterListUpdated {
                 list_id,
                 name,
@@ -1493,9 +1751,10 @@ impl ServiceEventInner {
                 timestamp,
             },
             Self::TrafficAllowed { event } => ServiceEvent::TrafficAllowed { event, timestamp },
-            Self::FirewallDecision { decision } => {
-                ServiceEvent::FirewallDecision { decision, timestamp }
-            }
+            Self::FirewallDecision { decision } => ServiceEvent::FirewallDecision {
+                decision,
+                timestamp,
+            },
             Self::RouteUsageUpdated { stats } => {
                 ServiceEvent::RouteUsageUpdated { stats, timestamp }
             }
@@ -1519,10 +1778,7 @@ impl ServiceEventInner {
                 new_route,
                 timestamp,
             },
-            Self::TransportStarted {
-                transport_id,
-                name,
-            } => ServiceEvent::TransportStarted {
+            Self::TransportStarted { transport_id, name } => ServiceEvent::TransportStarted {
                 transport_id,
                 name,
                 timestamp,
@@ -1571,9 +1827,10 @@ impl ServiceEventInner {
                 error,
                 timestamp,
             },
-            Self::PrivacyScoreUpdated { snapshot } => {
-                ServiceEvent::PrivacyScoreUpdated { snapshot, timestamp }
-            }
+            Self::PrivacyScoreUpdated { snapshot } => ServiceEvent::PrivacyScoreUpdated {
+                snapshot,
+                timestamp,
+            },
             Self::LeakDetected { incident } => ServiceEvent::LeakDetected {
                 incident,
                 timestamp,
@@ -1593,28 +1850,34 @@ impl ServiceEventInner {
                 timestamp,
             },
             Self::SecurityAudit { entry } => ServiceEvent::SecurityAudit { entry, timestamp },
-            Self::ValidationPassed { check_name, message } => ServiceEvent::ValidationPassed {
+            Self::ValidationPassed {
+                check_name,
+                message,
+            } => ServiceEvent::ValidationPassed {
                 check_name,
                 message,
                 timestamp,
             },
-            Self::ValidationFailed { check_name, message } => ServiceEvent::ValidationFailed {
+            Self::ValidationFailed {
+                check_name,
+                message,
+            } => ServiceEvent::ValidationFailed {
                 check_name,
                 message,
                 timestamp,
             },
-            Self::DriverStateChanged { state } => ServiceEvent::DriverStateChanged {
-                state,
-                timestamp,
-            },
-            Self::DriverRecovered { recovery_generation } => ServiceEvent::DriverRecovered {
+            Self::DriverStateChanged { state } => {
+                ServiceEvent::DriverStateChanged { state, timestamp }
+            }
+            Self::DriverRecovered {
+                recovery_generation,
+            } => ServiceEvent::DriverRecovered {
                 recovery_generation,
                 timestamp,
             },
-            Self::DriverRecoveryFailed { error } => ServiceEvent::DriverRecoveryFailed {
-                error,
-                timestamp,
-            },
+            Self::DriverRecoveryFailed { error } => {
+                ServiceEvent::DriverRecoveryFailed { error, timestamp }
+            }
             Self::FaultInjected { scenario } => ServiceEvent::FaultInjected {
                 scenario,
                 timestamp,
@@ -1623,10 +1886,9 @@ impl ServiceEventInner {
                 scenario,
                 timestamp,
             },
-            Self::SecurityFindingRecorded { finding } => ServiceEvent::SecurityFindingRecorded {
-                finding,
-                timestamp,
-            },
+            Self::SecurityFindingRecorded { finding } => {
+                ServiceEvent::SecurityFindingRecorded { finding, timestamp }
+            }
             Self::TailnetJoined {
                 profile_id,
                 hostname,
@@ -1635,10 +1897,7 @@ impl ServiceEventInner {
                 hostname,
                 timestamp,
             },
-            Self::TailnetLeft {
-                profile_id,
-                reason,
-            } => ServiceEvent::TailnetLeft {
+            Self::TailnetLeft { profile_id, reason } => ServiceEvent::TailnetLeft {
                 profile_id,
                 reason,
                 timestamp,
@@ -1655,10 +1914,7 @@ impl ServiceEventInner {
                 profile_id,
                 timestamp,
             },
-            Self::TorStopped {
-                profile_id,
-                reason,
-            } => ServiceEvent::TorStopped {
+            Self::TorStopped { profile_id, reason } => ServiceEvent::TorStopped {
                 profile_id,
                 reason,
                 timestamp,
@@ -1684,10 +1940,7 @@ impl ServiceEventInner {
                 error,
                 timestamp,
             },
-            Self::PluginInstalled { plugin } => ServiceEvent::PluginInstalled {
-                plugin,
-                timestamp,
-            },
+            Self::PluginInstalled { plugin } => ServiceEvent::PluginInstalled { plugin, timestamp },
             Self::PluginLoaded { plugin_id, name } => ServiceEvent::PluginLoaded {
                 plugin_id,
                 name,
@@ -1713,39 +1966,38 @@ impl ServiceEventInner {
                 detail,
                 timestamp,
             },
-            Self::TailnetProfileUpdated { profile } => ServiceEvent::TailnetProfileUpdated {
-                profile,
-                timestamp,
-            },
-            Self::TorBootstrapProgress { profile_id, progress } => {
-                ServiceEvent::TorBootstrapProgress {
-                    profile_id,
-                    progress,
-                    timestamp,
-                }
+            Self::TailnetProfileUpdated { profile } => {
+                ServiceEvent::TailnetProfileUpdated { profile, timestamp }
             }
-            Self::TransportChainUpdated { chain } => ServiceEvent::TransportChainUpdated {
-                chain,
+            Self::TorBootstrapProgress {
+                profile_id,
+                progress,
+            } => ServiceEvent::TorBootstrapProgress {
+                profile_id,
+                progress,
                 timestamp,
             },
+            Self::TransportChainUpdated { chain } => {
+                ServiceEvent::TransportChainUpdated { chain, timestamp }
+            }
             Self::TransportChainStarted { chain_id, name } => ServiceEvent::TransportChainStarted {
                 chain_id,
                 name,
                 timestamp,
             },
-            Self::TransportChainStopped { chain_id, reason } => ServiceEvent::TransportChainStopped {
-                chain_id,
-                reason,
-                timestamp,
-            },
-            Self::ProxyProfileCreated { profile } => ServiceEvent::ProxyProfileCreated {
-                profile,
-                timestamp,
-            },
-            Self::ProxyProfileUpdated { profile } => ServiceEvent::ProxyProfileUpdated {
-                profile,
-                timestamp,
-            },
+            Self::TransportChainStopped { chain_id, reason } => {
+                ServiceEvent::TransportChainStopped {
+                    chain_id,
+                    reason,
+                    timestamp,
+                }
+            }
+            Self::ProxyProfileCreated { profile } => {
+                ServiceEvent::ProxyProfileCreated { profile, timestamp }
+            }
+            Self::ProxyProfileUpdated { profile } => {
+                ServiceEvent::ProxyProfileUpdated { profile, timestamp }
+            }
             Self::ProxyLatencyMeasured {
                 profile_id,
                 latency_ms,
@@ -1762,13 +2014,11 @@ impl ServiceEventInner {
                 listen_port,
                 timestamp,
             },
-            Self::ProxyDisconnected { profile_id, reason } => {
-                ServiceEvent::ProxyDisconnected {
-                    profile_id,
-                    reason,
-                    timestamp,
-                }
-            }
+            Self::ProxyDisconnected { profile_id, reason } => ServiceEvent::ProxyDisconnected {
+                profile_id,
+                reason,
+                timestamp,
+            },
             Self::ProxyFailed { profile_id, error } => ServiceEvent::ProxyFailed {
                 profile_id,
                 error,
@@ -1830,20 +2080,16 @@ impl ServiceEventInner {
                 profile_id,
                 timestamp,
             },
-            Self::CoverTrafficStopped { profile_id, reason } => {
-                ServiceEvent::CoverTrafficStopped {
-                    profile_id,
-                    reason,
-                    timestamp,
-                }
-            }
-            Self::AnonymousChainStarted { chain_id, name } => {
-                ServiceEvent::AnonymousChainStarted {
-                    chain_id,
-                    name,
-                    timestamp,
-                }
-            }
+            Self::CoverTrafficStopped { profile_id, reason } => ServiceEvent::CoverTrafficStopped {
+                profile_id,
+                reason,
+                timestamp,
+            },
+            Self::AnonymousChainStarted { chain_id, name } => ServiceEvent::AnonymousChainStarted {
+                chain_id,
+                name,
+                timestamp,
+            },
             Self::AnonymousChainStopped { chain_id, reason } => {
                 ServiceEvent::AnonymousChainStopped {
                     chain_id,
@@ -1865,14 +2111,13 @@ impl ServiceEventInner {
                 detail,
                 timestamp,
             },
-            Self::ControllerRegistered {
-                controller_id,
-                url,
-            } => ServiceEvent::ControllerRegistered {
-                controller_id,
-                url,
-                timestamp,
-            },
+            Self::ControllerRegistered { controller_id, url } => {
+                ServiceEvent::ControllerRegistered {
+                    controller_id,
+                    url,
+                    timestamp,
+                }
+            }
             Self::ControllerDisconnected {
                 controller_id,
                 reason,
@@ -1904,7 +2149,10 @@ impl ServiceEventInner {
                 reason,
                 timestamp,
             },
-            Self::CompliancePassed { report_id, check_kind } => ServiceEvent::CompliancePassed {
+            Self::CompliancePassed {
+                report_id,
+                check_kind,
+            } => ServiceEvent::CompliancePassed {
                 report_id,
                 check_kind,
                 timestamp,
@@ -2098,14 +2346,13 @@ impl ServiceEventInner {
             Self::DeviceTrustUpdated { record } => {
                 ServiceEvent::DeviceTrustUpdated { record, timestamp }
             }
-            Self::DevicePostureChanged {
-                device_id,
-                posture,
-            } => ServiceEvent::DevicePostureChanged {
-                device_id,
-                posture,
-                timestamp,
-            },
+            Self::DevicePostureChanged { device_id, posture } => {
+                ServiceEvent::DevicePostureChanged {
+                    device_id,
+                    posture,
+                    timestamp,
+                }
+            }
             Self::ConditionalAccessEvaluated { result } => {
                 ServiceEvent::ConditionalAccessEvaluated { result, timestamp }
             }
@@ -2147,9 +2394,10 @@ impl ServiceEventInner {
                 reason,
                 timestamp,
             },
-            Self::TrustScoreUpdated { snapshot } => {
-                ServiceEvent::TrustScoreUpdated { snapshot, timestamp }
-            }
+            Self::TrustScoreUpdated { snapshot } => ServiceEvent::TrustScoreUpdated {
+                snapshot,
+                timestamp,
+            },
             Self::ZtnaSecurityViolation {
                 violation_type,
                 detail,
@@ -2178,24 +2426,38 @@ impl ServiceEventInner {
                 current,
                 timestamp,
             },
-            Self::WebAccessAllowed { result } => ServiceEvent::WebAccessAllowed { result, timestamp },
-            Self::WebAccessBlocked { result } => ServiceEvent::WebAccessBlocked { result, timestamp },
+            Self::WebAccessAllowed { result } => {
+                ServiceEvent::WebAccessAllowed { result, timestamp }
+            }
+            Self::WebAccessBlocked { result } => {
+                ServiceEvent::WebAccessBlocked { result, timestamp }
+            }
             Self::WebAccessViolation { result } => {
                 ServiceEvent::WebAccessViolation { result, timestamp }
             }
-            Self::ShadowItDetected { record } => ServiceEvent::ShadowItDetected { record, timestamp },
-            Self::CasbViolation { finding } => ServiceEvent::CasbViolation { finding, timestamp },
-            Self::DlpViolation { incident } => ServiceEvent::DlpViolation { incident, timestamp },
-            Self::SensitiveDataDetected { incident } => {
-                ServiceEvent::SensitiveDataDetected { incident, timestamp }
+            Self::ShadowItDetected { record } => {
+                ServiceEvent::ShadowItDetected { record, timestamp }
             }
-            Self::IsolationStarted { session } => ServiceEvent::IsolationStarted { session, timestamp },
+            Self::CasbViolation { finding } => ServiceEvent::CasbViolation { finding, timestamp },
+            Self::DlpViolation { incident } => ServiceEvent::DlpViolation {
+                incident,
+                timestamp,
+            },
+            Self::SensitiveDataDetected { incident } => ServiceEvent::SensitiveDataDetected {
+                incident,
+                timestamp,
+            },
+            Self::IsolationStarted { session } => {
+                ServiceEvent::IsolationStarted { session, timestamp }
+            }
             Self::IsolationTerminated { session } => {
                 ServiceEvent::IsolationTerminated { session, timestamp }
             }
             Self::ThreatDetected { threat } => ServiceEvent::ThreatDetected { threat, timestamp },
             Self::ThreatBlocked { threat } => ServiceEvent::ThreatBlocked { threat, timestamp },
-            Self::AnomalyDetected { anomaly } => ServiceEvent::AnomalyDetected { anomaly, timestamp },
+            Self::AnomalyDetected { anomaly } => {
+                ServiceEvent::AnomalyDetected { anomaly, timestamp }
+            }
             Self::RiskElevated {
                 score,
                 previous_level,
@@ -2205,13 +2467,17 @@ impl ServiceEventInner {
                 timestamp,
             },
             Self::RiskScoreUpdated { score } => ServiceEvent::RiskScoreUpdated { score, timestamp },
-            Self::RiskThresholdExceeded { score, threshold } => ServiceEvent::RiskThresholdExceeded {
-                score,
-                threshold,
-                timestamp,
-            },
+            Self::RiskThresholdExceeded { score, threshold } => {
+                ServiceEvent::RiskThresholdExceeded {
+                    score,
+                    threshold,
+                    timestamp,
+                }
+            }
             Self::SiemExportStarted { job } => ServiceEvent::SiemExportStarted { job, timestamp },
-            Self::SiemExportCompleted { job } => ServiceEvent::SiemExportCompleted { job, timestamp },
+            Self::SiemExportCompleted { job } => {
+                ServiceEvent::SiemExportCompleted { job, timestamp }
+            }
             Self::SiemExportFailed { job } => ServiceEvent::SiemExportFailed { job, timestamp },
             Self::SseSecurityViolation {
                 violation_type,
@@ -2228,7 +2494,10 @@ impl ServiceEventInner {
                 ServiceEvent::PersistenceDetected { finding, timestamp }
             }
             Self::MaliciousExecutionDetected { execution } => {
-                ServiceEvent::MaliciousExecutionDetected { execution, timestamp }
+                ServiceEvent::MaliciousExecutionDetected {
+                    execution,
+                    timestamp,
+                }
             }
             Self::NetworkThreatDetected { threat } => {
                 ServiceEvent::NetworkThreatDetected { threat, timestamp }
@@ -2248,27 +2517,34 @@ impl ServiceEventInner {
             Self::DetectionTriggered { trigger } => {
                 ServiceEvent::DetectionTriggered { trigger, timestamp }
             }
-            Self::IncidentCreated { incident } => {
-                ServiceEvent::IncidentCreated { incident, timestamp }
-            }
-            Self::IncidentEscalated { incident } => {
-                ServiceEvent::IncidentEscalated { incident, timestamp }
-            }
-            Self::IncidentResolved { incident } => {
-                ServiceEvent::IncidentResolved { incident, timestamp }
-            }
-            Self::PlaybookStarted { execution } => {
-                ServiceEvent::PlaybookStarted { execution, timestamp }
-            }
-            Self::PlaybookCompleted { execution } => {
-                ServiceEvent::PlaybookCompleted { execution, timestamp }
-            }
-            Self::PlaybookFailed { execution } => {
-                ServiceEvent::PlaybookFailed { execution, timestamp }
-            }
-            Self::TechniqueDetected { detection } => {
-                ServiceEvent::TechniqueDetected { detection, timestamp }
-            }
+            Self::IncidentCreated { incident } => ServiceEvent::IncidentCreated {
+                incident,
+                timestamp,
+            },
+            Self::IncidentEscalated { incident } => ServiceEvent::IncidentEscalated {
+                incident,
+                timestamp,
+            },
+            Self::IncidentResolved { incident } => ServiceEvent::IncidentResolved {
+                incident,
+                timestamp,
+            },
+            Self::PlaybookStarted { execution } => ServiceEvent::PlaybookStarted {
+                execution,
+                timestamp,
+            },
+            Self::PlaybookCompleted { execution } => ServiceEvent::PlaybookCompleted {
+                execution,
+                timestamp,
+            },
+            Self::PlaybookFailed { execution } => ServiceEvent::PlaybookFailed {
+                execution,
+                timestamp,
+            },
+            Self::TechniqueDetected { detection } => ServiceEvent::TechniqueDetected {
+                detection,
+                timestamp,
+            },
             Self::ResponseActionExecuted { result } => {
                 ServiceEvent::ResponseActionExecuted { result, timestamp }
             }
@@ -2306,9 +2582,10 @@ impl ServiceEventInner {
                     timestamp,
                 }
             }
-            Self::WorkloadCompromised { workload } => {
-                ServiceEvent::WorkloadCompromised { workload, timestamp }
-            }
+            Self::WorkloadCompromised { workload } => ServiceEvent::WorkloadCompromised {
+                workload,
+                timestamp,
+            },
             Self::KubernetesRiskDetected { finding } => {
                 ServiceEvent::KubernetesRiskDetected { finding, timestamp }
             }
@@ -2324,42 +2601,45 @@ impl ServiceEventInner {
             Self::IacFindingDetected { finding } => {
                 ServiceEvent::IacFindingDetected { finding, timestamp }
             }
-            Self::SecretExposed { finding } => {
-                ServiceEvent::SecretExposed { finding, timestamp }
-            }
-            Self::DependencyRiskDetected { dependency, severity } => {
-                ServiceEvent::DependencyRiskDetected {
-                    dependency,
-                    severity,
-                    timestamp,
-                }
-            }
+            Self::SecretExposed { finding } => ServiceEvent::SecretExposed { finding, timestamp },
+            Self::DependencyRiskDetected {
+                dependency,
+                severity,
+            } => ServiceEvent::DependencyRiskDetected {
+                dependency,
+                severity,
+                timestamp,
+            },
             Self::SupplyChainThreatDetected { dependency } => {
-                ServiceEvent::SupplyChainThreatDetected { dependency, timestamp }
-            }
-            Self::SbomGenerated { document } => {
-                ServiceEvent::SbomGenerated { document, timestamp }
-            }
-            Self::SbomImported { document } => {
-                ServiceEvent::SbomImported { document, timestamp }
-            }
-            Self::CriticalVulnerabilityDetected { vulnerability, asset } => {
-                ServiceEvent::CriticalVulnerabilityDetected {
-                    vulnerability,
-                    asset,
+                ServiceEvent::SupplyChainThreatDetected {
+                    dependency,
                     timestamp,
                 }
             }
+            Self::SbomGenerated { document } => ServiceEvent::SbomGenerated {
+                document,
+                timestamp,
+            },
+            Self::SbomImported { document } => ServiceEvent::SbomImported {
+                document,
+                timestamp,
+            },
+            Self::CriticalVulnerabilityDetected {
+                vulnerability,
+                asset,
+            } => ServiceEvent::CriticalVulnerabilityDetected {
+                vulnerability,
+                asset,
+                timestamp,
+            },
             Self::AttackPathDiscovered { path } => {
                 ServiceEvent::AttackPathDiscovered { path, timestamp }
             }
-            Self::ComplianceViolation { control, severity } => {
-                ServiceEvent::ComplianceViolation {
-                    control,
-                    severity,
-                    timestamp,
-                }
-            }
+            Self::ComplianceViolation { control, severity } => ServiceEvent::ComplianceViolation {
+                control,
+                severity,
+                timestamp,
+            },
             Self::ComplianceScoreUpdated { score } => {
                 ServiceEvent::ComplianceScoreUpdated { score, timestamp }
             }
@@ -2371,9 +2651,10 @@ impl ServiceEventInner {
                 detail,
                 timestamp,
             },
-            Self::CopilotQueryExecuted { response } => {
-                ServiceEvent::CopilotQueryExecuted { response, timestamp }
-            }
+            Self::CopilotQueryExecuted { response } => ServiceEvent::CopilotQueryExecuted {
+                response,
+                timestamp,
+            },
             Self::InvestigationCompleted { report } => {
                 ServiceEvent::InvestigationCompleted { report, timestamp }
             }
@@ -2384,7 +2665,10 @@ impl ServiceEventInner {
                 ServiceEvent::AiRiskScoreUpdated { score, timestamp }
             }
             Self::AiRecommendationGenerated { recommendation } => {
-                ServiceEvent::AiRecommendationGenerated { recommendation, timestamp }
+                ServiceEvent::AiRecommendationGenerated {
+                    recommendation,
+                    timestamp,
+                }
             }
             Self::ExecutiveReportGenerated { report } => {
                 ServiceEvent::ExecutiveReportGenerated { report, timestamp }
@@ -2397,10 +2681,7 @@ impl ServiceEventInner {
                 detail,
                 timestamp,
             },
-            Self::PromptBlocked {
-                tenant_id,
-                reason,
-            } => ServiceEvent::PromptBlocked {
+            Self::PromptBlocked { tenant_id, reason } => ServiceEvent::PromptBlocked {
                 tenant_id,
                 reason,
                 timestamp,
@@ -2423,14 +2704,13 @@ impl ServiceEventInner {
                 mode,
                 timestamp,
             },
-            Self::TcpTerminationFailed {
-                error,
-                profile_id,
-            } => ServiceEvent::TcpTerminationFailed {
-                error,
-                profile_id,
-                timestamp,
-            },
+            Self::TcpTerminationFailed { error, profile_id } => {
+                ServiceEvent::TcpTerminationFailed {
+                    error,
+                    profile_id,
+                    timestamp,
+                }
+            }
             Self::HandshakeProxyConnected {
                 profile_id,
                 proxy_host,
@@ -2441,22 +2721,20 @@ impl ServiceEventInner {
                 proxy_port,
                 timestamp,
             },
-            Self::HandshakeProxyFailed {
-                profile_id,
-                error,
-            } => ServiceEvent::HandshakeProxyFailed {
-                profile_id,
-                error,
-                timestamp,
-            },
-            Self::SplitTemplateApplied {
-                template_id,
-                mode,
-            } => ServiceEvent::SplitTemplateApplied {
-                template_id,
-                mode,
-                timestamp,
-            },
+            Self::HandshakeProxyFailed { profile_id, error } => {
+                ServiceEvent::HandshakeProxyFailed {
+                    profile_id,
+                    error,
+                    timestamp,
+                }
+            }
+            Self::SplitTemplateApplied { template_id, mode } => {
+                ServiceEvent::SplitTemplateApplied {
+                    template_id,
+                    mode,
+                    timestamp,
+                }
+            }
             Self::SplitTemplateConflict {
                 template_id,
                 suppressed_rule_ids,

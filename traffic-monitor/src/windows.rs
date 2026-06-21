@@ -9,8 +9,8 @@ pub fn enumerate_tcp_connections() -> Vec<ConnectionSnapshot> {
 fn enumerate_tcp_connections_impl() -> Vec<ConnectionSnapshot> {
     use std::net::{IpAddr, Ipv6Addr, SocketAddr};
     use windows::Win32::NetworkManagement::IpHelper::{
-        GetExtendedTcpTable, MIB_TCP6TABLE_OWNER_PID, MIB_TCP6ROW_OWNER_PID,
-        MIB_TCPTABLE_OWNER_PID, MIB_TCPROW_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
+        GetExtendedTcpTable, MIB_TCP6ROW_OWNER_PID, MIB_TCP6TABLE_OWNER_PID, MIB_TCPROW_OWNER_PID,
+        MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
     };
     use windows::Win32::Networking::WinSock::{AF_INET, AF_INET6};
 
@@ -24,22 +24,14 @@ fn enumerate_tcp_connections_impl() -> Vec<ConnectionSnapshot> {
 fn enumerate_tcp_v4() -> Vec<ConnectionSnapshot> {
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use windows::Win32::NetworkManagement::IpHelper::{
-        GetExtendedTcpTable, MIB_TCPTABLE_OWNER_PID, MIB_TCPROW_OWNER_PID,
-        TCP_TABLE_OWNER_PID_ALL,
+        GetExtendedTcpTable, MIB_TCPROW_OWNER_PID, MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
     };
     use windows::Win32::Networking::WinSock::AF_INET;
 
     let mut connections = Vec::new();
     let mut size = 0u32;
     unsafe {
-        let _ = GetExtendedTcpTable(
-            None,
-            &mut size,
-            false,
-            AF_INET,
-            TCP_TABLE_OWNER_PID_ALL,
-            0,
-        );
+        let _ = GetExtendedTcpTable(None, &mut size, false, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
     }
     if size == 0 {
         return connections;
@@ -62,10 +54,7 @@ fn enumerate_tcp_v4() -> Vec<ConnectionSnapshot> {
 
     unsafe {
         let table = &*(buffer.as_ptr() as *const MIB_TCPTABLE_OWNER_PID);
-        let rows = std::slice::from_raw_parts(
-            table.table.as_ptr(),
-            table.dwNumEntries as usize,
-        );
+        let rows = std::slice::from_raw_parts(table.table.as_ptr(), table.dwNumEntries as usize);
         for row in rows {
             connections.push(row_to_snapshot_v4(row));
         }
@@ -77,7 +66,7 @@ fn enumerate_tcp_v4() -> Vec<ConnectionSnapshot> {
 fn enumerate_tcp_v6() -> Vec<ConnectionSnapshot> {
     use std::net::{IpAddr, Ipv6Addr, SocketAddr};
     use windows::Win32::NetworkManagement::IpHelper::{
-        GetExtendedTcpTable, MIB_TCP6TABLE_OWNER_PID, MIB_TCP6ROW_OWNER_PID,
+        GetExtendedTcpTable, MIB_TCP6ROW_OWNER_PID, MIB_TCP6TABLE_OWNER_PID,
         TCP_TABLE_OWNER_PID_ALL,
     };
     use windows::Win32::Networking::WinSock::AF_INET6;
@@ -85,14 +74,7 @@ fn enumerate_tcp_v6() -> Vec<ConnectionSnapshot> {
     let mut connections = Vec::new();
     let mut size = 0u32;
     unsafe {
-        let _ = GetExtendedTcpTable(
-            None,
-            &mut size,
-            false,
-            AF_INET6,
-            TCP_TABLE_OWNER_PID_ALL,
-            0,
-        );
+        let _ = GetExtendedTcpTable(None, &mut size, false, AF_INET6, TCP_TABLE_OWNER_PID_ALL, 0);
     }
     if size == 0 {
         return connections;
@@ -115,10 +97,7 @@ fn enumerate_tcp_v6() -> Vec<ConnectionSnapshot> {
 
     unsafe {
         let table = &*(buffer.as_ptr() as *const MIB_TCP6TABLE_OWNER_PID);
-        let rows = std::slice::from_raw_parts(
-            table.table.as_ptr(),
-            table.dwNumEntries as usize,
-        );
+        let rows = std::slice::from_raw_parts(table.table.as_ptr(), table.dwNumEntries as usize);
         for row in rows {
             connections.push(row_to_snapshot_v6(row));
         }

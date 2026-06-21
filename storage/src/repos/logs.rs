@@ -25,7 +25,8 @@ impl SqliteTrafficLogRepository {
 impl TrafficLogRepository for SqliteTrafficLogRepository {
     async fn insert(&self, event: &TrafficEvent) -> Result<()> {
         let route_json = serde_json::to_string(&event.route).map_err(WireSentinelError::Serde)?;
-        let verdict_json = serde_json::to_string(&event.verdict).map_err(WireSentinelError::Serde)?;
+        let verdict_json =
+            serde_json::to_string(&event.verdict).map_err(WireSentinelError::Serde)?;
         let src_ip = event
             .source_ip
             .clone()
@@ -167,7 +168,9 @@ fn parse_traffic_row(
         .and_then(|s| Uuid::parse_str(&s).ok())
         .unwrap_or_else(Uuid::new_v4);
     let display_name = display_name.unwrap_or_else(|| "unknown".into());
-    let exe_path = exe_path.map(PathBuf::from).unwrap_or_else(|| PathBuf::from("unknown"));
+    let exe_path = exe_path
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("unknown"));
     let now = chrono::Utc::now();
     let record = AppRecord {
         app_id,
@@ -193,8 +196,12 @@ fn parse_traffic_row(
         app: AppIdentity::new(process_id.unwrap_or(0) as u32, record),
         direction: Direction::Outbound,
         protocol: parse_protocol(&protocol),
-        local_addr: local_addr.parse().unwrap_or_else(|_| "0.0.0.0:0".parse().unwrap()),
-        remote_addr: remote_addr.parse().unwrap_or_else(|_| "0.0.0.0:0".parse().unwrap()),
+        local_addr: local_addr
+            .parse()
+            .unwrap_or_else(|_| "0.0.0.0:0".parse().unwrap()),
+        remote_addr: remote_addr
+            .parse()
+            .unwrap_or_else(|_| "0.0.0.0:0".parse().unwrap()),
         remote_domain: domain,
         bytes_in: bytes_in as u64,
         bytes_out: bytes_out as u64,
@@ -277,7 +284,23 @@ impl DnsLogRepository for SqliteDnsLogRepository {
         }
         sql.push_str(&format!(" ORDER BY {sort_col} {order} LIMIT ? OFFSET ?"));
 
-        let mut q = sqlx::query_as::<_, (String, Option<String>, Option<i64>, String, String, String, String, i32, i64, String, Option<String>, Option<String>)>(&sql);
+        let mut q = sqlx::query_as::<
+            _,
+            (
+                String,
+                Option<String>,
+                Option<i64>,
+                String,
+                String,
+                String,
+                String,
+                i32,
+                i64,
+                String,
+                Option<String>,
+                Option<String>,
+            ),
+        >(&sql);
         if let Some(ref name) = query.qname {
             q = q.bind(format!("%{name}%"));
         }
@@ -324,7 +347,20 @@ impl DnsLogRepository for SqliteDnsLogRepository {
 }
 
 fn parse_dns_row(
-    (id, app_id, pid, timestamp, qname, qtype, upstream, blocked, latency_ms, answers_json, response, correlation_id): (
+    (
+        id,
+        app_id,
+        pid,
+        timestamp,
+        qname,
+        qtype,
+        upstream,
+        blocked,
+        latency_ms,
+        answers_json,
+        response,
+        correlation_id,
+    ): (
         String,
         Option<String>,
         Option<i64>,

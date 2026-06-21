@@ -17,9 +17,7 @@ pub fn parse(content: &str) -> HashSet<String> {
 
 fn parse_rule(line: &str) -> Option<String> {
     let rest = line.strip_prefix("||")?;
-    let end = rest
-        .find(['^', '/', '*'])
-        .unwrap_or(rest.len());
+    let end = rest.find(['^', '/', '*']).unwrap_or(rest.len());
     let domain = normalize_domain(&rest[..end]);
     if domain.is_empty() {
         None

@@ -110,12 +110,8 @@ impl FilterListEngine {
         let plugins = self.plugins.read().clone();
 
         for sub in subs.iter().filter(|s| s.enabled) {
-            let content = std::fs::read_to_string(&sub.cache_path).map_err(|e| {
-                format!(
-                    "read cache {}: {e}",
-                    sub.cache_path.display()
-                )
-            })?;
+            let content = std::fs::read_to_string(&sub.cache_path)
+                .map_err(|e| format!("read cache {}: {e}", sub.cache_path.display()))?;
             merged.extend(parse_with_plugins(sub.list_type, &content, &plugins));
         }
 
@@ -132,11 +128,7 @@ impl FilterListEngine {
             .map_err(|e| format!("fetch {}: {e}", sub.url))?;
 
         if !response.status().is_success() {
-            return Err(format!(
-                "fetch {}: HTTP {}",
-                sub.url,
-                response.status()
-            ));
+            return Err(format!("fetch {}: HTTP {}", sub.url, response.status()));
         }
 
         let body = response
@@ -149,12 +141,8 @@ impl FilterListEngine {
                 .map_err(|e| format!("create cache dir {}: {e}", parent.display()))?;
         }
 
-        std::fs::write(&sub.cache_path, &body).map_err(|e| {
-            format!(
-                "write cache {}: {e}",
-                sub.cache_path.display()
-            )
-        })?;
+        std::fs::write(&sub.cache_path, &body)
+            .map_err(|e| format!("write cache {}: {e}", sub.cache_path.display()))?;
 
         tracing::info!(
             id = %sub.id,
@@ -189,9 +177,7 @@ fn parse_with_plugins(
 fn domain_chain(domain: &str) -> Vec<String> {
     let normalized = domain.trim_end_matches('.').to_ascii_lowercase();
     let labels: Vec<&str> = normalized.split('.').collect();
-    (0..labels.len())
-        .map(|i| labels[i..].join("."))
-        .collect()
+    (0..labels.len()).map(|i| labels[i..].join(".")).collect()
 }
 
 /// Cache directory matching `storage::data_dir()/filters/`.

@@ -122,8 +122,8 @@ fn manager_discovers_manifest_json() {
     .unwrap();
     std::fs::write(dir.path().join("sample.wasm"), b"\0asm\x01\0\0\0").unwrap();
 
-    let mut manager = PluginManager::new(dir.path().to_path_buf(), PluginSecurityPolicy::default())
-        .unwrap();
+    let mut manager =
+        PluginManager::new(dir.path().to_path_buf(), PluginSecurityPolicy::default()).unwrap();
     let discovered = manager.discover().unwrap();
     assert_eq!(discovered.len(), 1);
     assert_eq!(discovered[0].id, id);

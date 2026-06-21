@@ -221,9 +221,6 @@ mod tests {
         };
         let cfg = build_config(1081, &spec, None);
         assert_eq!(cfg["inbounds"][0]["port"], 1081);
-        assert_eq!(
-            cfg["outbounds"][0]["streamSettings"]["security"],
-            "reality"
-        );
+        assert_eq!(cfg["outbounds"][0]["streamSettings"]["security"], "reality");
     }
 }

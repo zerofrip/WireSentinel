@@ -1,7 +1,9 @@
 use super::traits::{Result, VpnProfileRepository};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use shared_types::{HandshakeProxySettings, TransportKind, VPNProfile, VpnBackendKind, WireSentinelError};
+use shared_types::{
+    HandshakeProxySettings, TransportKind, VPNProfile, VpnBackendKind, WireSentinelError,
+};
 use sqlx::SqlitePool;
 use std::path::PathBuf;
 use uuid::Uuid;
@@ -29,7 +31,9 @@ fn backend_from_str(s: &str) -> Result<VpnBackendKind> {
         "wireguard_nt" => Ok(VpnBackendKind::WireGuardNt),
         "amnezia_wg" => Ok(VpnBackendKind::AmneziaWg),
         "tailscale" => Ok(VpnBackendKind::Tailscale),
-        other => Err(WireSentinelError::Config(format!("unknown backend: {other}"))),
+        other => Err(WireSentinelError::Config(format!(
+            "unknown backend: {other}"
+        ))),
     }
 }
 
@@ -60,7 +64,9 @@ fn transport_kind_from_str(s: &str) -> Result<TransportKind> {
         "ws_tunnel" => Ok(TransportKind::WebSocketTunnel),
         "mixnet" => Ok(TransportKind::Mixnet),
         "proxy" => Ok(TransportKind::Proxy),
-        other => Err(WireSentinelError::Config(format!("unknown transport kind: {other}"))),
+        other => Err(WireSentinelError::Config(format!(
+            "unknown transport kind: {other}"
+        ))),
     }
 }
 
@@ -137,11 +143,12 @@ impl VpnProfileRepository for SqliteVpnProfileRepository {
     }
 
     async fn get_config_blob(&self, id: Uuid) -> Result<Option<Vec<u8>>> {
-        let row: Option<(Vec<u8>,)> = sqlx::query_as("SELECT config_blob FROM vpn_profiles WHERE id = ?")
-            .bind(id.to_string())
-            .fetch_optional(&self.pool)
-            .await
-            .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let row: Option<(Vec<u8>,)> =
+            sqlx::query_as("SELECT config_blob FROM vpn_profiles WHERE id = ?")
+                .bind(id.to_string())
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| WireSentinelError::Config(e.to_string()))?;
         Ok(row.map(|r| r.0))
     }
 

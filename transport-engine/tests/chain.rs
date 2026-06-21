@@ -2,8 +2,8 @@ use chrono::Utc;
 use shared_types::{ChainHop, ChainProfile, TransportKind, TransportState};
 use std::sync::Arc;
 use transport_engine::{
-    ChainOrchestrator, TransportBackendFactory, TransportConfigStore, TransportContext,
-    ProcessManager,
+    ChainOrchestrator, ProcessManager, TransportBackendFactory, TransportConfigStore,
+    TransportContext,
 };
 use uuid::Uuid;
 use vpn_engine::ScmTunnelDllBackend;

@@ -50,8 +50,7 @@ async fn connection_flood_stress() {
     }
 
     let duration_ms = start.elapsed().as_millis() as u64;
-    let throughput = event_bus::drain_publish_count() as f64
-        / (duration_ms.max(1) as f64 / 1000.0);
+    let throughput = event_bus::drain_publish_count() as f64 / (duration_ms.max(1) as f64 / 1000.0);
     let report = StressTestReport {
         connections_processed: count,
         duration_ms,

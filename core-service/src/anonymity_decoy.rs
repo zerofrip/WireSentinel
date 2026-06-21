@@ -1,6 +1,6 @@
 //! Decoy routing framework wrapper (lab mode).
 
-use anonymity_decoy_routing::{DecoyMode, DecoyRoutingFramework, DecoyRoute};
+use anonymity_decoy_routing::{DecoyMode, DecoyRoute, DecoyRoutingFramework};
 use event_bus::EventBus;
 use shared_types::{Result, ServiceEvent, ServiceEventInner, WireSentinelError};
 

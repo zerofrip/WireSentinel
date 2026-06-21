@@ -83,11 +83,12 @@ impl AnonymitySecurityPolicy {
     }
 
     fn publish_violation(&self, profile_id: Uuid, violation_type: &str, detail: &str) {
-        self.events
-            .publish(ServiceEvent::now(ServiceEventInner::AnonymitySecurityViolation {
+        self.events.publish(ServiceEvent::now(
+            ServiceEventInner::AnonymitySecurityViolation {
                 profile_id,
                 violation_type: violation_type.to_string(),
                 detail: detail.to_string(),
-            }));
+            },
+        ));
     }
 }

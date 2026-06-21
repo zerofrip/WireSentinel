@@ -1,0 +1,24 @@
+[package]
+name = "dns"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+shared-types = { workspace = true }
+filter-lists = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+parking_lot = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+async-trait = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+urlencoding = "2"
+tokio-rustls = "0.26"
+rustls = "0.23"
+webpki-roots = "0.26"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }

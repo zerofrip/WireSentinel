@@ -1,0 +1,22 @@
+[package]
+name = "filter-lists"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "EasyList / hosts-based filter subscriptions"
+
+[dependencies]
+shared-types = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+plugin-runtime = { path = "../plugin-runtime" }
+tokio = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+tokio-cron-scheduler = "0.13"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }

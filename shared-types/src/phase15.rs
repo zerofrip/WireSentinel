@@ -212,7 +212,7 @@ pub struct DeviceTrustRecord {
 }
 
 /// Device posture signals used in trust scoring.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema, Default)]
 pub struct DevicePosture {
     pub os_version: Option<String>,
     pub disk_encrypted: bool,
@@ -220,19 +220,6 @@ pub struct DevicePosture {
     pub antivirus_running: bool,
     pub jailbroken_or_rooted: bool,
     pub compliant: bool,
-}
-
-impl Default for DevicePosture {
-    fn default() -> Self {
-        Self {
-            os_version: None,
-            disk_encrypted: false,
-            firewall_enabled: false,
-            antivirus_running: false,
-            jailbroken_or_rooted: false,
-            compliant: false,
-        }
-    }
 }
 
 /// Trust score snapshot emitted on updates.

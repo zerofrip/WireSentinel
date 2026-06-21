@@ -13,17 +13,12 @@ pub struct TunnelIface {
     pub socks_port: Option<u16>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum DnsBlockMode {
     Null,
+    #[default]
     Nxdomain,
-}
-
-impl Default for DnsBlockMode {
-    fn default() -> Self {
-        Self::Nxdomain
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

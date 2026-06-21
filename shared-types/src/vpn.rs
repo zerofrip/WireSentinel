@@ -1,4 +1,4 @@
-use crate::TransportKind;
+use crate::{HandshakeProxySettings, TransportKind};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -29,6 +29,8 @@ pub struct VPNProfile {
     pub chain_id: Option<Uuid>,
     #[serde(default)]
     pub obfuscation_profile_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub handshake_proxy: Option<HandshakeProxySettings>,
 }
 
 impl VPNProfile {

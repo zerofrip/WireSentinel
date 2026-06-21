@@ -14,6 +14,7 @@ use crate::{
     SbomDocument, SecretFinding, Vulnerability, WorkloadRecord,
     AiRecommendation, AiRiskScore, CopilotResponse, CorrelatedThreat,
     ExecutiveReport, InvestigationReport,
+    TcpTerminationMode, TemplateMode,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -919,6 +920,38 @@ pub enum ServiceEvent {
         provider: String,
         timestamp: DateTime<Utc>,
     },
+    TcpConnectionsTerminated {
+        count: u32,
+        profile_id: Option<Uuid>,
+        mode: TcpTerminationMode,
+        timestamp: DateTime<Utc>,
+    },
+    TcpTerminationFailed {
+        error: String,
+        profile_id: Option<Uuid>,
+        timestamp: DateTime<Utc>,
+    },
+    HandshakeProxyConnected {
+        profile_id: Uuid,
+        proxy_host: String,
+        proxy_port: u16,
+        timestamp: DateTime<Utc>,
+    },
+    HandshakeProxyFailed {
+        profile_id: Uuid,
+        error: String,
+        timestamp: DateTime<Utc>,
+    },
+    SplitTemplateApplied {
+        template_id: Uuid,
+        mode: TemplateMode,
+        timestamp: DateTime<Utc>,
+    },
+    SplitTemplateConflict {
+        template_id: Uuid,
+        suppressed_rule_ids: Vec<Uuid>,
+        timestamp: DateTime<Utc>,
+    },
 }
 
 impl ServiceEvent {
@@ -1378,6 +1411,32 @@ pub enum ServiceEventInner {
     ProviderAccessDenied {
         tenant_id: Uuid,
         provider: String,
+    },
+    TcpConnectionsTerminated {
+        count: u32,
+        profile_id: Option<Uuid>,
+        mode: TcpTerminationMode,
+    },
+    TcpTerminationFailed {
+        error: String,
+        profile_id: Option<Uuid>,
+    },
+    HandshakeProxyConnected {
+        profile_id: Uuid,
+        proxy_host: String,
+        proxy_port: u16,
+    },
+    HandshakeProxyFailed {
+        profile_id: Uuid,
+        error: String,
+    },
+    SplitTemplateApplied {
+        template_id: Uuid,
+        mode: TemplateMode,
+    },
+    SplitTemplateConflict {
+        template_id: Uuid,
+        suppressed_rule_ids: Vec<Uuid>,
     },
 }
 
@@ -2352,6 +2411,58 @@ impl ServiceEventInner {
             } => ServiceEvent::ProviderAccessDenied {
                 tenant_id,
                 provider,
+                timestamp,
+            },
+            Self::TcpConnectionsTerminated {
+                count,
+                profile_id,
+                mode,
+            } => ServiceEvent::TcpConnectionsTerminated {
+                count,
+                profile_id,
+                mode,
+                timestamp,
+            },
+            Self::TcpTerminationFailed {
+                error,
+                profile_id,
+            } => ServiceEvent::TcpTerminationFailed {
+                error,
+                profile_id,
+                timestamp,
+            },
+            Self::HandshakeProxyConnected {
+                profile_id,
+                proxy_host,
+                proxy_port,
+            } => ServiceEvent::HandshakeProxyConnected {
+                profile_id,
+                proxy_host,
+                proxy_port,
+                timestamp,
+            },
+            Self::HandshakeProxyFailed {
+                profile_id,
+                error,
+            } => ServiceEvent::HandshakeProxyFailed {
+                profile_id,
+                error,
+                timestamp,
+            },
+            Self::SplitTemplateApplied {
+                template_id,
+                mode,
+            } => ServiceEvent::SplitTemplateApplied {
+                template_id,
+                mode,
+                timestamp,
+            },
+            Self::SplitTemplateConflict {
+                template_id,
+                suppressed_rule_ids,
+            } => ServiceEvent::SplitTemplateConflict {
+                template_id,
+                suppressed_rule_ids,
                 timestamp,
             },
         }

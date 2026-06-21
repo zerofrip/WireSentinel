@@ -82,7 +82,7 @@ impl VpnProfileRepository for SqliteVpnProfileRepository {
                 Option<String>,
             ),
         >(
-            "SELECT id, name, backend, auto_connect, created_at, group_name, transport_kind, chain_id, obfuscation_profile_id FROM vpn_profiles ORDER BY name",
+            "SELECT id, name, backend, auto_connect, created_at, group_name, transport_kind, chain_id, obfuscation_profile_id, handshake_proxy_json FROM vpn_profiles ORDER BY name",
         )
         .fetch_all(&self.pool)
         .await
@@ -100,9 +100,9 @@ impl VpnProfileRepository for SqliteVpnProfileRepository {
                     transport_kind,
                     chain_id,
                     obfuscation_profile_id,
-                    NULL,
+                    handshake_proxy_json,
                 )| {
-                    let handshake_proxy = NULL
+                    let handshake_proxy = handshake_proxy_json
                         .map(|j| serde_json::from_str::<HandshakeProxySettings>(&j))
                         .transpose()
                         .map_err(WireSentinelError::Serde)?;
@@ -147,7 +147,7 @@ impl VpnProfileRepository for SqliteVpnProfileRepository {
 
     async fn insert(&self, profile: &VPNProfile, config_blob: &[u8]) -> Result<()> {
         sqlx::query(
-            "INSERT INTO vpn_profiles (id, name, backend, config_blob, auto_connect, group_name, created_at, transport_kind, chain_id, obfuscation_profile_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO vpn_profiles (id, name, backend, config_blob, auto_connect, group_name, created_at, transport_kind, chain_id, obfuscation_profile_id, handshake_proxy_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(profile.id.to_string())
         .bind(&profile.name)
@@ -176,7 +176,7 @@ impl VpnProfileRepository for SqliteVpnProfileRepository {
     async fn update(&self, profile: &VPNProfile, config_blob: Option<&[u8]>) -> Result<()> {
         if let Some(blob) = config_blob {
             sqlx::query(
-                "UPDATE vpn_profiles SET name = ?, backend = ?, config_blob = ?, auto_connect = ?, transport_kind = ?, chain_id = ?, obfuscation_profile_id = ? = ? WHERE id = ?",
+                "UPDATE vpn_profiles SET name = ?, backend = ?, config_blob = ?, auto_connect = ?, transport_kind = ?, chain_id = ?, obfuscation_profile_id = ?, handshake_proxy_json = ? WHERE id = ?",
             )
             .bind(&profile.name)
             .bind(backend_str(profile.backend))
@@ -199,7 +199,7 @@ impl VpnProfileRepository for SqliteVpnProfileRepository {
             .map_err(|e| WireSentinelError::Config(e.to_string()))?;
         } else {
             sqlx::query(
-                "UPDATE vpn_profiles SET name = ?, backend = ?, auto_connect = ?, transport_kind = ?, chain_id = ?, obfuscation_profile_id = ? = ? WHERE id = ?",
+                "UPDATE vpn_profiles SET name = ?, backend = ?, auto_connect = ?, transport_kind = ?, chain_id = ?, obfuscation_profile_id = ?, handshake_proxy_json = ? WHERE id = ?",
             )
             .bind(&profile.name)
             .bind(backend_str(profile.backend))

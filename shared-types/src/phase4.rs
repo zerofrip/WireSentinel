@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::HandshakeProxySettings;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum TransportKind {
@@ -35,6 +37,7 @@ pub enum ObfuscationPreset {
     Balanced,
     Aggressive,
     Lwo,
+    Socks5Handshake,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -79,6 +82,8 @@ pub struct ObfuscationProfile {
     pub name: String,
     pub preset: ObfuscationPreset,
     pub modules_json: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub handshake_proxy: Option<HandshakeProxySettings>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

@@ -1,0 +1,18 @@
+[package]
+name = "split-tunnel"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+shared-types = { workspace = true }
+policy-engine = { workspace = true }
+event-bus = { workspace = true }
+parking_lot = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+uuid = { workspace = true }
+policy-engine = { workspace = true }

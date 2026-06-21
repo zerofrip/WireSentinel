@@ -42,14 +42,16 @@ fn preset_from_str(s: &str) -> Result<ObfuscationPreset> {
 impl ObfuscationProfileRepository for SqliteObfuscationProfileRepository {
     async fn list(&self) -> Result<Vec<ObfuscationProfile>> {
         let rows = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, String, String)>(
-            "SELECT id, name, preset, modules_json, created_at, updated_at FROM obfuscation_profiles ORDER BY name",
+            "SELECT id, name, preset, modules_json, handshake_proxy_json, created_at, updated_at FROM obfuscation_profiles ORDER BY name",
         )
         .fetch_all(&self.pool)
         .await
         .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
         rows.into_iter()
-            .map(|(id, name, preset, modules_json, created_at, updated_at)| {
+            .map(|(id, name, preset, modules_json, handshake_proxy_json, created_at, updated_at)| {
+                let handshake_proxy = handshake_proxy_json
+                    .map(|j| serde_json::from_str::<HandshakeProxySettings>(&j))
                     .transpose()
                     .map_err(WireSentinelError::Serde)?;
                 Ok(ObfuscationProfile {
@@ -58,6 +60,7 @@ impl ObfuscationProfileRepository for SqliteObfuscationProfileRepository {
                     name,
                     preset: preset_from_str(&preset)?,
                     modules_json,
+                    handshake_proxy,
                     created_at: DateTime::parse_from_rfc3339(&created_at)
                         .map_err(|e| WireSentinelError::Config(e.to_string()))?
                         .with_timezone(&Utc),
@@ -75,7 +78,7 @@ impl ObfuscationProfileRepository for SqliteObfuscationProfileRepository {
 
     async fn insert(&self, profile: &ObfuscationProfile) -> Result<()> {
         sqlx::query(
-            "INSERT INTO obfuscation_profiles (id, name, preset, modules_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO obfuscation_profiles (id, name, preset, modules_json, handshake_proxy_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(profile.id.to_string())
         .bind(&profile.name)
@@ -99,7 +102,7 @@ impl ObfuscationProfileRepository for SqliteObfuscationProfileRepository {
 
     async fn update(&self, profile: &ObfuscationProfile) -> Result<()> {
         sqlx::query(
-            "UPDATE obfuscation_profiles SET name = ?, preset = ?, modules_json = ? = ?, updated_at = ? WHERE id = ?",
+            "UPDATE obfuscation_profiles SET name = ?, preset = ?, modules_json = ?, handshake_proxy_json = ?, updated_at = ? WHERE id = ?",
         )
         .bind(&profile.name)
         .bind(preset_str(profile.preset))

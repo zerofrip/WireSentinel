@@ -10,6 +10,8 @@ use shared_types::{
     RouteStatisticsRecord, Rule, RuntimeStateRecord, SecurityFinding, TailnetProfile, TorProfile,
     TopDomainEntry, TrafficEvent, TransportProfile, ValidationCheck, VpnConfigFileRecord,
     VPNProfile, WfpFilterStateRecord, WireSentinelError,
+    TcpTerminationPolicy, TcpTerminationRule, TcpTerminationSettings,
+    SplitTunnelTemplate, SplitTemplateModeSettings,
 };
 use std::path::Path;
 use uuid::Uuid;
@@ -441,4 +443,25 @@ pub trait AnonymousServiceRepository: Send + Sync {
     async fn upsert_endpoint(&self, endpoint: &AnonymousServiceEndpoint) -> Result<()>;
 }
 
+#[async_trait]
+pub trait TcpTerminationRepository: Send + Sync {
+    async fn get_settings(&self) -> Result<TcpTerminationSettings>;
+    async fn set_settings(&self, settings: &TcpTerminationSettings) -> Result<()>;
+    async fn list_rules(&self) -> Result<Vec<TcpTerminationRule>>;
+    async fn get_rule(&self, id: Uuid) -> Result<Option<TcpTerminationRule>>;
+    async fn insert_rule(&self, rule: &TcpTerminationRule) -> Result<()>;
+    async fn update_rule(&self, rule: &TcpTerminationRule) -> Result<()>;
+    async fn delete_rule(&self, id: Uuid) -> Result<bool>;
+    async fn load_policy(&self) -> Result<TcpTerminationPolicy>;
+}
 
+#[async_trait]
+pub trait SplitTemplateRepository: Send + Sync {
+    async fn list(&self) -> Result<Vec<SplitTunnelTemplate>>;
+    async fn get(&self, id: Uuid) -> Result<Option<SplitTunnelTemplate>>;
+    async fn insert(&self, template: &SplitTunnelTemplate) -> Result<()>;
+    async fn update(&self, template: &SplitTunnelTemplate) -> Result<()>;
+    async fn delete(&self, id: Uuid) -> Result<bool>;
+    async fn get_mode(&self) -> Result<SplitTemplateModeSettings>;
+    async fn set_mode(&self, settings: &SplitTemplateModeSettings) -> Result<()>;
+}

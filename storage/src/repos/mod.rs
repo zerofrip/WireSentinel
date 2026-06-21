@@ -39,6 +39,8 @@ mod privacy_analytics;
 mod katzenpost;
 mod loopix;
 mod anonymous_service;
+mod tcp_termination;
+mod split_template;
 
 pub use app::*;
 pub use audit::*;
@@ -80,3 +82,5 @@ pub use privacy_analytics::*;
 pub use katzenpost::*;
 pub use loopix::*;
 pub use anonymous_service::*;
+pub use tcp_termination::*;
+pub use split_template::*;

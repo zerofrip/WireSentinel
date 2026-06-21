@@ -56,6 +56,8 @@ pub struct Storage {
     pub katzenpost_profiles: Arc<dyn KatzenpostProfileRepository>,
     pub loopix_profiles: Arc<dyn LoopixProfileRepository>,
     pub anonymous_services: Arc<dyn AnonymousServiceRepository>,
+    pub tcp_termination: Arc<dyn TcpTerminationRepository>,
+    pub split_templates: Arc<dyn SplitTemplateRepository>,
 }
 
 impl Storage {
@@ -103,6 +105,8 @@ impl Storage {
             katzenpost_profiles: Arc::new(SqliteKatzenpostProfileRepository::new(pool.clone())),
             loopix_profiles: Arc::new(SqliteLoopixProfileRepository::new(pool.clone())),
             anonymous_services: Arc::new(SqliteAnonymousServiceRepository::new(pool.clone())),
+            tcp_termination: Arc::new(SqliteTcpTerminationRepository::new(pool.clone())),
+            split_templates: Arc::new(SqliteSplitTemplateRepository::new(pool.clone())),
             pool,
         }
     }

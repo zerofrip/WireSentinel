@@ -16,26 +16,69 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: WireSentinel
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Mixnet
+          path: WireSentinel-Mixnet
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Anonymity
+          path: WireSentinel-Anonymity
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-ZTNA
+          path: WireSentinel-ZTNA
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-SSE
+          path: WireSentinel-SSE
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-XDR
+          path: WireSentinel-XDR
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Ndis
+          path: WireSentinel-Ndis
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Kernel
+          path: WireSentinel-Kernel
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: WireSentinel
 
       - name: cargo fmt
+        working-directory: WireSentinel
         run: cargo fmt --all -- --check
 
       - name: cargo clippy
+        working-directory: WireSentinel
         run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: cargo test
+        working-directory: WireSentinel
         run: cargo test --workspace
 
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
 
       - name: cargo audit
+        working-directory: WireSentinel
         run: cargo audit
 
   frontend:
@@ -43,15 +86,17 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ui
+        working-directory: WireSentinel/ui
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: WireSentinel
 
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: WireSentinel/ui/package-lock.json
 
       - name: npm ci
         run: npm ci
@@ -64,6 +109,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: WireSentinel
 
       - name: Install PowerShell
         run: |
@@ -71,26 +118,74 @@ jobs:
           sudo apt-get install -y powershell
 
       - name: validate.ps1 (token checks, skip file refs)
+        working-directory: WireSentinel
         run: pwsh -File installer/tests/validate.ps1 -SkipFileRefs
 
       - name: Pester installer e2e (static)
+        working-directory: WireSentinel
         run: |
-          pwsh -Command "Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck"
-          pwsh -File installer/tests/installer-e2e.ps1
+          pwsh -NoProfile -Command @'
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module Pester -RequiredVersion 5.5.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          $config = New-PesterConfiguration
+          $config.Run.Path = "installer/tests/installer-e2e.ps1"
+          $config.Output.Verbosity = "Detailed"
+          Invoke-Pester -Configuration $config
+          '@
 
   windows-cross:
     name: Windows cross-check (x64)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: WireSentinel
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Mixnet
+          path: WireSentinel-Mixnet
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Anonymity
+          path: WireSentinel-Anonymity
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-ZTNA
+          path: WireSentinel-ZTNA
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-SSE
+          path: WireSentinel-SSE
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-XDR
+          path: WireSentinel-XDR
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Ndis
+          path: WireSentinel-Ndis
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Kernel
+          path: WireSentinel-Kernel
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: WireSentinel
 
       - name: cargo check (x86_64-pc-windows-msvc)
+        working-directory: WireSentinel
         run: cargo check --workspace --target x86_64-pc-windows-msvc
 
   windows-arm64:
@@ -98,12 +193,52 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: WireSentinel
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Mixnet
+          path: WireSentinel-Mixnet
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Anonymity
+          path: WireSentinel-Anonymity
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-ZTNA
+          path: WireSentinel-ZTNA
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-SSE
+          path: WireSentinel-SSE
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-XDR
+          path: WireSentinel-XDR
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Ndis
+          path: WireSentinel-Ndis
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Kernel
+          path: WireSentinel-Kernel
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-pc-windows-msvc
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: WireSentinel
 
       - name: cargo check (aarch64-pc-windows-msvc)
+        working-directory: WireSentinel
         run: cargo check --workspace --target aarch64-pc-windows-msvc

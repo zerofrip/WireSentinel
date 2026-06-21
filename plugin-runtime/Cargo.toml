@@ -1,0 +1,33 @@
+[package]
+name = "plugin-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "WireSentinel plugin loader — WASM (wasmtime) and native (Windows) runtimes"
+
+[features]
+default = []
+native-plugins = ["dep:windows"]
+
+[dependencies]
+shared-types = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+sha2 = "0.10"
+wasmtime = "28"
+windows = { version = "0.58", optional = true, features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Cryptography",
+    "Win32_System_LibraryLoader",
+] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["rt", "macros"] }

@@ -1,0 +1,12 @@
+[package]
+name = "dpi-transforms"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "DPI evasion transform hooks (MVP placeholder)"
+
+[dependencies]
+shared-types = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }

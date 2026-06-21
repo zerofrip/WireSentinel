@@ -179,16 +179,11 @@ jobs:
       - name: Install cargo-xwin
         run: cargo install cargo-xwin --locked
 
-      - name: Setup Windows SDK (xwin)
-        run: cargo xwin setup --accept-license
-        env:
-          XWIN_CACHE_DIR: ${{ runner.temp }}/xwin
-
       - name: cargo check (x86_64-pc-windows-msvc)
         working-directory: WireSentinel
         run: cargo xwin check --workspace --target x86_64-pc-windows-msvc
         env:
-          XWIN_CACHE_DIR: ${{ runner.temp }}/xwin
+          XWIN_ACCEPT_LICENSE: "1"
 
   windows-arm64:
     name: Windows ARM64 check
@@ -244,13 +239,8 @@ jobs:
       - name: Install cargo-xwin
         run: cargo install cargo-xwin --locked
 
-      - name: Setup Windows SDK (xwin)
-        run: cargo xwin setup --accept-license
-        env:
-          XWIN_CACHE_DIR: ${{ runner.temp }}/xwin
-
       - name: cargo check (aarch64-pc-windows-msvc)
         working-directory: WireSentinel
         run: cargo xwin check --workspace --target aarch64-pc-windows-msvc
         env:
-          XWIN_CACHE_DIR: ${{ runner.temp }}/xwin
+          XWIN_ACCEPT_LICENSE: "1"

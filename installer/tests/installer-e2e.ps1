@@ -1,5 +1,5 @@
 # Pester static installer e2e checks (no live install required).
-# Run: pwsh -File installer/tests/installer-e2e.ps1
+# Run: pwsh -File installer/tests/run-pester-ci.ps1
 
 $ErrorActionPreference = "Stop"
 
@@ -114,4 +114,3 @@ Describe "WireSentinel installer — firewall (loopback API)" {
     }
 }
 
-Invoke-Pester -Path $PSCommandPath -Output Detailed

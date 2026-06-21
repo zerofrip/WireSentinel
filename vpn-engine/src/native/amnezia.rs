@@ -9,7 +9,7 @@ pub use stub::NativeAmneziaWgBackend;
 #[cfg(windows)]
 mod imp {
     use crate::backend::VpnBackend;
-    use crate::conf::{encode_awg_config, parse_conf, read_conf_file, WireGuardConfig};
+    use crate::conf::{encode_awg_config, read_conf_file, WireGuardConfig};
     use async_trait::async_trait;
     use libloading::Library;
     use parking_lot::Mutex;
@@ -181,9 +181,7 @@ mod imp {
             if profile.config_path.to_string_lossy().starts_with("db://") {
                 return Err(awg_err("native backend requires config file path on disk"));
             }
-            let content = read_conf_file(&profile.config_path)
-                .map_err(|e| awg_err(format!("read config: {e}")))?;
-            Ok(parse_conf(&content))
+            read_conf_file(&profile.config_path).map_err(|e| awg_err(format!("read config: {e}")))
         }
     }
 

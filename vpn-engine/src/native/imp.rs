@@ -1,7 +1,7 @@
 //! Windows wireguard.dll FFI backend.
 
 use crate::backend::VpnBackend;
-use crate::conf::{parse_conf, read_conf_file, WireGuardConfig};
+use crate::conf::{read_conf_file, WireGuardConfig};
 use async_trait::async_trait;
 use libloading::Library;
 use parking_lot::Mutex;
@@ -133,9 +133,8 @@ impl NativeWireGuardBackend {
         config: &WireGuardConfig,
     ) -> Result<()> {
         let blob = encode_config(config)?;
-        let ok = unsafe {
-            (self.dll.set_configuration)(handle.raw(), blob.as_ptr(), blob.len() as u32)
-        };
+        let ok =
+            unsafe { (self.dll.set_configuration)(handle.raw(), blob.as_ptr(), blob.len() as u32) };
         if ok == 0 {
             return Err(wg_err("WireGuardSetConfiguration failed"));
         }
@@ -168,9 +167,7 @@ impl NativeWireGuardBackend {
         if profile.config_path.to_string_lossy().starts_with("db://") {
             return Err(wg_err("native backend requires config file path on disk"));
         }
-        let content = read_conf_file(&profile.config_path)
-            .map_err(|e| wg_err(format!("read config: {e}")))?;
-        Ok(parse_conf(&content))
+        read_conf_file(&profile.config_path).map_err(|e| wg_err(format!("read config: {e}")))
     }
 }
 

@@ -1,0 +1,23 @@
+[package]
+name = "transport-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Phase 4 transport backends: direct, VPN delegation, sing-box, xray, chains"
+
+[dependencies]
+shared-types = { workspace = true }
+vpn-engine = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+dpi-transforms = { workspace = true }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+dpi-transforms = { workspace = true }
+tokio = { workspace = true, features = ["rt", "macros"] }
+chrono = { workspace = true }

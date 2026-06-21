@@ -167,6 +167,29 @@ impl ScmTunnelDllBackend {
         }
     }
 
+    async fn config_path_with_handshake_proxy(&self, profile: &VPNProfile) -> Result<PathBuf> {
+        if profile
+            .handshake_proxy
+            .as_ref()
+            .map(|s| s.enabled)
+            .unwrap_or(false)
+        {
+            let content = std::fs::read_to_string(&profile.config_path)
+                .map_err(|e| WireSentinelError::Vpn(format!("read config: {e}")))?;
+            let mut config = crate::conf::parse_conf(&content);
+            let _session =
+                crate::handshake_proxy::apply_handshake_proxy(profile, &mut config, None).await?;
+            let temp = crate::materialize::vpn_config_dir().join(format!(
+                "handshake-{}.conf",
+                profile.id
+            ));
+            let rendered = crate::conf::write_conf(&config);
+            std::fs::write(&temp, rendered)
+                .map_err(|e| WireSentinelError::Vpn(format!("write temp config: {e}")))?;
+            return Ok(temp);
+        }
+        Ok(profile.config_path.clone())
+    }
 }
 
 #[async_trait]
@@ -179,7 +202,7 @@ impl VpnBackend for ScmTunnelDllBackend {
             .write()
             .insert(profile.id, VpnStatus::Connecting);
 
-        let config_path = self.config_path(profile).await?;
+        let config_path = self.config_path_with_handshake_proxy(profile).await?;
 
         #[cfg(windows)]
         {

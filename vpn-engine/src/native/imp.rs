@@ -165,6 +165,8 @@ impl VpnBackend for NativeWireGuardBackend {
             return Err(wg_err("missing [Peer] section"));
         }
 
+        let _handshake =
+            crate::handshake_proxy::apply_handshake_proxy(profile, &mut config, None).await?;
 
         let adapter_name = format!("WS{}", &profile.id.to_string()[..8]);
         let handle = self.create_adapter(&adapter_name)?;

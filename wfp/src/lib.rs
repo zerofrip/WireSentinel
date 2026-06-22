@@ -36,9 +36,12 @@ pub fn kernel_driver_available() -> Result<String, String> {
     use guardian_controller::GuardianClient;
     let client = GuardianClient::connect().map_err(|e| e.to_string())?;
     let state = client.driver_state().map_err(|e| e.to_string())?;
+    let major = unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(state.version_major)) };
+    let minor = unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(state.version_minor)) };
+    let patch = unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(state.version_patch)) };
+    let lifecycle = unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(state.lifecycle_state)) };
     Ok(format!(
-        "Guardian driver v{}.{}.{} state={}",
-        state.version_major, state.version_minor, state.version_patch, state.lifecycle_state
+        "Guardian driver v{major}.{minor}.{patch} state={lifecycle}"
     ))
 }
 

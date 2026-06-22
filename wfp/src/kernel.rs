@@ -17,9 +17,20 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use uuid::Uuid;
 
+/// Guardian IOCTL client is owned by the service thread; the device handle is safe to move.
+struct SendGuardianClient(GuardianClient);
+unsafe impl Send for SendGuardianClient {}
+unsafe impl Sync for SendGuardianClient {}
+
+impl SendGuardianClient {
+    fn inner(&self) -> &GuardianClient {
+        &self.0
+    }
+}
+
 /// WFP engine backed by Guardian.sys.
 pub struct KernelCalloutEngine {
-    client: Mutex<Option<GuardianClient>>,
+    client: Mutex<Option<SendGuardianClient>>,
     listen_ports: RwLock<Option<Arc<ProxyListenPort>>>,
 }
 
@@ -63,7 +74,7 @@ impl KernelCalloutEngine {
         let client = guard
             .as_ref()
             .ok_or_else(|| WireSentinelError::Wfp("Guardian driver not initialized".into()))?;
-        f(client)
+        f(client.inner())
     }
 }
 
@@ -138,7 +149,12 @@ fn build_app_policy(
 }
 
 fn driver_state_from_kernel(state: &GuardianDriverStateV1) -> DriverState {
-    let lifecycle = match state.lifecycle_state {
+    let lifecycle_state =
+        unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(state.lifecycle_state)) };
+    let filter_count = unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(state.filter_count)) };
+    let callouts_registered =
+        unsafe { std::ptr::read_unaligned(std::ptr::addr_of!(state.callouts_registered)) };
+    let lifecycle = match lifecycle_state {
         x if x == GuardianLifecycleState::Running as u32 => "running",
         x if x == GuardianLifecycleState::Recovering as u32 => "recovering",
         x if x == GuardianLifecycleState::Failed as u32 => "failed",
@@ -147,8 +163,8 @@ fn driver_state_from_kernel(state: &GuardianDriverStateV1) -> DriverState {
     DriverState {
         engine: "kernel".into(),
         state: lifecycle.into(),
-        filter_count: state.filter_count,
-        provider_registered: state.callouts_registered > 0,
+        filter_count,
+        provider_registered: callouts_registered > 0,
         message: None,
     }
 }
@@ -161,7 +177,7 @@ impl WfpEngine for KernelCalloutEngine {
         let _ = client
             .reconcile()
             .map_err(|e| WireSentinelError::Wfp(format!("Guardian reconcile failed: {e}")))?;
-        *self.client.lock() = Some(client);
+        *self.client.lock() = Some(SendGuardianClient(client));
         Ok(())
     }
 

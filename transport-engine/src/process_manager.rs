@@ -95,7 +95,7 @@ impl ProcessManager {
 
     pub async fn kill(&self, id: Uuid) -> Result<()> {
         let entry = self.processes.write().remove(&id);
-        let Some(_entry) = entry else {
+        let Some(entry) = entry else {
             return Ok(());
         };
 
@@ -112,7 +112,7 @@ impl ProcessManager {
 
         #[cfg(not(windows))]
         {
-            info!(%id, "stub transport process stopped");
+            info!(%id, pid = entry.pid, "transport process stopped");
         }
 
         Ok(())

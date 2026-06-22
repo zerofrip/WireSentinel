@@ -183,7 +183,13 @@ jobs:
           workspaces: WireSentinel
 
       - name: Install cargo-xwin
-        run: cargo install cargo-xwin --locked
+        run: |
+          for attempt in 1 2 3; do
+            cargo install cargo-xwin --locked && exit 0
+            echo "cargo-xwin install attempt $attempt failed; retrying..."
+            sleep 10
+          done
+          exit 1
 
       - name: cargo check (x86_64-pc-windows-msvc)
         working-directory: WireSentinel

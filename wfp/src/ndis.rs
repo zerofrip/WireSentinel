@@ -10,6 +10,17 @@ use shared_types::{AppIdentity, NdisHealth, Result, TrafficRoute, TunnelIface, W
 use std::sync::Arc;
 use uuid::Uuid;
 
+/// NDIS device handle is opened per service thread.
+struct SendNdisClient(NdisClient);
+unsafe impl Send for SendNdisClient {}
+unsafe impl Sync for SendNdisClient {}
+
+impl SendNdisClient {
+    fn inner(&self) -> &NdisClient {
+        &self.0
+    }
+}
+
 #[async_trait]
 pub trait NdisEngine: Send + Sync {
     async fn init(&self) -> Result<()>;
@@ -108,7 +119,7 @@ fn route_assignment(
 
 /// NDIS driver client (Windows) with in-memory fallback for CI.
 pub struct NdisCalloutEngine {
-    client: Mutex<Option<NdisClient>>,
+    client: Mutex<Option<SendNdisClient>>,
     stub_routes: Mutex<std::collections::HashMap<Uuid, TrafficRoute>>,
 }
 
@@ -132,7 +143,7 @@ impl NdisEngine for NdisCalloutEngine {
     async fn init(&self) -> Result<()> {
         match NdisClient::connect() {
             Ok(client) => {
-                *self.client.lock() = Some(client);
+                *self.client.lock() = Some(SendNdisClient(client));
                 Ok(())
             }
             Err(e) => {
@@ -158,6 +169,7 @@ impl NdisEngine for NdisCalloutEngine {
         if let Some(client) = self.client.lock().as_ref() {
             let assignment = route_assignment(app, route, tunnel.as_ref());
             client
+                .inner()
                 .set_route(&assignment)
                 .map_err(|e| WireSentinelError::Wfp(format!("ndis set route: {e}")))?;
         }
@@ -168,6 +180,7 @@ impl NdisEngine for NdisCalloutEngine {
         self.stub_routes.lock().remove(&app_id);
         if let Some(client) = self.client.lock().as_ref() {
             client
+                .inner()
                 .clear_route(app_id)
                 .map_err(|e| WireSentinelError::Wfp(format!("ndis clear route: {e}")))?;
         }
@@ -176,7 +189,7 @@ impl NdisEngine for NdisCalloutEngine {
 
     async fn health(&self) -> NdisHealth {
         if let Some(client) = self.client.lock().as_ref() {
-            match client.driver_state() {
+            match client.inner().driver_state() {
                 Ok(state) => return health_from_state(&state, None),
                 Err(e) => {
                     return NdisHealth {
@@ -210,6 +223,7 @@ impl NdisEngine for NdisCalloutEngine {
     async fn telemetry_summary(&self) -> Result<NdisTelemetrySummaryV2> {
         if let Some(client) = self.client.lock().as_ref() {
             return client
+                .inner()
                 .telemetry_summary()
                 .map_err(|e| WireSentinelError::Wfp(format!("ndis telemetry: {e}")));
         }

@@ -13,6 +13,33 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
+type WfpEngineHandle = u64;
+
+fn raw_handle(handle: WfpEngineHandle) -> windows::Win32::Foundation::HANDLE {
+    windows::Win32::Foundation::HANDLE(handle as *mut std::ffi::c_void)
+}
+
+fn store_handle(handle: windows::Win32::Foundation::HANDLE) -> WfpEngineHandle {
+    handle.0 as usize as u64
+}
+
+fn win32_ok(status: u32, op: &str) -> Result<()> {
+    use windows::Win32::Foundation::NO_ERROR;
+    if status == NO_ERROR.0 {
+        Ok(())
+    } else {
+        Err(WireSentinelError::Wfp(format!(
+            "{op} failed: Win32 error {status}"
+        )))
+    }
+}
+
+fn engine_handle_from_guard(
+    guard: parking_lot::RwLockReadGuard<'_, Option<WfpEngineHandle>>,
+) -> Result<WfpEngineHandle> {
+    (*guard).ok_or_else(|| WireSentinelError::Wfp("engine not initialized".into()))
+}
+
 /// WireSentinel WFP provider display name.
 pub const PROVIDER_NAME: &str = "WireSentinel";
 pub const SUBLAYER_NAME: &str = "WireSentinel/AppFilter";
@@ -23,7 +50,7 @@ pub struct UserspaceWfpEngine {
     provider_registered: AtomicBool,
     filter_ids: RwLock<HashMap<Uuid, Vec<u64>>>,
     kill_switch_filter_ids: RwLock<Vec<u64>>,
-    engine_handle: RwLock<Option<u64>>,
+    engine_handle: RwLock<Option<WfpEngineHandle>>,
 }
 
 impl UserspaceWfpEngine {
@@ -38,32 +65,34 @@ impl UserspaceWfpEngine {
         }
     }
 
-    fn open_engine(&self) -> Result<u64> {
+    fn open_engine(&self) -> Result<WfpEngineHandle> {
         use windows::core::PCWSTR;
+        use windows::Win32::Foundation::HANDLE;
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::{
             FwpmEngineOpen0, FWPM_SESSION0,
         };
 
-        let mut handle = std::ptr::null_mut();
+        let mut handle = HANDLE::default();
         let session = FWPM_SESSION0::default();
-        unsafe {
+        let status = unsafe {
             FwpmEngineOpen0(
                 PCWSTR::null(),
-                0x00000002, // RPC_C_AUTHN_WINNT
+                0x00000002,
                 None,
-                Some(&session as *const _ as *mut _),
+                Some(&session),
                 &mut handle,
             )
-            .map_err(|e| WireSentinelError::Wfp(format!("FwpmEngineOpen0 failed: {e}")))?;
-        }
-        Ok(handle as u64)
+        };
+        win32_ok(status, "FwpmEngineOpen0")?;
+        Ok(store_handle(handle))
     }
 
-    fn close_engine(handle: u64) {
+    fn close_engine(handle: WfpEngineHandle) {
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::FwpmEngineClose0;
-        if handle != 0 {
+        let handle = raw_handle(handle);
+        if !handle.is_invalid() {
             unsafe {
-                let _ = FwpmEngineClose0(handle as _);
+                let _ = FwpmEngineClose0(handle);
             }
         }
     }
@@ -78,7 +107,8 @@ impl UserspaceWfpEngine {
         let wide = windows::core::HSTRING::from(path.as_os_str());
         let mut app_id = std::ptr::null_mut();
         unsafe {
-            FwpmGetAppIdFromFileName0(PCWSTR(wide.as_ptr()), &mut app_id).map_err(|e| {
+            let status = FwpmGetAppIdFromFileName0(PCWSTR(wide.as_ptr()), &mut app_id);
+            win32_ok(status, "FwpmGetAppIdFromFileName0").map_err(|e| {
                 WireSentinelError::Wfp(format!(
                     "FwpmGetAppIdFromFileName0 failed for {}: {e}",
                     path.display()
@@ -89,7 +119,7 @@ impl UserspaceWfpEngine {
     }
 
     fn free_app_id(
-        app_id: *mut windows::Win32::NetworkManagement::WindowsFilteringPlatform::FWP_BYTE_BLOB,
+        mut app_id: *mut windows::Win32::NetworkManagement::WindowsFilteringPlatform::FWP_BYTE_BLOB,
     ) {
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::FwpmFreeMemory0;
         if !app_id.is_null() {
@@ -101,7 +131,7 @@ impl UserspaceWfpEngine {
 
     fn apply_filter_on_layer(
         &self,
-        engine: u64,
+        engine: WfpEngineHandle,
         app: &AppIdentity,
         layer: windows::core::GUID,
         action: RuleAction,
@@ -145,7 +175,7 @@ impl UserspaceWfpEngine {
         filter.weight.r#type =
             windows::Win32::NetworkManagement::WindowsFilteringPlatform::FWP_UINT8;
         filter.weight.Anonymous.uint8 = if block { 1 } else { 15 };
-        filter.filterCondition = condition;
+        filter.filterCondition = std::ptr::addr_of_mut!(condition);
         filter.numFilterConditions = 1;
 
         // Interface LUID condition for VPN routes — stub until tunnel LUID is available.
@@ -154,11 +184,10 @@ impl UserspaceWfpEngine {
         }
 
         let mut filter_id = 0u64;
-        let add_result =
-            unsafe { FwpmFilterAdd0(engine as _, &filter, None, Some(&mut filter_id)) };
+        let engine = raw_handle(engine);
+        let status = unsafe { FwpmFilterAdd0(engine, &filter, None, Some(&mut filter_id)) };
         Self::free_app_id(app_id_blob);
-
-        add_result.map_err(|e| {
+        win32_ok(status, "FwpmFilterAdd0").map_err(|e| {
             WireSentinelError::Wfp(format!(
                 "FwpmFilterAdd0 failed for {}: {e}",
                 app.exe_path().display()
@@ -170,7 +199,7 @@ impl UserspaceWfpEngine {
 
     fn apply_connection_filters(
         &self,
-        engine: u64,
+        engine: WfpEngineHandle,
         app: &AppIdentity,
         route: &TrafficRoute,
         tunnel: Option<&TunnelIface>,
@@ -183,6 +212,7 @@ impl UserspaceWfpEngine {
             TrafficRoute::Blocked => RuleAction::Block,
             TrafficRoute::Direct => RuleAction::Allow,
             TrafficRoute::WireGuard(_) | TrafficRoute::AmneziaWG(_) => RuleAction::Allow,
+            _ => RuleAction::Allow,
         };
 
         let mut ids = Vec::with_capacity(2);
@@ -190,7 +220,7 @@ impl UserspaceWfpEngine {
             engine,
             app,
             FWPM_LAYER_ALE_AUTH_CONNECT_V4,
-            action,
+            action.clone(),
             tunnel,
         )?);
         ids.push(self.apply_filter_on_layer(
@@ -203,7 +233,7 @@ impl UserspaceWfpEngine {
         Ok(ids)
     }
 
-    fn remove_filters(&self, engine: u64, ids: &[u64]) {
+    fn remove_filters(&self, engine: WfpEngineHandle, ids: &[u64]) {
         for id in ids {
             if let Err(e) = self.remove_filter(engine, *id) {
                 warn!(filter_id = id, error = %e, "failed to remove WFP filter");
@@ -211,13 +241,11 @@ impl UserspaceWfpEngine {
         }
     }
 
-    fn remove_filter(&self, engine: u64, filter_id: u64) -> Result<()> {
+    fn remove_filter(&self, engine: WfpEngineHandle, filter_id: u64) -> Result<()> {
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::FwpmFilterDeleteById0;
-        unsafe {
-            FwpmFilterDeleteById0(engine as _, filter_id).map_err(|e| {
-                WireSentinelError::Wfp(format!("FwpmFilterDeleteById0 failed: {e}"))
-            })?;
-        }
+        let engine = raw_handle(engine);
+        let status = unsafe { FwpmFilterDeleteById0(engine, filter_id) };
+        win32_ok(status, "FwpmFilterDeleteById0")?;
         Ok(())
     }
 
@@ -227,10 +255,7 @@ impl UserspaceWfpEngine {
         route: &TrafficRoute,
         tunnel: Option<&TunnelIface>,
     ) -> Result<Vec<u64>> {
-        let handle = *self
-            .engine_handle
-            .read()
-            .ok_or_else(|| WireSentinelError::Wfp("engine not initialized".into()))?;
+        let handle = engine_handle_from_guard(self.engine_handle.read())?;
 
         if let Some(old_ids) = self.filter_ids.write().remove(&app.id()) {
             self.remove_filters(handle, &old_ids);
@@ -241,13 +266,14 @@ impl UserspaceWfpEngine {
         Ok(ids)
     }
 
-    fn apply_kill_switch_filters(&self, engine: u64) -> Result<Vec<u64>> {
+    fn apply_kill_switch_filters(&self, engine: WfpEngineHandle) -> Result<Vec<u64>> {
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::{
             FwpmFilterAdd0, FWPM_FILTER0, FWPM_LAYER_ALE_AUTH_CONNECT_V4,
             FWPM_LAYER_ALE_AUTH_CONNECT_V6, FWP_ACTION_BLOCK,
         };
 
         info!("applying kill switch block-all filters");
+        let wfp_engine = raw_handle(engine);
         let mut ids = Vec::new();
         for layer in [
             FWPM_LAYER_ALE_AUTH_CONNECT_V4,
@@ -264,17 +290,14 @@ impl UserspaceWfpEngine {
             filter.weight.Anonymous.uint8 = 0;
 
             let mut filter_id = 0u64;
-            unsafe {
-                FwpmFilterAdd0(engine as _, &filter, None, Some(&mut filter_id)).map_err(|e| {
-                    WireSentinelError::Wfp(format!("kill switch filter failed: {e}"))
-                })?;
-            }
+            let status = unsafe { FwpmFilterAdd0(wfp_engine, &filter, None, Some(&mut filter_id)) };
+            win32_ok(status, "FwpmFilterAdd0")?;
             ids.push(filter_id);
         }
         Ok(ids)
     }
 
-    fn ensure_provider(&self, engine: u64) -> Result<()> {
+    fn ensure_provider(&self, engine: WfpEngineHandle) -> Result<()> {
         use windows::core::GUID;
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::{
             FwpmProviderAdd0, FwpmSubLayerAdd0, FWPM_PROVIDER0, FWPM_SUBLAYER0,
@@ -283,22 +306,25 @@ impl UserspaceWfpEngine {
         let provider_key = GUID::from_u128(0xa1b2c3d4_e5f6_7890_abcd_ef1234567890);
         let sublayer_key = GUID::from_u128(0xb2c3d4e5_f6a7_8901_bcde_f12345678901);
 
+        let wfp_engine = raw_handle(engine);
+
         let mut provider: FWPM_PROVIDER0 = unsafe { std::mem::zeroed() };
         provider.providerKey = provider_key;
         provider.displayData.name =
             windows::core::PWSTR(windows::core::HSTRING::from(PROVIDER_NAME).as_ptr() as _);
         unsafe {
-            let _ = FwpmProviderAdd0(engine as _, &provider, None);
+            let _ = FwpmProviderAdd0(wfp_engine, &provider, None);
         }
 
         let mut sublayer: FWPM_SUBLAYER0 = unsafe { std::mem::zeroed() };
+        let mut provider_key_ref = provider_key;
         sublayer.subLayerKey = sublayer_key;
         sublayer.displayData.name =
             windows::core::PWSTR(windows::core::HSTRING::from(SUBLAYER_NAME).as_ptr() as _);
-        sublayer.providerKey = provider_key;
+        sublayer.providerKey = std::ptr::addr_of_mut!(provider_key_ref);
         sublayer.weight = 0x100;
         unsafe {
-            let _ = FwpmSubLayerAdd0(engine as _, &sublayer, None);
+            let _ = FwpmSubLayerAdd0(wfp_engine, &sublayer, None);
         }
 
         self.provider_registered.store(true, Ordering::SeqCst);
@@ -347,10 +373,7 @@ impl WfpEngine for UserspaceWfpEngine {
     }
 
     async fn remove_app_rule(&self, app_id: Uuid) -> Result<()> {
-        let handle = *self
-            .engine_handle
-            .read()
-            .ok_or_else(|| WireSentinelError::Wfp("engine not initialized".into()))?;
+        let handle = engine_handle_from_guard(self.engine_handle.read())?;
         if let Some(ids) = self.filter_ids.write().remove(&app_id) {
             self.remove_filters(handle, &ids);
         }
@@ -359,10 +382,7 @@ impl WfpEngine for UserspaceWfpEngine {
 
     async fn apply_kill_switch(&self, active: bool) -> Result<()> {
         self.kill_switch.store(active, Ordering::SeqCst);
-        let handle = *self
-            .engine_handle
-            .read()
-            .ok_or_else(|| WireSentinelError::Wfp("engine not initialized".into()))?;
+        let handle = engine_handle_from_guard(self.engine_handle.read())?;
 
         if active {
             let ids = self.apply_kill_switch_filters(handle)?;
@@ -386,8 +406,18 @@ impl WfpEngine for UserspaceWfpEngine {
                     TrafficRoute::Direct
                 }
                 RuleAction::RouteViaVpn(pid) => TrafficRoute::WireGuard(*pid),
+                RuleAction::RouteViaTailnet(pid) => TrafficRoute::Tailnet(*pid),
+                RuleAction::RouteViaTor(pid) => TrafficRoute::Tor(*pid),
+                RuleAction::RouteViaProxy(pid) => TrafficRoute::Proxy(*pid),
+                RuleAction::RouteViaProxyChain(pid) => TrafficRoute::ProxyChain(*pid),
+                RuleAction::RouteViaChain(pid) => TrafficRoute::Chain(*pid),
+                RuleAction::RouteViaAnonymous(route) => TrafficRoute::Anonymous(route.clone()),
+                RuleAction::RouteViaMixnet(id) => {
+                    TrafficRoute::Anonymous(shared_types::AnonymousRoute::FutureMixnet(*id))
+                }
+                RuleAction::SegmentDeny(_) => TrafficRoute::Blocked,
             };
-            self.apply_route(&app, &route).await?;
+            WfpEngine::apply_route(self, &app, &route).await?;
         }
         Ok(())
     }
@@ -427,10 +457,7 @@ impl WfpEngine for UserspaceWfpEngine {
     }
 
     async fn reconcile_filters(&self, known_ids: &[u64]) -> Result<u32> {
-        let handle = *self
-            .engine_handle
-            .read()
-            .ok_or_else(|| WireSentinelError::Wfp("engine not initialized".into()))?;
+        let handle = engine_handle_from_guard(self.engine_handle.read())?;
         let known: std::collections::HashSet<u64> = known_ids.iter().copied().collect();
         let mut removed = 0u32;
 

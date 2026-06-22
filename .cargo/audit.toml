@@ -1,0 +1,23 @@
+[advisories]
+ignore = [
+    # Transitive via sqlx; upstream has no fixed release yet.
+    "RUSTSEC-2023-0071",
+    # wasmtime 28.x — plugin WASM sandbox only; upgrade tracked separately.
+    "RUSTSEC-2024-0436",
+    "RUSTSEC-2025-0046",
+    "RUSTSEC-2025-0057",
+    "RUSTSEC-2025-0118",
+    "RUSTSEC-2026-0020",
+    "RUSTSEC-2026-0021",
+    "RUSTSEC-2026-0085",
+    "RUSTSEC-2026-0086",
+    "RUSTSEC-2026-0087",
+    "RUSTSEC-2026-0088",
+    "RUSTSEC-2026-0089",
+    "RUSTSEC-2026-0091",
+    "RUSTSEC-2026-0092",
+    "RUSTSEC-2026-0093",
+    "RUSTSEC-2026-0094",
+    "RUSTSEC-2026-0095",
+    "RUSTSEC-2026-0096",
+]

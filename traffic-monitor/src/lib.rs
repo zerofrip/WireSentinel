@@ -10,5 +10,8 @@ pub use etw::{backend_from_settings, TrafficBackend};
 #[cfg(windows)]
 mod windows;
 
+#[cfg(windows)]
+pub use windows::enumerate_tcp_connections;
+
 pub use handler::ConnectionHandler;
 pub use monitor::{spawn_monitor, TrafficMonitor};

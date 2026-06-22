@@ -12,7 +12,7 @@ pub trait TcpSessionTerminator: Send + Sync {
 pub fn default_terminator() -> Box<dyn TcpSessionTerminator> {
     #[cfg(windows)]
     {
-        Box::new(windows::WindowsTcpTerminator)
+        Box::new(win::WindowsTcpTerminator)
     }
     #[cfg(not(windows))]
     {
@@ -21,13 +21,14 @@ pub fn default_terminator() -> Box<dyn TcpSessionTerminator> {
 }
 
 #[cfg(windows)]
-mod windows {
+mod win {
     use super::TcpSessionTerminator;
     use shared_types::{Result, TcpConnectionSnapshot, WireSentinelError};
-    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-    use traffic_monitor::windows::enumerate_tcp_connections;
+    use std::net::{IpAddr, SocketAddr};
+    use traffic_monitor::enumerate_tcp_connections;
+    use windows::Win32::Foundation::NO_ERROR;
     use windows::Win32::NetworkManagement::IpHelper::{
-        SetTcpEntry, MIB_TCPROW, MIB_TCP_STATE_DELETE_TCB,
+        SetTcpEntry, MIB_TCPROW_LH, MIB_TCPROW_LH_0, MIB_TCP_STATE_DELETE_TCB,
     };
 
     pub struct WindowsTcpTerminator;
@@ -45,18 +46,21 @@ mod windows {
                 _ => return Ok(()),
             };
 
-            let mut row = MIB_TCPROW {
-                dwState: MIB_TCP_STATE_DELETE_TCB.0,
+            let row = MIB_TCPROW_LH {
+                Anonymous: MIB_TCPROW_LH_0 {
+                    State: MIB_TCP_STATE_DELETE_TCB,
+                },
                 dwLocalAddr: u32::from(local_ip).to_be(),
                 dwLocalPort: (local_port as u32).to_be(),
                 dwRemoteAddr: u32::from(remote_ip).to_be(),
                 dwRemotePort: (remote_port as u32).to_be(),
-                ..Default::default()
             };
 
-            unsafe {
-                SetTcpEntry(&mut row)
-                    .map_err(|e| WireSentinelError::Internal(format!("SetTcpEntry v4: {e}")))?;
+            let status = unsafe { SetTcpEntry(&row) };
+            if status != NO_ERROR.0 {
+                return Err(WireSentinelError::Traffic(format!(
+                    "SetTcpEntry v4 failed: status {status}"
+                )));
             }
             Ok(())
         }

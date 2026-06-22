@@ -2,8 +2,7 @@ use super::traits::{Result, SplitTemplateRepository};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use shared_types::{
-    AppRule, DomainRule, SplitTemplateModeSettings, SplitTunnelTemplate, TemplateMode,
-    TrafficRoute, WireSentinelError,
+    SplitTemplateModeSettings, SplitTunnelTemplate, TemplateMode, WireSentinelError,
 };
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -20,6 +19,7 @@ impl SqliteSplitTemplateRepository {
 
 const MODE_KEY: &str = "split_tunnel_template_mode";
 
+#[allow(dead_code)]
 fn mode_str(m: TemplateMode) -> &'static str {
     match m {
         TemplateMode::Disabled => "disabled",
@@ -28,6 +28,7 @@ fn mode_str(m: TemplateMode) -> &'static str {
     }
 }
 
+#[allow(dead_code)]
 fn mode_from_str(s: &str) -> Result<TemplateMode> {
     match s {
         "disabled" => Ok(TemplateMode::Disabled),

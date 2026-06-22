@@ -1,6 +1,6 @@
 use super::traits::{Result, RuleRepository, SettingsRepository};
 use async_trait::async_trait;
-use shared_types::{PolicyMode, Rule, RuleAction, RuleScope, WireSentinelError};
+use shared_types::{PolicyMode, Rule, RuleScope, WireSentinelError};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 

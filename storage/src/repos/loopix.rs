@@ -108,7 +108,7 @@ impl LoopixProfileRepository for SqliteLoopixProfileRepository {
             profile
                 .config_json
                 .as_ref()
-                .map(|v| serde_json::to_string(v))
+                .map(serde_json::to_string)
                 .transpose()
                 .map_err(|e| WireSentinelError::Config(e.to_string()))?,
         )
@@ -135,7 +135,7 @@ impl LoopixProfileRepository for SqliteLoopixProfileRepository {
             profile
                 .config_json
                 .as_ref()
-                .map(|v| serde_json::to_string(v))
+                .map(serde_json::to_string)
                 .transpose()
                 .map_err(|e| WireSentinelError::Config(e.to_string()))?,
         )

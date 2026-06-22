@@ -28,18 +28,18 @@ use axum::{
     http::{HeaderMap, StatusCode},
     middleware,
     response::{IntoResponse, Response},
-    routing::{delete, get, post, put},
+    routing::{get, post, put},
     Json, Router,
 };
 use chrono::Utc;
-use filter_lists::{filters_cache_dir, FilterSubscription};
+use filter_lists::filters_cache_dir;
 use serde::Deserialize;
 use shared_types::{
     AppSummary, AuditLogQuery, ChainProfile, DnsProviderRecord, DnsSettings, EnterprisePolicy,
     FilterListRecord, KernelStatistics, KernelTelemetryV2, LeakIncident, LogLevel, PolicyMode,
     PrivacyScoreSnapshot, RouteStatisticsQuery, Rule, SecurityAuditEntry, SecurityFinding,
-    ServiceEventInner, ServiceStatus, TailscaleStatus, TopDomainEntry, TorStatus, TrafficEvent,
-    TrafficRoute, TransportProfile, TransportStatusRecord, VPNProfile, ValidationReport,
+    ServiceEventInner, ServiceStatus, TailscaleStatus, TorStatus, TrafficRoute, TransportProfile,
+    TransportStatusRecord, VPNProfile, ValidationReport,
 };
 use std::sync::Arc;
 use storage::{
@@ -1523,7 +1523,7 @@ async fn rotate_auth_token(State(state): State<Arc<AppState>>) -> impl IntoRespo
 }
 
 #[derive(Deserialize)]
-struct BenchmarkQuery {
+pub struct BenchmarkQuery {
     limit: Option<u32>,
 }
 

@@ -7,9 +7,8 @@ mod phase2_tests {
     };
     use std::path::PathBuf;
     use storage::{
-        init_pool_in_memory, CorrelationQuery, CorrelationRepository, DnsLogQuery,
-        DnsLogRepository, DnsSortField, FilterListRepository, SortOrder, Storage, TrafficLogQuery,
-        TrafficLogRepository, TrafficSortField,
+        init_pool_in_memory, CorrelationQuery, DnsLogQuery, DnsSortField, SortOrder, Storage,
+        TrafficLogQuery, TrafficSortField,
     };
     use uuid::Uuid;
 
@@ -148,10 +147,7 @@ mod phase3_tests {
         RouteStatisticsRecord, TrafficRoute, TransportKind, TransportProfile, TransportProfileKind,
         Verdict,
     };
-    use storage::{
-        init_pool_in_memory, AuditLogRepository, DomainCacheRepository, FirewallDecisionRepository,
-        RouteStatisticsRepository, Storage,
-    };
+    use storage::{init_pool_in_memory, Storage};
     use uuid::Uuid;
 
     async fn storage() -> Storage {

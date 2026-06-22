@@ -4,9 +4,8 @@ use event_bus::EventBus;
 use parking_lot::RwLock;
 use shared_types::{
     Result, ServiceEventInner, TcpConnectionSnapshot, TcpTerminationMode, TcpTerminationPolicy,
-    TcpTerminationRule, TrafficRoute, WireSentinelError,
+    TcpTerminationRule, TrafficRoute,
 };
-use std::sync::Arc;
 use tracing::{debug, warn};
 use uuid::Uuid;
 

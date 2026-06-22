@@ -1,6 +1,5 @@
 //! Auto-update framework (check/notify only in Phase 5).
 
-use chrono::Utc;
 use shared_types::{Result, UpdateInfo, WireSentinelError};
 use std::sync::Arc;
 use storage::Storage;

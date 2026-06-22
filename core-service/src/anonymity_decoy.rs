@@ -51,7 +51,7 @@ impl AnonymityDecoyService {
     }
 
     pub fn simulate(&self, route: &DecoyRoute) -> Result<u32> {
-        let framework = self.framework.lock();
+        let _framework = self.framework.lock();
         let hops = route.hops.len() as u32;
         self.events
             .publish(ServiceEvent::now(ServiceEventInner::DecoyRouteSimulated {

@@ -7,8 +7,8 @@ use crate::provider::DnsProvider;
 
 #[derive(serde::Deserialize)]
 struct DohResponse {
-    #[serde(default)]
-    Answer: Vec<DohAnswer>,
+    #[serde(default, rename = "Answer")]
+    answer: Vec<DohAnswer>,
 }
 
 #[derive(serde::Deserialize)]
@@ -84,7 +84,7 @@ impl DnsProvider for DohProvider {
             .await
             .map_err(|e| WireSentinelError::Dns(format!("DoH parse failed: {e}")))?;
 
-        let answers: Vec<String> = body.Answer.into_iter().map(|a| a.data).collect();
+        let answers: Vec<String> = body.answer.into_iter().map(|a| a.data).collect();
         let latency = start.elapsed().as_millis() as u64;
         debug!(name = qname, ?answers, latency_ms = latency, "DoH resolved");
         Ok((answers, latency))

@@ -2,9 +2,7 @@
 
 use chrono::Utc;
 use event_bus::EventBus;
-use shared_types::{
-    Result, SecurityFinding, SecuritySeverity, ServiceEventInner, WireSentinelError,
-};
+use shared_types::{Result, SecurityFinding, SecuritySeverity, ServiceEventInner};
 use std::sync::Arc;
 use storage::{data_dir, Storage};
 use uuid::Uuid;

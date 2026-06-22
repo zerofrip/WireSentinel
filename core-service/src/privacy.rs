@@ -70,10 +70,11 @@ impl PrivacyScoreService {
             .map(|r| r.bytes_out + r.bytes_in)
             .sum();
         let total_bytes: u64 = route_stats.iter().map(|r| r.bytes_out + r.bytes_in).sum();
+        #[allow(clippy::manual_checked_ops)]
         let route_leakage = if total_bytes == 0 {
             100
         } else {
-            let direct_pct = (direct_bytes * 100 / total_bytes) as u8;
+            let direct_pct = (direct_bytes.saturating_mul(100) / total_bytes) as u8;
             100u8.saturating_sub(direct_pct.min(80))
         };
 

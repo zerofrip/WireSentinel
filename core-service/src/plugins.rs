@@ -5,7 +5,7 @@ use event_bus::EventBus;
 use plugin_runtime::{plugins_data_dir, PluginManager, PluginSecurityPolicy};
 use shared_types::{PluginCapability, PluginRecord, Result, ServiceEventInner, WireSentinelError};
 use std::sync::Arc;
-use storage::{PluginRepository, Storage};
+use storage::Storage;
 use tracing::info;
 use uuid::Uuid;
 
@@ -137,8 +137,7 @@ impl PluginService {
             .filter(|r| {
                 r.manifest
                     .capabilities
-                    .iter()
-                    .any(|c| *c == PluginCapability::MixnetBackend)
+                    .contains(&PluginCapability::MixnetBackend)
             })
             .collect())
     }

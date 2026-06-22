@@ -42,6 +42,7 @@ pub fn materialize_profile_config(profile: &VPNProfile, blob: Option<&[u8]>) -> 
     Ok(path)
 }
 
+#[allow(dead_code)]
 pub fn profile_id_from_db_path(path: &Path) -> Option<Uuid> {
     let s = path.to_string_lossy();
     if !s.starts_with(DB_SCHEME) {

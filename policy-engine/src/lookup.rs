@@ -16,10 +16,12 @@ impl ProfileLookup for EmptyProfileLookup {
 }
 
 /// In-memory profile lookup for tests and simple deployments.
+#[cfg_attr(not(test), allow(dead_code))]
 pub struct HashMapProfileLookup {
     map: std::collections::HashMap<Uuid, VpnBackendKind>,
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
 impl HashMapProfileLookup {
     pub fn new(map: std::collections::HashMap<Uuid, VpnBackendKind>) -> Self {
         Self { map }

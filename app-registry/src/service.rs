@@ -2,7 +2,7 @@ use crate::discovery::exe_path_for_pid;
 use crate::identity::{file_sha256, icon_path_for_exe, publisher_for_exe};
 use chrono::Utc;
 use event_bus::EventBus;
-use shared_types::{AppIdentity, AppRecord, ServiceEvent, ServiceEventInner, WireSentinelError};
+use shared_types::{AppIdentity, AppRecord, ServiceEventInner, WireSentinelError};
 use std::sync::Arc;
 use storage::{AppFilter, AppRepository};
 use tracing::debug;

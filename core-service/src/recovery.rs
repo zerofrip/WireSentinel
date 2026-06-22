@@ -2,7 +2,7 @@
 
 use chrono::Utc;
 use event_bus::EventBus;
-use shared_types::{Result, RuntimeStateRecord, ServiceEventInner, VpnStatus, WireSentinelError};
+use shared_types::{Result, RuntimeStateRecord, ServiceEventInner, VpnStatus};
 use std::sync::Arc;
 use storage::Storage;
 use tracing::{info, warn};

@@ -15,6 +15,7 @@ const DEFAULT_TTL_SECS: u64 = 300;
 #[derive(Debug, Clone)]
 struct MemoryEntry {
     domain: String,
+    #[allow(dead_code)]
     wildcard: bool,
     expires_at: chrono::DateTime<Utc>,
 }

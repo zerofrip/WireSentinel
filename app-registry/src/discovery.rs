@@ -33,7 +33,7 @@ pub fn exe_path_for_pid(pid: u32) -> Result<PathBuf, WireSentinelError> {
     {
         let path = format!("/proc/{pid}/exe");
         std::fs::read_link(&path)
-            .map_err(|e| WireSentinelError::Io(e))
+            .map_err(WireSentinelError::Io)
             .or_else(|_| Ok(PathBuf::from(format!("unknown-{pid}.exe"))))
     }
 }

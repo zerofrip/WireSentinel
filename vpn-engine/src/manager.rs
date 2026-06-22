@@ -1,6 +1,5 @@
 use crate::backend::VpnBackend;
 use crate::factory::VpnBackendFactory;
-use async_trait::async_trait;
 use chrono::Utc;
 use event_bus::EventBus;
 use parking_lot::RwLock;

@@ -55,7 +55,7 @@ impl MetricsService {
             .count() as u32;
 
         Ok(MetricsSnapshot {
-            active_tunnels: self.vpn.active_count() as u32,
+            active_tunnels: self.vpn.active_count(),
             active_transports,
             blocked_requests: blocked,
             dns_queries,

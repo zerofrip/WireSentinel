@@ -548,7 +548,8 @@ impl Orchestrator {
             warn!(error = %e, "recovery flush before stop failed");
         }
 
-        if let Some(mut scheduler) = self.deps.filter_scheduler.lock().take() {
+        let scheduler = self.deps.filter_scheduler.lock().take();
+        if let Some(mut scheduler) = scheduler {
             let _ = scheduler.shutdown().await;
         }
 

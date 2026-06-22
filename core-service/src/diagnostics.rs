@@ -2,7 +2,7 @@
 
 use chrono::Utc;
 use dns::DnsLayer;
-use shared_types::{DiagnosticsHealth, Result, SubsystemHealth, TransportState, WireSentinelError};
+use shared_types::{DiagnosticsHealth, Result, SubsystemHealth, WireSentinelError};
 use std::sync::Arc;
 use storage::{data_dir, Storage};
 use vpn_engine::VpnManager;
@@ -12,6 +12,7 @@ use crate::transport::TransportManager;
 
 pub struct DiagnosticsService {
     storage: Arc<Storage>,
+    #[allow(dead_code)]
     wfp: Arc<dyn WfpEngine>,
     vpn: Arc<VpnManager>,
     dns: Arc<DnsLayer>,
@@ -139,17 +140,15 @@ impl DiagnosticsService {
             )
             .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
-            if let Ok(snapshot) = self.storage.privacy_snapshots.latest().await {
-                if let Some(s) = snapshot {
-                    zip.start_file("privacy_snapshot.json", options)
-                        .map_err(|e| WireSentinelError::Config(e.to_string()))?;
-                    zip.write_all(
-                        serde_json::to_string_pretty(&s)
-                            .map_err(WireSentinelError::Serde)?
-                            .as_bytes(),
-                    )
+            if let Ok(Some(s)) = self.storage.privacy_snapshots.latest().await {
+                zip.start_file("privacy_snapshot.json", options)
                     .map_err(|e| WireSentinelError::Config(e.to_string()))?;
-                }
+                zip.write_all(
+                    serde_json::to_string_pretty(&s)
+                        .map_err(WireSentinelError::Serde)?
+                        .as_bytes(),
+                )
+                .map_err(|e| WireSentinelError::Config(e.to_string()))?;
             }
 
             zip.finish()

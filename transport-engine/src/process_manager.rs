@@ -1,12 +1,16 @@
 use parking_lot::RwLock;
-use shared_types::{Result, WireSentinelError};
+use shared_types::Result;
+#[cfg(windows)]
+use shared_types::WireSentinelError;
 use std::collections::HashMap;
 use std::path::Path;
+#[cfg(windows)]
 use std::process::Stdio;
 use tracing::{info, warn};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct ManagedProcess {
     pid: u32,
     binary: String,

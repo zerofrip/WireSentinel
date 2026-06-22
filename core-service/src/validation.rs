@@ -4,7 +4,6 @@ use chrono::Utc;
 use event_bus::EventBus;
 use shared_types::{
     GuardianMode, Result, ServiceEventInner, ValidationCheck, ValidationReport, ValidationStatus,
-    WireSentinelError,
 };
 use std::path::PathBuf;
 use std::sync::Arc;

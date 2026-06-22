@@ -1,6 +1,5 @@
 //! Tor transport and bridge management service.
 
-use chrono::Utc;
 use event_bus::EventBus;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};

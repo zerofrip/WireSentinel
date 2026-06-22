@@ -86,7 +86,6 @@ async fn run_proxy(
                 };
 
                 let ctx = Arc::clone(&ctx);
-                let query = query;
                 let sock = Arc::clone(&socket);
                 tokio::spawn(async move {
                     let settings = ctx.settings.clone();

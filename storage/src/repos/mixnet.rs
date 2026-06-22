@@ -147,7 +147,7 @@ impl MixnetProfileRepository for SqliteMixnetProfileRepository {
             profile
                 .config_json
                 .as_ref()
-                .map(|v| serde_json::to_string(v))
+                .map(serde_json::to_string)
                 .transpose()
                 .map_err(|e| WireSentinelError::Config(e.to_string()))?,
         )
@@ -177,7 +177,7 @@ impl MixnetProfileRepository for SqliteMixnetProfileRepository {
             profile
                 .config_json
                 .as_ref()
-                .map(|v| serde_json::to_string(v))
+                .map(serde_json::to_string)
                 .transpose()
                 .map_err(|e| WireSentinelError::Config(e.to_string()))?,
         )
@@ -286,7 +286,7 @@ impl MixnetSessionRepository for SqliteMixnetSessionRepository {
         let route_json = session
             .route
             .as_ref()
-            .map(|r| serde_json::to_string(r))
+            .map(serde_json::to_string)
             .transpose()
             .map_err(|e| WireSentinelError::Config(e.to_string()))?;
         sqlx::query(
@@ -310,7 +310,7 @@ impl MixnetSessionRepository for SqliteMixnetSessionRepository {
         let route_json = session
             .route
             .as_ref()
-            .map(|r| serde_json::to_string(r))
+            .map(serde_json::to_string)
             .transpose()
             .map_err(|e| WireSentinelError::Config(e.to_string()))?;
         sqlx::query(

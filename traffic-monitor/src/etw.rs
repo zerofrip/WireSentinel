@@ -3,6 +3,7 @@
 use shared_types::ConnectionSnapshot;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
+#[cfg(windows)]
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -11,10 +12,12 @@ pub enum TrafficBackend {
     Etw,
 }
 
+#[allow(dead_code)]
 pub struct EtwMonitor {
     tx: Sender<ConnectionSnapshot>,
 }
 
+#[allow(dead_code)]
 impl EtwMonitor {
     pub fn new() -> (Self, Receiver<ConnectionSnapshot>) {
         let (tx, rx) = mpsc::channel();

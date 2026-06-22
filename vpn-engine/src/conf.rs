@@ -1,5 +1,5 @@
 use shared_types::VpnBackendKind;
-use std::collections::HashMap;
+#[cfg(windows)]
 use std::path::Path;
 
 /// Parsed WireGuard / AmneziaWG configuration.
@@ -218,6 +218,7 @@ fn write_awg_str(out: &mut String, key: &str, value: Option<&str>) {
     }
 }
 
+#[cfg(windows)]
 pub fn read_conf_file(path: &Path) -> std::io::Result<WireGuardConfig> {
     let content = std::fs::read_to_string(path)?;
     Ok(parse_conf(&content))

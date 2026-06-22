@@ -109,8 +109,7 @@ impl PrivacyAnalyticsService {
 
         let anonymity_score =
             ((anonymous_ratio * 65.0) + mixnet_bonus + anonymity_bonus + cover_bonus)
-                .min(100.0)
-                .max(0.0) as u8;
+                .clamp(0.0, 100.0) as u8;
 
         let cover_traffic_effectiveness = if self.cover_traffic.is_running() {
             match self.cover_traffic.engine().profile() {

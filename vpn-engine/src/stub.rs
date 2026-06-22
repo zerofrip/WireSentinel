@@ -1,7 +1,7 @@
 use crate::backend::VpnBackend;
 use async_trait::async_trait;
 use parking_lot::RwLock;
-use shared_types::{Result, VPNProfile, VpnState, VpnStats, VpnStatus, WireSentinelError};
+use shared_types::{Result, VPNProfile, VpnStats, VpnStatus};
 use std::collections::HashMap;
 use tracing::info;
 use uuid::Uuid;

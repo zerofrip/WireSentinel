@@ -446,8 +446,10 @@ mod tests {
 
     #[test]
     fn whitelist_default_blocks() {
-        let mut ruleset = Ruleset::default();
-        ruleset.mode = PolicyMode::Whitelist;
+        let ruleset = Ruleset {
+            mode: PolicyMode::Whitelist,
+            ..Default::default()
+        };
         let engine = PolicyEngine::new(ruleset, Arc::new(EmptyProfileLookup));
         let decision = engine.decide(&ConnectionContext {
             app_id: Uuid::new_v4(),

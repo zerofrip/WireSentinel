@@ -175,8 +175,7 @@ pub async fn kernel_packets(State(state): State<Arc<AppState>>) -> impl IntoResp
         .unwrap_or_default();
     let packets: Vec<KernelPacketEntry> = events
         .into_iter()
-        .enumerate()
-        .map(|(idx, ev)| KernelPacketEntry {
+        .map(|ev| KernelPacketEntry {
             flow_id: ev.id.to_string(),
             process_id: ev.process_id.unwrap_or(0),
             protocol: match ev.protocol {

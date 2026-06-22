@@ -113,37 +113,6 @@ impl WfpEngine for StubWfpEngine {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn block_connection_records_blocked_route() {
-        let wfp = StubWfpEngine::new();
-        let record = shared_types::AppRecord::new(std::path::PathBuf::from("C:\\app.exe"));
-        let app = AppIdentity::new(1, record);
-        wfp.block_connection(&app).await.unwrap();
-        assert_eq!(
-            wfp.routes.read().get(&app.id()),
-            Some(&TrafficRoute::Blocked)
-        );
-    }
-
-    #[tokio::test]
-    async fn allow_connection_records_direct_route() {
-        let wfp = StubWfpEngine::new();
-        let record = shared_types::AppRecord::new(std::path::PathBuf::from("C:\\app.exe"));
-        let app = AppIdentity::new(1, record);
-        wfp.allow_connection(&app, &TrafficRoute::Direct)
-            .await
-            .unwrap();
-        assert_eq!(
-            wfp.routes.read().get(&app.id()),
-            Some(&TrafficRoute::Direct)
-        );
-    }
-}
-
 #[async_trait]
 impl RouteEnforcer for StubWfpEngine {
     async fn apply_route(&self, app: &AppIdentity, route: &TrafficRoute) -> Result<()> {
@@ -164,6 +133,12 @@ impl KernelCalloutEngineStub {
     }
 
     pub fn set_listen_ports(&self, _ports: Arc<proxy_engine::ProxyListenPort>) {}
+}
+
+impl Default for KernelCalloutEngineStub {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[async_trait]
@@ -209,5 +184,36 @@ impl RouteEnforcer for KernelCalloutEngineStub {
 
     async fn apply_kill_switch(&self, active: bool) -> Result<()> {
         WfpEngine::apply_kill_switch(self, active).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn block_connection_records_blocked_route() {
+        let wfp = StubWfpEngine::new();
+        let record = shared_types::AppRecord::new(std::path::PathBuf::from("C:\\app.exe"));
+        let app = AppIdentity::new(1, record);
+        wfp.block_connection(&app).await.unwrap();
+        assert_eq!(
+            wfp.routes.read().get(&app.id()),
+            Some(&TrafficRoute::Blocked)
+        );
+    }
+
+    #[tokio::test]
+    async fn allow_connection_records_direct_route() {
+        let wfp = StubWfpEngine::new();
+        let record = shared_types::AppRecord::new(std::path::PathBuf::from("C:\\app.exe"));
+        let app = AppIdentity::new(1, record);
+        wfp.allow_connection(&app, &TrafficRoute::Direct)
+            .await
+            .unwrap();
+        assert_eq!(
+            wfp.routes.read().get(&app.id()),
+            Some(&TrafficRoute::Direct)
+        );
     }
 }

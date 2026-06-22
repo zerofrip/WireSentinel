@@ -157,7 +157,7 @@ impl SseAgent {
     fn evaluate_local(&self, ctx: &ConnectionContext) -> Option<policy_engine::SseGateResult> {
         let domain = ctx.domain.as_ref()?;
         let bundle = self.policy_bundle.read();
-        let bundle = match bundle.as_ref() {
+        match bundle.as_ref() {
             None => {
                 return Some(policy_engine::SseGateResult {
                     allowed: true,
@@ -224,7 +224,6 @@ impl SseAgent {
             }
         }
 
-        let _ = bundle;
         Some(policy_engine::SseGateResult {
             allowed: true,
             reason: "sse checks passed".into(),

@@ -73,6 +73,12 @@ pub struct ProfileCache {
     map: RwLock<HashMap<Uuid, VpnBackendKind>>,
 }
 
+impl Default for ProfileCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProfileCache {
     pub fn new() -> Self {
         Self {

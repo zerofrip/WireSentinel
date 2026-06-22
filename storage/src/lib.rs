@@ -1,5 +1,8 @@
 //! SQLite persistence layer with repository traits.
 
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::type_complexity)]
+
 mod migrate_legacy;
 mod pool;
 pub mod repos;

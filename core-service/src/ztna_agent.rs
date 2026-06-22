@@ -7,7 +7,7 @@ use policy_engine::{ConnectionContext, ZtnaGateResult, ZtnaPolicyLookup};
 use serde::{Deserialize, Serialize};
 use shared_types::{
     ConnectorRegistration, DevicePosture, Resource, ResourceType, Result, ServiceEvent,
-    ServiceEventInner, Subject, SubjectKind, WireSentinelError, ZtnaDecision, ZtnaHeartbeatPayload,
+    ServiceEventInner, Subject, WireSentinelError, ZtnaDecision, ZtnaHeartbeatPayload,
     ZtnaPolicyBundle,
 };
 use std::sync::Arc;

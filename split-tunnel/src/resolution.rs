@@ -1,8 +1,6 @@
 //! Template resolution helpers for split-tunnel merge/override modes.
 
-use shared_types::{
-    AppRule, DomainRule, TemplateMode, TemplateResolutionTrace, TemplateTraceStep, TrafficRoute,
-};
+use shared_types::{TemplateMode, TemplateTraceStep, TrafficRoute};
 
 pub use shared_types::ResolvedTemplate;
 
@@ -69,7 +67,7 @@ fn domain_matches(query: &str, pattern: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shared_types::SplitTunnelTemplate;
+    use shared_types::{AppRule, SplitTunnelTemplate};
     use uuid::Uuid;
 
     #[test]

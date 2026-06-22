@@ -3,8 +3,8 @@
 use chrono::Utc;
 use event_bus::EventBus;
 use shared_types::{
-    BackupBundle, BackupManifestEntry, EnterprisePolicy, Result, SecurityAuditEntry,
-    ServiceEventInner, WireSentinelError,
+    BackupBundle, BackupManifestEntry, Result, SecurityAuditEntry, ServiceEventInner,
+    WireSentinelError,
 };
 use std::sync::Arc;
 use storage::Storage;

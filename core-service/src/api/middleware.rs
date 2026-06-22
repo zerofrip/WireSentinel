@@ -1,5 +1,4 @@
 use axum::{
-    body::Body,
     extract::Request,
     http::{header, StatusCode},
     middleware::Next,
@@ -70,11 +69,11 @@ pub fn extract_bearer(headers: &axum::http::HeaderMap) -> Option<&str> {
         .or_else(|| headers.get("X-API-Token").and_then(|v| v.to_str().ok()))
 }
 
+#[allow(dead_code)]
 pub fn extract_bearer_from_query(query: &str) -> Option<String> {
     query.split('&').find_map(|pair| {
-        let mut parts = pair.splitn(2, '=');
-        let key = parts.next()?;
-        let val = parts.next()?;
+        let (key, val) = pair.split_once('=')?;
+
         if key == "token" {
             Some(val.to_string())
         } else {

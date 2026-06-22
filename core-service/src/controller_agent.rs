@@ -94,6 +94,7 @@ impl ControllerAgent {
         storage.settings.set(SETTINGS_KEY, &json).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn spawn(
         storage: Arc<Storage>,
         events: EventBus,

@@ -1,7 +1,5 @@
 //! WireSentinel core Windows service binary.
 
-use tracing_subscriber::{fmt, EnvFilter};
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().collect();

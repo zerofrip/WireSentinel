@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use shared_types::{Result, TunnelIface, VPNProfile, VpnState, VpnStats, VpnStatus};
+use shared_types::{Result, TunnelIface, VPNProfile, VpnStats, VpnStatus};
 use uuid::Uuid;
 
 #[async_trait]

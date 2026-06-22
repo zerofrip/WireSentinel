@@ -36,7 +36,7 @@ impl AnonymousRoutingService {
         events: event_bus::EventBus,
     ) -> Self {
         let engine = AnonymousRouteEngine::new(MixnetManager::new(security.to_core_policy()))
-            .with_chain_resolver(Arc::new(|route| resolve_anonymous_route(route)));
+            .with_chain_resolver(Arc::new(resolve_anonymous_route));
 
         Self {
             engine,

@@ -1,7 +1,7 @@
 use super::traits::{AppFilter, AppRepository, Result};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use shared_types::{AppRecord, TrafficRoute, WireSentinelError};
+use shared_types::{AppRecord, WireSentinelError};
 use sqlx::SqlitePool;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
@@ -30,7 +30,7 @@ fn row_to_app(
     let default_route = default_route_json
         .as_deref()
         .filter(|s| !s.is_empty())
-        .map(|s| serde_json::from_str(s))
+        .map(serde_json::from_str)
         .transpose()
         .map_err(WireSentinelError::Serde)?;
 

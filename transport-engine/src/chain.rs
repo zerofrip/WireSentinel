@@ -95,6 +95,7 @@ fn validate_hop(hop: &shared_types::ChainHop, idx: usize) -> Result<()> {
 
 struct ActiveChain {
     hops: Vec<Arc<dyn TransportBackend>>,
+    #[allow(dead_code)]
     contexts: Vec<TransportContext>,
 }
 

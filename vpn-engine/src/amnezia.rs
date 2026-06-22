@@ -8,6 +8,12 @@ use uuid::Uuid;
 
 pub struct AmneziaWgBackend;
 
+impl Default for AmneziaWgBackend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AmneziaWgBackend {
     pub fn new() -> Self {
         Self

@@ -9,9 +9,7 @@ use axum::{
 };
 use chrono::Utc;
 use serde::Deserialize;
-use shared_types::{
-    AnonymousService, EntropySnapshot, FederatedMixnetConfig, KatzenpostProfile, LoopixProfile,
-};
+use shared_types::{AnonymousService, EntropySnapshot, FederatedMixnetConfig};
 use std::sync::Arc;
 use utoipa::ToSchema;
 use uuid::Uuid;

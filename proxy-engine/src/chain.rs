@@ -40,11 +40,7 @@ pub fn validate_hop_sequence(hops: &[ProxyChainHop]) -> Result<(), ChainValidati
 
 fn is_valid_transition(from: ProxyChainHopKind, to: ProxyChainHopKind) -> bool {
     use ProxyChainHopKind::*;
-    match (from, to) {
-        (Https, Socks5) | (Https, Http) => false,
-        (Tor, Tor) => false,
-        _ => true,
-    }
+    !matches!((from, to), (Https, Socks5) | (Https, Http) | (Tor, Tor))
 }
 
 #[cfg(test)]

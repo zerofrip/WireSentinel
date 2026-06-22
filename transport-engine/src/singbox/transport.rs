@@ -4,7 +4,7 @@ use crate::process_manager::ProcessManager;
 use crate::singbox::config::{build_config, SingBoxOutboundSpec};
 use async_trait::async_trait;
 use parking_lot::RwLock;
-use shared_types::{Result, TransportHealth, TransportKind, TransportState, WireSentinelError};
+use shared_types::{Result, TransportHealth, TransportKind, TransportState};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::info;

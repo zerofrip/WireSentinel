@@ -1,6 +1,5 @@
 //! VPN connect triggers TCP termination when policy mode matches.
 
-use chrono::Utc;
 use shared_types::{TcpTerminationMode, TcpTerminationPolicy, TcpTerminationRule};
 use tcp_termination::TcpTerminationEngine;
 use uuid::Uuid;

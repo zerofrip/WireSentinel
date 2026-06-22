@@ -56,8 +56,7 @@ impl FilterPlugin for WasmFilterPlugin {
     }
 
     fn parse(&self, content: &str) -> HashSet<String> {
-        let domains = self.inner.parse_domains(content);
-        domains
+        self.inner.parse_domains(content)
     }
 }
 

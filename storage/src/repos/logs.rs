@@ -272,10 +272,8 @@ impl DnsLogRepository for SqliteDnsLogRepository {
         let sort_col = match query.sort {
             DnsSortField::Timestamp => "timestamp",
         };
-        let mut sql = format!(
-            "SELECT id, app_id, pid, timestamp, qname, qtype, upstream, blocked, latency_ms, answers_json, response, correlation_id
-             FROM dns_logs WHERE 1=1"
-        );
+        let mut sql = "SELECT id, app_id, pid, timestamp, qname, qtype, upstream, blocked, latency_ms, answers_json, response, correlation_id
+             FROM dns_logs WHERE 1=1".to_string();
         if query.qname.is_some() {
             sql.push_str(" AND qname LIKE ?");
         }

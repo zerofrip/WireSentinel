@@ -260,6 +260,7 @@ fn parse_host_port(endpoint: &str) -> Result<(String, u16)> {
     Ok((host.to_string(), port))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn udp_relay_loop(
     relay: UdpSocket,
     proxy_host: String,

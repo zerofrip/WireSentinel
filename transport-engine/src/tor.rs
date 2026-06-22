@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 /// Tor SOCKS proxy transport (stub supervisor — marks running without spawning tor.exe).
 pub struct TorTransport {
+    #[allow(dead_code)]
     process_manager: Arc<ProcessManager>,
     #[allow(dead_code)]
     config_store: Arc<TransportConfigStore>,

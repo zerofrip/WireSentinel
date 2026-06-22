@@ -10,11 +10,13 @@ use tracing::{debug, info};
 use uuid::Uuid;
 
 /// Non-Windows stub for development and CI.
+#[cfg_attr(windows, allow(dead_code))]
 pub struct StubWfpEngine {
     kill_switch: AtomicBool,
     routes: RwLock<HashMap<Uuid, TrafficRoute>>,
 }
 
+#[cfg_attr(windows, allow(dead_code))]
 impl StubWfpEngine {
     pub fn new() -> Self {
         Self {
@@ -125,8 +127,10 @@ impl RouteEnforcer for StubWfpEngine {
 }
 
 /// Non-Windows stub for `KernelCalloutEngine`.
+#[cfg_attr(windows, allow(dead_code))]
 pub struct KernelCalloutEngineStub;
 
+#[cfg_attr(windows, allow(dead_code))]
 impl KernelCalloutEngineStub {
     pub fn new() -> Self {
         Self

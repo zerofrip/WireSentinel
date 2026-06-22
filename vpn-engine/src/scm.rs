@@ -6,13 +6,15 @@ use parking_lot::RwLock;
 use shared_types::{Result, VPNProfile, VpnStats, VpnStatus, WireSentinelError};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use tracing::{info, warn};
+use tracing::info;
+#[cfg(not(windows))]
+use tracing::warn;
 use uuid::Uuid;
 
 const SERVICE_PREFIX: &str = "WireGuardTunnel$";
 
 pub struct ScmTunnelDllBackend {
-    tunnel_dll_path: PathBuf,
+    _tunnel_dll_path: PathBuf,
     service_exe_path: PathBuf,
     states: RwLock<HashMap<Uuid, VpnStatus>>,
     service_names: RwLock<HashMap<Uuid, String>>,
@@ -21,7 +23,7 @@ pub struct ScmTunnelDllBackend {
 impl ScmTunnelDllBackend {
     pub fn new(tunnel_dll_path: PathBuf, service_exe_path: PathBuf) -> Self {
         Self {
-            tunnel_dll_path,
+            _tunnel_dll_path: tunnel_dll_path,
             service_exe_path,
             states: RwLock::new(HashMap::new()),
             service_names: RwLock::new(HashMap::new()),

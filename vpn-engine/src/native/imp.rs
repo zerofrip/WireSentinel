@@ -85,7 +85,7 @@ fn map_sym(e: libloading::Error) -> WireSentinelError {
 
 struct AdapterState {
     handle: WireGuardAdapterHandle,
-    name: String,
+    _name: String,
 }
 
 pub struct NativeWireGuardBackend {
@@ -109,7 +109,7 @@ impl NativeWireGuardBackend {
         })
     }
 
-    pub fn create_adapter(&self, name: &str) -> Result<WireGuardAdapterHandle> {
+    fn create_adapter(&self, name: &str) -> Result<WireGuardAdapterHandle> {
         let wide_name = str_to_wide(name);
         let tunnel_type = str_to_wide("WireGuard");
         let handle = unsafe {
@@ -121,17 +121,13 @@ impl NativeWireGuardBackend {
         Ok(WireGuardAdapterHandle(handle))
     }
 
-    pub fn delete_adapter(&self, handle: WireGuardAdapterHandle) {
+    fn delete_adapter(&self, handle: WireGuardAdapterHandle) {
         if !handle.is_null() {
             unsafe { (self.dll.close_adapter)(handle.raw()) };
         }
     }
 
-    pub fn set_config(
-        &self,
-        handle: WireGuardAdapterHandle,
-        config: &WireGuardConfig,
-    ) -> Result<()> {
+    fn set_config(&self, handle: WireGuardAdapterHandle, config: &WireGuardConfig) -> Result<()> {
         let blob = encode_config(config)?;
         let ok =
             unsafe { (self.dll.set_configuration)(handle.raw(), blob.as_ptr(), blob.len() as u32) };
@@ -200,7 +196,7 @@ impl VpnBackend for NativeWireGuardBackend {
             profile.id,
             AdapterState {
                 handle,
-                name: adapter_name,
+                _name: adapter_name,
             },
         );
         Ok(())

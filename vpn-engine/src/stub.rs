@@ -7,10 +7,12 @@ use tracing::info;
 use uuid::Uuid;
 
 /// Non-Windows stub VPN backend for development.
+#[cfg_attr(windows, allow(dead_code))]
 pub struct StubVpnBackend {
     active: RwLock<HashMap<Uuid, VpnStatus>>,
 }
 
+#[cfg_attr(windows, allow(dead_code))]
 impl StubVpnBackend {
     pub fn new() -> Self {
         Self {

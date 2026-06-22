@@ -18,11 +18,10 @@ fn enumerate_tcp_connections_impl() -> Vec<ConnectionSnapshot> {
 
 #[cfg(windows)]
 fn enumerate_tcp_v4() -> Vec<ConnectionSnapshot> {
-    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use windows::Win32::Foundation::BOOL;
     use windows::Win32::Foundation::NO_ERROR;
     use windows::Win32::NetworkManagement::IpHelper::{
-        GetExtendedTcpTable, MIB_TCPROW_OWNER_PID, MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
+        GetExtendedTcpTable, MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
     };
     use windows::Win32::Networking::WinSock::AF_INET;
 
@@ -69,12 +68,10 @@ fn enumerate_tcp_v4() -> Vec<ConnectionSnapshot> {
 
 #[cfg(windows)]
 fn enumerate_tcp_v6() -> Vec<ConnectionSnapshot> {
-    use std::net::{IpAddr, Ipv6Addr, SocketAddr};
     use windows::Win32::Foundation::BOOL;
     use windows::Win32::Foundation::NO_ERROR;
     use windows::Win32::NetworkManagement::IpHelper::{
-        GetExtendedTcpTable, MIB_TCP6ROW_OWNER_PID, MIB_TCP6TABLE_OWNER_PID,
-        TCP_TABLE_OWNER_PID_ALL,
+        GetExtendedTcpTable, MIB_TCP6TABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL,
     };
     use windows::Win32::Networking::WinSock::AF_INET6;
 

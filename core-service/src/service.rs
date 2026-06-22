@@ -37,9 +37,8 @@ fn service_main(_arguments: Vec<std::ffi::OsString>) {
 
     let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
     rt.block_on(async {
-        let status_handle =
-            service_control_handler::register(crate::SERVICE_NAME, event_handler)
-                .expect("register service handler");
+        let status_handle = service_control_handler::register(crate::SERVICE_NAME, event_handler)
+            .expect("register service handler");
 
         status_handle
             .set_service_status(ServiceStatus {

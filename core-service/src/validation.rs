@@ -203,21 +203,29 @@ impl ValidationService {
         self.make_check("wfp_availability", || {
             #[cfg(windows)]
             {
+                use shared_types::WireSentinelError;
                 use windows::core::PCWSTR;
+                use windows::Win32::Foundation::{HANDLE, NO_ERROR};
                 use windows::Win32::NetworkManagement::WindowsFilteringPlatform::{
                     FwpmEngineClose0, FwpmEngineOpen0, FWPM_SESSION0,
                 };
-                let mut handle = std::ptr::null_mut();
+                let mut handle = HANDLE::default();
                 let session = FWPM_SESSION0::default();
-                unsafe {
+                let status = unsafe {
                     FwpmEngineOpen0(
                         PCWSTR::null(),
                         0x00000002,
                         None,
-                        Some(&session as *const _ as *mut _),
+                        Some(&session),
                         &mut handle,
                     )
-                    .map_err(|e| WireSentinelError::Wfp(format!("{e}")))?;
+                };
+                if status != NO_ERROR.0 {
+                    return Err(WireSentinelError::Wfp(format!(
+                        "FwpmEngineOpen0 failed: status {status}"
+                    )));
+                }
+                unsafe {
                     FwpmEngineClose0(handle);
                 }
                 return Ok((ValidationStatus::Pass, Some("FwpmEngineOpen0 ok".into())));
@@ -254,7 +262,7 @@ impl ValidationService {
         self.make_check("service_permissions", || {
             #[cfg(windows)]
             {
-                use windows::Win32::Security::Authorization::IsUserAnAdmin;
+                use windows::Win32::UI::Shell::IsUserAnAdmin;
                 unsafe {
                     if IsUserAnAdmin().as_bool() {
                         return Ok((ValidationStatus::Pass, Some("elevated".into())));

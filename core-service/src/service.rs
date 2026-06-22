@@ -6,7 +6,7 @@ pub fn run_windows_service() -> anyhow::Result<()> {
 
     define_windows_service!(ffi_service_main, service_main);
 
-    service_dispatcher::start(core_service::SERVICE_NAME, ffi_service_main)?;
+    service_dispatcher::start(crate::SERVICE_NAME, ffi_service_main)?;
     Ok(())
 }
 
@@ -38,7 +38,7 @@ fn service_main(_arguments: Vec<std::ffi::OsString>) {
     let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
     rt.block_on(async {
         let status_handle =
-            service_control_handler::register(core_service::SERVICE_NAME, event_handler)
+            service_control_handler::register(crate::SERVICE_NAME, event_handler)
                 .expect("register service handler");
 
         status_handle
@@ -67,7 +67,7 @@ fn service_main(_arguments: Vec<std::ffi::OsString>) {
 
         info!("WireSentinel Windows service running");
 
-        if let Err(e) = core_service::run_service(Some(shutdown_rx)).await {
+        if let Err(e) = crate::run_service(Some(shutdown_rx)).await {
             error!(error = %e, "service error");
         }
 

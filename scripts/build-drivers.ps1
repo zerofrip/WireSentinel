@@ -25,6 +25,7 @@ $StageRoot = Join-Path $Root "installer\staging\drivers\$ArchLabel"
 $GuardianStage = Join-Path $StageRoot "guardian"
 $NdisStage = Join-Path $StageRoot "ndis"
 $CurrentLink = Join-Path $Root "installer\staging\drivers\current"
+$script:WdkPackagesDir = $null
 
 function Write-Step([string]$Message) {
     Write-Host "[build-drivers] $Message"
@@ -76,8 +77,8 @@ function Initialize-WdkNuGet {
     Copy-Item -Force $buildProps (Join-Path $parent "Directory.Build.props")
     Copy-Item -Force $packagesConfig (Join-Path $parent "packages.config")
 
-    $packagesDir = Join-Path $parent "packages"
-    New-Item -ItemType Directory -Force -Path $packagesDir | Out-Null
+    $script:WdkPackagesDir = Join-Path $parent "packages"
+    New-Item -ItemType Directory -Force -Path $script:WdkPackagesDir | Out-Null
 
     $nuget = Get-Command nuget.exe -ErrorAction SilentlyContinue
     if (-not $nuget) {
@@ -89,13 +90,42 @@ function Initialize-WdkNuGet {
         $nuget = @{ Source = $nugetExe }
     }
 
-    Write-Step "Restoring WDK NuGet packages to $packagesDir"
-    & $nuget.Source restore (Join-Path $parent "packages.config") -PackagesDirectory $packagesDir -NonInteractive
+    Write-Step "Restoring WDK NuGet packages to $script:WdkPackagesDir"
+    & $nuget.Source restore (Join-Path $parent "packages.config") -PackagesDirectory $script:WdkPackagesDir -NonInteractive
     if ($LASTEXITCODE -ne 0) {
         throw "nuget restore failed for WDK packages (exit $LASTEXITCODE)"
     }
 
-    Repair-WdkNuGetToolLayout -PackagesDir $packagesDir
+    Repair-WdkNuGetToolLayout -PackagesDir $script:WdkPackagesDir
+}
+
+function Get-WdkInfToolPath {
+    param(
+        [string]$PackagesDir,
+        [string]$Platform
+    )
+
+    $pkgPattern = if ($Platform -eq "ARM64") {
+        "Microsoft.Windows.WDK.arm64.*"
+    } else {
+        "Microsoft.Windows.WDK.x64.*"
+    }
+    $pkg = Get-ChildItem -Path $PackagesDir -Directory -Filter $pkgPattern -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    if (-not $pkg) { return $null }
+
+    $binRoot = Join-Path $pkg.FullName "c\bin"
+    if (-not (Test-Path $binRoot)) { return $null }
+
+    foreach ($versionDir in (Get-ChildItem -Path $binRoot -Directory | Sort-Object Name -Descending)) {
+        foreach ($arch in @("x86", "x64")) {
+            $dir = Join-Path $versionDir.FullName $arch
+            if (Test-Path (Join-Path $dir "stampinf.exe")) {
+                return "$dir\"
+            }
+        }
+    }
+    return $null
 }
 
 function Repair-WdkNuGetToolLayout {
@@ -141,7 +171,20 @@ function Invoke-MsBuild {
     }
     Push-Location $WorkingDirectory
     try {
-        & msbuild.exe $Project /p:Configuration=$Configuration /p:Platform=$MsBuildPlatform /m
+        $msbuildArgs = @(
+            $Project,
+            "/p:Configuration=$Configuration",
+            "/p:Platform=$MsBuildPlatform",
+            "/m"
+        )
+        if ($script:WdkPackagesDir) {
+            $infToolPath = Get-WdkInfToolPath -PackagesDir $script:WdkPackagesDir -Platform $MsBuildPlatform
+            if ($infToolPath) {
+                Write-Step "Using InfToolPath=$infToolPath"
+                $msbuildArgs += "/p:InfToolPath=$infToolPath"
+            }
+        }
+        & msbuild.exe @msbuildArgs
         if ($LASTEXITCODE -ne 0) {
             throw "msbuild failed for $Project (exit $LASTEXITCODE)"
         }

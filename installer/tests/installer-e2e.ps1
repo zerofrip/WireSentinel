@@ -118,6 +118,7 @@ Describe "WireSentinel installer — kernel drivers" {
     }
 }
 
+Describe "WireSentinel installer — firewall (loopback API)" {
     It "WiX adds loopback rule on port 8170" {
         $Script:WixText | Should -Match "8170"
         $Script:WixText | Should -Match "127.0.0.1"

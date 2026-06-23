@@ -99,6 +99,37 @@ function Initialize-WdkNuGet {
     Repair-WdkNuGetToolLayout -PackagesDir $script:WdkPackagesDir
 }
 
+function Repair-WdkBuildBinLayout {
+    param([string]$PackagesDir)
+
+    # InfVerif loads x86\InfVerif.dll from c\build\<ver>\bin\x86; NuGet WDK may ship x64 only.
+    $wdkPackages = Get-ChildItem -Path $PackagesDir -Directory -Filter "Microsoft.Windows.WDK.*" -ErrorAction SilentlyContinue
+    foreach ($pkg in $wdkPackages) {
+        $buildRoot = Join-Path $pkg.FullName "c\build"
+        if (-not (Test-Path $buildRoot)) { continue }
+
+        foreach ($versionDir in Get-ChildItem -Path $buildRoot -Directory) {
+            $binRoot = Join-Path $versionDir.FullName "bin"
+            $x86Dir = Join-Path $binRoot "x86"
+            $x64Dir = Join-Path $binRoot "x64"
+            if (-not (Test-Path $x64Dir)) { continue }
+
+            New-Item -ItemType Directory -Force -Path $x86Dir | Out-Null
+            $copied = $false
+            foreach ($file in Get-ChildItem -Path $x64Dir -File -ErrorAction SilentlyContinue) {
+                $dest = Join-Path $x86Dir $file.Name
+                if (-not (Test-Path $dest)) {
+                    Copy-Item -Force $file.FullName $dest
+                    $copied = $true
+                }
+            }
+            if ($copied) {
+                Write-Step "Installed build bin x86 tools under $($versionDir.Name) for $($pkg.Name)"
+            }
+        }
+    }
+}
+
 function Get-WdkInfToolPath {
     param(
         [string]$PackagesDir,
@@ -158,6 +189,24 @@ function Repair-WdkNuGetToolLayout {
             Write-Step "Installed stampinf.exe under $($versionDir.Name)\x86 for $($pkg.Name)"
         }
     }
+
+    Repair-WdkBuildBinLayout -PackagesDir $PackagesDir
+}
+
+function Get-MsBuildExe {
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vswhere) {
+        $amd64 = & $vswhere -latest -requires Microsoft.Component.MSBuild `
+            -find "MSBuild\**\Bin\amd64\MSBuild.exe" |
+            Select-Object -First 1
+        if ($amd64 -and (Test-Path $amd64)) {
+            return $amd64
+        }
+    }
+
+    $msbuild = Get-Command msbuild.exe -ErrorAction SilentlyContinue
+    if ($msbuild) { return $msbuild.Source }
+    throw "msbuild.exe not found — install Visual Studio 2022 + WDK"
 }
 
 function Invoke-MsBuild {
@@ -165,10 +214,8 @@ function Invoke-MsBuild {
         [string]$Project,
         [string]$WorkingDirectory
     )
-    $msbuild = Get-Command msbuild.exe -ErrorAction SilentlyContinue
-    if (-not $msbuild) {
-        throw "msbuild.exe not found — install Visual Studio 2022 + WDK"
-    }
+    $msbuild = Get-MsBuildExe
+    Write-Step "Using MSBuild=$msbuild"
     Push-Location $WorkingDirectory
     try {
         $msbuildArgs = @(
@@ -184,7 +231,7 @@ function Invoke-MsBuild {
                 $msbuildArgs += "/p:InfToolPath=$infToolPath"
             }
         }
-        & msbuild.exe @msbuildArgs
+        & $msbuild @msbuildArgs
         if ($LASTEXITCODE -ne 0) {
             throw "msbuild failed for $Project (exit $LASTEXITCODE)"
         }

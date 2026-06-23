@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or SHA to build"
+        required: false
+        default: "main"
+        type: string
 
 permissions:
   contents: write
@@ -15,32 +22,83 @@ jobs:
   build-x64:
     name: Release x64
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: WireSentinel
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+          path: WireSentinel
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Mixnet
+          path: WireSentinel-Mixnet
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Anonymity
+          path: WireSentinel-Anonymity
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-ZTNA
+          path: WireSentinel-ZTNA
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-SSE
+          path: WireSentinel-SSE
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-XDR
+          path: WireSentinel-XDR
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Ndis
+          path: WireSentinel-Ndis
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Kernel
+          path: WireSentinel-Kernel
 
       - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: WireSentinel
 
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: WireSentinel/ui/package-lock.json
 
       - name: Install WiX Toolset
         run: dotnet tool install --global wix --version 5.0.2
 
+      - name: Add dotnet tools to PATH
+        shell: pwsh
+        run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
+
       - name: Install NSIS
         run: choco install nsis -y
 
-      - name: Verify VPN resource DLLs
+      - name: Cache wireguard-windows build deps
+        uses: actions/cache@v4
+        with:
+          path: WireSentinel/.cache/vpn-resources/wireguard-windows/.deps
+          key: wireguard-windows-deps-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1') }}
+          restore-keys: |
+            wireguard-windows-deps-${{ runner.os }}-
+
+      - name: Fetch VPN resource DLLs
         shell: pwsh
-        run: |
-          $required = @("resources\tunnel.dll", "resources\wireguard.dll")
-          foreach ($f in $required) {
-            if (-not (Test-Path $f)) {
-              Write-Error "Missing $f — copy WireGuard DLLs per resources/README.md before release"
-            }
-          }
+        run: .\scripts\fetch-vpn-resources.ps1 -Arch x64
 
       - name: Build release packages (x64)
         shell: pwsh
@@ -50,39 +108,90 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-x64
-          path: dist/release/x64/
+          path: WireSentinel/dist/release/x64/
 
   build-arm64:
     name: Release arm64
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: WireSentinel
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+          path: WireSentinel
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Mixnet
+          path: WireSentinel-Mixnet
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Anonymity
+          path: WireSentinel-Anonymity
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-ZTNA
+          path: WireSentinel-ZTNA
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-SSE
+          path: WireSentinel-SSE
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-XDR
+          path: WireSentinel-XDR
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Ndis
+          path: WireSentinel-Ndis
+
+      - uses: actions/checkout@v4
+        with:
+          repository: zerofrip/WireSentinel-Kernel
+          path: WireSentinel-Kernel
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-pc-windows-msvc
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: WireSentinel
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: WireSentinel/ui/package-lock.json
 
       - name: Install WiX Toolset
         run: dotnet tool install --global wix --version 5.0.2
 
+      - name: Add dotnet tools to PATH
+        shell: pwsh
+        run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
+
       - name: Install NSIS
         run: choco install nsis -y
 
-      - name: Verify VPN resource DLLs
+      - name: Cache wireguard-windows build deps
+        uses: actions/cache@v4
+        with:
+          path: WireSentinel/.cache/vpn-resources/wireguard-windows/.deps
+          key: wireguard-windows-deps-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1') }}
+          restore-keys: |
+            wireguard-windows-deps-${{ runner.os }}-
+
+      - name: Fetch VPN resource DLLs
         shell: pwsh
-        run: |
-          $required = @("resources\tunnel.dll", "resources\wireguard.dll")
-          foreach ($f in $required) {
-            if (-not (Test-Path $f)) {
-              Write-Error "Missing $f — copy WireGuard DLLs per resources/README.md before release"
-            }
-          }
+        run: .\scripts\fetch-vpn-resources.ps1 -Arch arm64
 
       - name: Build release packages (arm64)
         shell: pwsh
@@ -92,7 +201,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-arm64
-          path: dist/release/arm64/
+          path: WireSentinel/dist/release/arm64/
 
   github-release:
     name: Publish GitHub Release
@@ -100,6 +209,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+          fetch-depth: 0
+          path: WireSentinel
+
+      - name: Resolve release tag
+        id: release
+        working-directory: WireSentinel
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION=$(jq -r .version version.json)
+            TAG="v${VERSION}"
+            TARGET="${{ inputs.ref }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            TARGET="${GITHUB_SHA}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "target=${TARGET}" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+              echo "::error::Tag ${TAG} already exists. Bump version.json or delete the tag before a manual release."
+              exit 1
+            fi
+          fi
 
       - name: Download x64 artifacts
         uses: actions/download-artifact@v4
@@ -116,7 +252,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.release.outputs.tag }}
+          target_commitish: ${{ steps.release.outputs.target }}
+          generate_release_notes: true
           files: |
             dist/release/x64/*
             dist/release/arm64/*
-          generate_release_notes: true

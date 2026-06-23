@@ -141,8 +141,62 @@ CI uses `-SkipFileRefs` when build artifacts are absent.
 
 ## CI/CD
 
-- **CI** (`.github/workflows/ci.yml`): fmt, clippy, test, audit, npm build, validate.ps1, Windows cross-compile checks
-- **Release** (`.github/workflows/release.yml`): triggered on `v*` tags, builds x64 + arm64, publishes GitHub Release with artifacts
+- **CI** ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)): fmt, clippy, test, audit, npm build, validate.ps1, Windows cross-compile checks
+- **Release** ([`.github/workflows/release.yml`](../.github/workflows/release.yml)): builds x64 + arm64 installers and publishes a GitHub Release
+
+### GitHub Actions release
+
+Release workflow triggers:
+
+1. **Tag push** — push a `v*` tag (for example `v0.1.0`)
+2. **Manual** — Actions → **Release** → **Run workflow**, optional `ref` (default `main`)
+
+Before releasing, bump version consistently in:
+
+- `version.json` (build scripts and manifest)
+- `Cargo.toml` workspace version
+- `ui/package.json` and `ui/src-tauri/Cargo.toml`
+- `ui/src-tauri/tauri.conf.json`
+- `installer/wix/Product.wxs`
+- NSIS default version (overridden at build time via `/DWIRESENTINEL_VERSION=`)
+
+**Tag release example:**
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+**Manual release example:**
+
+1. Ensure `version.json` matches the version you want to ship
+2. Run the **Release** workflow on `main` (or another `ref`)
+3. The workflow creates tag `v{version}` from `version.json` and publishes the release
+
+Manual runs fail if that tag already exists (prevents duplicate releases).
+
+### Release artifacts
+
+Each architecture (`x64`, `arm64`) produces:
+
+| File | Description |
+|------|-------------|
+| `WireSentinel-{version}-{arch}.msi` | WiX per-machine installer |
+| `WireSentinel-{version}-{arch}-setup.exe` | NSIS installer |
+| `WireSentinel-{version}-{arch}.zip` | Portable bundle (exes + DLLs + `version.json`) |
+| `manifest.json` | SHA256 checksums for the three files above |
+
+VPN DLLs are **not** committed to git. CI fetches them via [`scripts/fetch-vpn-resources.ps1`](../scripts/fetch-vpn-resources.ps1):
+
+- `wireguard.dll` from [WireGuardNT SDK](https://download.wireguard.com/wireguard-nt/)
+- `tunnel.dll` built from [wireguard-windows embeddable-dll-service](https://github.com/WireGuard/wireguard-windows/tree/master/embeddable-dll-service)
+
+Local release (Windows, sibling repos checked out next to WireSentinel):
+
+```powershell
+.\scripts\fetch-vpn-resources.ps1 -Arch x64
+.\scripts\release-builder.ps1 -Arch x64
+```
 
 ## Manual WiX / NSIS
 

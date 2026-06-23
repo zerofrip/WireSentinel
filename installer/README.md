@@ -32,7 +32,7 @@ installer/
     └── installer-e2e.ps1
 scripts/
 ├── build-installer.ps1      # Unified MSI + NSIS build
-├── build-drivers.ps1        # Guardian + NDIS msbuild + staging
+├── build-drivers.ps1        # Guardian + NDIS msbuild + staging (NuGet WDK)
 ├── sign-drivers.ps1         # inf2cat + test signtool (self-signed PFX)
 ├── install-kernel-drivers.ps1
 └── uninstall-kernel-drivers.ps1

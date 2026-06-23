@@ -91,8 +91,16 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Install Windows Driver Kit
-        run: choco install windowsdriverkit10 -y --no-progress
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Cache WDK NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: packages
+          key: wdk-nuget-${{ hashFiles('WireSentinel/installer/wdk/packages.config') }}
+          restore-keys: |
+            wdk-nuget-
 
       - name: Cache test signing certificate
         uses: actions/cache@v4
@@ -206,8 +214,16 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Install Windows Driver Kit
-        run: choco install windowsdriverkit10 -y --no-progress
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Cache WDK NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: packages
+          key: wdk-nuget-${{ hashFiles('WireSentinel/installer/wdk/packages.config') }}
+          restore-keys: |
+            wdk-nuget-
 
       - name: Cache test signing certificate
         uses: actions/cache@v4

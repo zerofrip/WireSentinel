@@ -58,6 +58,44 @@ function Set-InfDriverVer {
     Set-Content -Path $InfPath -Value $content -Encoding ASCII -NoNewline
 }
 
+function Initialize-WdkNuGet {
+    param([string]$RepoRoot)
+
+    $parent = Split-Path -Parent $RepoRoot
+    $wdkDir = Join-Path $RepoRoot "installer\wdk"
+    $packagesConfig = Join-Path $wdkDir "packages.config"
+    $buildProps = Join-Path $wdkDir "Directory.Build.props"
+
+    if (-not (Test-Path $packagesConfig)) {
+        throw "Missing WDK NuGet manifest: $packagesConfig"
+    }
+    if (-not (Test-Path $buildProps)) {
+        throw "Missing WDK MSBuild props: $buildProps"
+    }
+
+    Copy-Item -Force $buildProps (Join-Path $parent "Directory.Build.props")
+    Copy-Item -Force $packagesConfig (Join-Path $parent "packages.config")
+
+    $packagesDir = Join-Path $parent "packages"
+    New-Item -ItemType Directory -Force -Path $packagesDir | Out-Null
+
+    $nuget = Get-Command nuget.exe -ErrorAction SilentlyContinue
+    if (-not $nuget) {
+        $nugetExe = Join-Path $env:TEMP "nuget.exe"
+        if (-not (Test-Path $nugetExe)) {
+            Write-Step "Downloading nuget.exe"
+            Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile $nugetExe
+        }
+        $nuget = @{ Source = $nugetExe }
+    }
+
+    Write-Step "Restoring WDK NuGet packages to $packagesDir"
+    & $nuget.Source restore (Join-Path $parent "packages.config") -PackagesDirectory $packagesDir -NonInteractive
+    if ($LASTEXITCODE -ne 0) {
+        throw "nuget restore failed for WDK packages (exit $LASTEXITCODE)"
+    }
+}
+
 function Invoke-MsBuild {
     param(
         [string]$Project,
@@ -114,6 +152,8 @@ if (-not $SkipBuild) {
     if (-not (Test-Path $NdisRoot)) {
         throw "WireSentinel-Ndis not found at $NdisRoot"
     }
+
+    Initialize-WdkNuGet -RepoRoot $Root
 
     Write-Step "Building Guardian.sys ($Configuration|$MsBuildPlatform)"
     Invoke-MsBuild -Project "guardian\guardian.sln" -WorkingDirectory $KernelRoot

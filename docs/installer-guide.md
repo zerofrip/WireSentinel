@@ -244,7 +244,7 @@ VPN DLLs are **not** committed to git. CI fetches them via [`scripts/fetch-vpn-r
 - `wireguard.dll` from [WireGuardNT SDK](https://download.wireguard.com/wireguard-nt/)
 - `tunnel.dll` built from [wireguard-windows embeddable-dll-service](https://github.com/WireGuard/wireguard-windows/tree/master/embeddable-dll-service)
 
-Kernel drivers are built from sibling repos (`WireSentinel-Kernel`, `WireSentinel-Ndis`) via [`scripts/build-drivers.ps1`](../scripts/build-drivers.ps1) and test-signed in Release CI via [`scripts/sign-drivers.ps1`](../scripts/sign-drivers.ps1). The test PFX is cached under `.cache/test-signing/` (gitignored).
+Kernel drivers are built from sibling repos (`WireSentinel-Kernel`, `WireSentinel-Ndis`) via [`scripts/build-drivers.ps1`](../scripts/build-drivers.ps1). WDK is restored from NuGet ([`installer/wdk/packages.config`](../installer/wdk/packages.config)) per [Microsoft's CI guidance](https://learn.microsoft.com/en-us/windows-hardware/drivers/install-the-wdk-using-nuget). Drivers are test-signed via [`scripts/sign-drivers.ps1`](../scripts/sign-drivers.ps1).
 
 Local release (Windows, sibling repos checked out next to WireSentinel):
 

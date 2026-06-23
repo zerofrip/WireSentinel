@@ -110,14 +110,6 @@ jobs:
           restore-keys: |
             test-signing-${{ runner.os }}-
 
-      - name: Cache driver staging
-        uses: actions/cache@v4
-        with:
-          path: WireSentinel/installer/staging/drivers
-          key: drivers-x64-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/build-drivers.ps1', 'WireSentinel/scripts/sign-drivers.ps1') }}
-          restore-keys: |
-            drivers-x64-${{ runner.os }}-
-
       - name: Cache wireguard-windows build deps
         uses: actions/cache@v4
         with:
@@ -232,14 +224,6 @@ jobs:
           key: test-signing-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/sign-drivers.ps1') }}
           restore-keys: |
             test-signing-${{ runner.os }}-
-
-      - name: Cache driver staging
-        uses: actions/cache@v4
-        with:
-          path: WireSentinel/installer/staging/drivers
-          key: drivers-arm64-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/build-drivers.ps1', 'WireSentinel/scripts/sign-drivers.ps1') }}
-          restore-keys: |
-            drivers-arm64-${{ runner.os }}-
 
       - name: Cache wireguard-windows build deps
         uses: actions/cache@v4

@@ -31,6 +31,16 @@ function Get-ToolPath {
     $cmd = Get-Command $Name -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
 
+    $parent = Split-Path -Parent $Root
+    $packagesDir = Join-Path $parent "packages"
+    if (Test-Path $packagesDir) {
+        $match = Get-ChildItem -Path $packagesDir -Recurse -Filter $Name -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\c\\bin\\' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+        if ($match) { return $match.FullName }
+    }
+
     $kits = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"
     if (Test-Path $kits) {
         $match = Get-ChildItem -Path $kits -Recurse -Filter $Name -ErrorAction SilentlyContinue |

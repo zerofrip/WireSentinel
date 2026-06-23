@@ -94,6 +94,40 @@ function Initialize-WdkNuGet {
     if ($LASTEXITCODE -ne 0) {
         throw "nuget restore failed for WDK packages (exit $LASTEXITCODE)"
     }
+
+    Repair-WdkNuGetToolLayout -PackagesDir $packagesDir
+}
+
+function Repair-WdkNuGetToolLayout {
+    param([string]$PackagesDir)
+
+    # NuGet WDK ships stampinf.exe under x64/ARM64 only, but MSBuild's StampInf
+    # task looks in WDKBinRoot_x86 (see WindowsDriver.Common.targets).
+    $wdkPackages = Get-ChildItem -Path $PackagesDir -Directory -Filter "Microsoft.Windows.WDK.*" -ErrorAction SilentlyContinue
+    foreach ($pkg in $wdkPackages) {
+        $binRoot = Join-Path $pkg.FullName "c\bin"
+        if (-not (Test-Path $binRoot)) { continue }
+
+        foreach ($versionDir in Get-ChildItem -Path $binRoot -Directory) {
+            $stampInfX86Dir = Join-Path $versionDir.FullName "x86"
+            $stampInfX86 = Join-Path $stampInfX86Dir "stampinf.exe"
+            if (Test-Path $stampInfX86) { continue }
+
+            $stampInfSource = $null
+            foreach ($arch in @("x64", "ARM64")) {
+                $candidate = Join-Path $versionDir.FullName "$arch\stampinf.exe"
+                if (Test-Path $candidate) {
+                    $stampInfSource = $candidate
+                    break
+                }
+            }
+            if (-not $stampInfSource) { continue }
+
+            New-Item -ItemType Directory -Force -Path $stampInfX86Dir | Out-Null
+            Copy-Item -Force $stampInfSource $stampInfX86
+            Write-Step "Installed stampinf.exe under $($versionDir.Name)\x86 for $($pkg.Name)"
+        }
+    }
 }
 
 function Invoke-MsBuild {

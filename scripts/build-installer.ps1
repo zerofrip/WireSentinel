@@ -173,15 +173,24 @@ if ($buildMsi) {
     $msiOut = Join-Path $Dist "WireSentinel-$Version-$ArchLabel.msi"
     Write-Host "Building MSI -> $msiOut"
     $env:WIRESENTINEL_ARCH = $ArchLabel
-    wix build -ext WixToolset.Util.wixext (Join-Path $Root "installer\wix\Product.wxs") -o $msiOut
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Push-Location (Join-Path $Root "installer\wix")
+    try {
+        wix build -ext WixToolset.Util.wixext Product.wxs -o $msiOut
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
 }
 
 if ($buildNsis) {
     Write-Host "Building NSIS setup.exe ($ArchLabel)..."
-    $nsisScript = Join-Path $Root "installer\nsis\installer.nsi"
-    makensis "/DWIRESENTINEL_VERSION=$Version" "/DWIRESENTINEL_ARCH=$ArchLabel" $nsisScript
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Push-Location (Join-Path $Root "installer\nsis")
+    try {
+        makensis "/DWIRESENTINEL_VERSION=$Version" "/DWIRESENTINEL_ARCH=$ArchLabel" installer.nsi
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
 }
 
 Write-Host "Installer build complete. Output: $Dist"

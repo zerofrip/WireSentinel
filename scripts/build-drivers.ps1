@@ -170,23 +170,30 @@ function Repair-WdkNuGetToolLayout {
         if (-not (Test-Path $binRoot)) { continue }
 
         foreach ($versionDir in Get-ChildItem -Path $binRoot -Directory) {
-            $stampInfX86Dir = Join-Path $versionDir.FullName "x86"
-            $stampInfX86 = Join-Path $stampInfX86Dir "stampinf.exe"
-            if (Test-Path $stampInfX86) { continue }
+            $x86Dir = Join-Path $versionDir.FullName "x86"
+            New-Item -ItemType Directory -Force -Path $x86Dir | Out-Null
 
-            $stampInfSource = $null
+            $sourceArchDir = $null
             foreach ($arch in @("x64", "ARM64")) {
-                $candidate = Join-Path $versionDir.FullName "$arch\stampinf.exe"
-                if (Test-Path $candidate) {
-                    $stampInfSource = $candidate
+                $candidate = Join-Path $versionDir.FullName $arch
+                if (Test-Path (Join-Path $candidate "stampinf.exe")) {
+                    $sourceArchDir = $candidate
                     break
                 }
             }
-            if (-not $stampInfSource) { continue }
+            if (-not $sourceArchDir) { continue }
 
-            New-Item -ItemType Directory -Force -Path $stampInfX86Dir | Out-Null
-            Copy-Item -Force $stampInfSource $stampInfX86
-            Write-Step "Installed stampinf.exe under $($versionDir.Name)\x86 for $($pkg.Name)"
+            $copied = $false
+            foreach ($file in Get-ChildItem -Path $sourceArchDir -File -ErrorAction SilentlyContinue) {
+                $dest = Join-Path $x86Dir $file.Name
+                if (-not (Test-Path $dest)) {
+                    Copy-Item -Force $file.FullName $dest
+                    $copied = $true
+                }
+            }
+            if ($copied) {
+                Write-Step "Installed x86 tool shims under $($versionDir.Name) for $($pkg.Name)"
+            }
         }
     }
 
@@ -222,6 +229,8 @@ function Invoke-MsBuild {
             $Project,
             "/p:Configuration=$Configuration",
             "/p:Platform=$MsBuildPlatform",
+            "/p:RunInf2Cat=false",
+            "/p:RunInfVerif=false",
             "/m"
         )
         if ($script:WdkPackagesDir) {

@@ -1,9 +1,10 @@
 # Static WiX/NSIS installer validation (file refs, required config strings, XML syntax).
 # Run from repo root: .\installer\tests\validate.ps1
-# CI (no binaries):   .\installer\tests\validate.ps1 -SkipFileRefs
+# CI (no binaries):   .\installer\tests\validate.ps1 -SkipFileRefs -SkipDriverRefs
 
 param(
-    [switch]$SkipFileRefs
+    [switch]$SkipFileRefs,
+    [switch]$SkipDriverRefs
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,6 +13,22 @@ $Root = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation
 $WixFile = Join-Path $Root "installer\wix\Product.wxs"
 $NsisFile = Join-Path $Root "installer\nsis\installer.nsi"
 
+$DriverSourceFragments = @(
+    "installer\staging\drivers\current\guardian",
+    "installer\staging\drivers\current\ndis",
+    "install-kernel-drivers.ps1"
+)
+
+function Test-IsDriverSource {
+    param([string]$Source)
+    foreach ($fragment in $DriverSourceFragments) {
+        if ($Source -match [regex]::Escape($fragment)) {
+            return $true
+        }
+    }
+    return $false
+}
+
 function Test-XmlSyntax {
     param([string]$Path)
     [xml]$null = Get-Content -Raw -Path $Path
@@ -19,21 +36,29 @@ function Test-XmlSyntax {
 }
 
 function Test-WixFileRefs {
-    param([string]$Path)
+    param(
+        [string]$Path,
+        [switch]$SkipDriverRefs
+    )
     [xml]$doc = Get-Content -Raw -Path $Path
     $files = $doc.SelectNodes("//*[local-name()='File']")
+    $checked = 0
     foreach ($node in $files) {
         $source = $node.GetAttribute("Source")
         if ([string]::IsNullOrWhiteSpace($source)) {
             throw "WiX File element missing Source in $Path"
+        }
+        if ($SkipDriverRefs -and (Test-IsDriverSource -Source $source)) {
+            continue
         }
         $resolved = Join-Path (Split-Path $Path -Parent) $source
         $resolved = [System.IO.Path]::GetFullPath($resolved)
         if (-not (Test-Path $resolved)) {
             throw "WiX references missing file: $source (resolved: $resolved)"
         }
+        $checked++
     }
-    Write-Host "OK WiX file references ($($files.Count) files)"
+    Write-Host "OK WiX file references ($checked files checked)"
 }
 
 function Test-WixRequiredContent {
@@ -58,7 +83,12 @@ function Test-WixRequiredContent {
         "CA_RollbackFirewallRule",
         'Execute="rollback"',
         "InstallExecuteSequence",
-        "MajorUpgrade"
+        "MajorUpgrade",
+        "KernelDriversFeature",
+        "DriverPayloadComponents",
+        "CA_InstallKernelDrivers",
+        "CA_UninstallKernelDrivers",
+        "install-kernel-drivers.ps1"
     )
     foreach ($token in $required) {
         if ($text -notmatch [regex]::Escape($token)) {
@@ -69,20 +99,28 @@ function Test-WixRequiredContent {
 }
 
 function Test-NsisFileRefs {
-    param([string]$Path)
+    param(
+        [string]$Path,
+        [switch]$SkipDriverRefs
+    )
     $lines = Get-Content -Path $Path
     $fileLines = $lines | Where-Object { $_ -match '^\s*File "' }
+    $checked = 0
     foreach ($line in $fileLines) {
         if ($line -match 'File "([^"]+)"') {
             $source = $Matches[1]
+            if ($SkipDriverRefs -and (Test-IsDriverSource -Source $source)) {
+                continue
+            }
             $resolved = Join-Path (Split-Path $Path -Parent) $source
             $resolved = [System.IO.Path]::GetFullPath($resolved)
             if (-not (Test-Path $resolved)) {
                 throw "NSIS references missing file: $source (resolved: $resolved)"
             }
+            $checked++
         }
     }
-    Write-Host "OK NSIS file references ($($fileLines.Count) files)"
+    Write-Host "OK NSIS file references ($checked files checked)"
 }
 
 function Test-NsisRequiredContent {
@@ -101,7 +139,9 @@ function Test-NsisRequiredContent {
         "WireSentinel API (loopback)",
         "/S",
         "Uninstall",
-        "WriteUninstaller"
+        "WriteUninstaller",
+        "SecKernelDrivers",
+        "install-kernel-drivers.ps1"
     )
     foreach ($token in $required) {
         if ($text -notmatch [regex]::Escape($token)) {
@@ -119,14 +159,14 @@ if (-not (Test-Path $NsisFile)) { throw "Missing NSIS file: $NsisFile" }
 Test-XmlSyntax -Path $WixFile
 Test-WixRequiredContent -Path $WixFile
 if (-not $SkipFileRefs) {
-    Test-WixFileRefs -Path $WixFile
+    Test-WixFileRefs -Path $WixFile -SkipDriverRefs:$SkipDriverRefs
 } else {
     Write-Host "SKIP WiX file references (-SkipFileRefs)"
 }
 
 Test-NsisRequiredContent -Path $NsisFile
 if (-not $SkipFileRefs) {
-    Test-NsisFileRefs -Path $NsisFile
+    Test-NsisFileRefs -Path $NsisFile -SkipDriverRefs:$SkipDriverRefs
 } else {
     Write-Host "SKIP NSIS file references (-SkipFileRefs)"
 }

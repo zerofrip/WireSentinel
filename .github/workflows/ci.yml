@@ -119,7 +119,7 @@ jobs:
 
       - name: validate.ps1 (token checks, skip file refs)
         working-directory: WireSentinel
-        run: pwsh -File installer/tests/validate.ps1 -SkipFileRefs
+        run: pwsh -File installer/tests/validate.ps1 -SkipFileRefs -SkipDriverRefs
 
       - name: Pester installer e2e (static)
         working-directory: WireSentinel

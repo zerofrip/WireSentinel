@@ -19,10 +19,25 @@
     <Feature Id="MainFeature" Title="WireSentinel" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
       <ComponentGroupRef Id="DataDirectories" />
+      <ComponentGroupRef Id="InstallerScriptComponents" />
+    </Feature>
+
+    <Feature
+      Id="KernelDriversFeature"
+      Title="Kernel enforcement drivers"
+      Description="Guardian WFP and NDIS LWF drivers for kernel-mode traffic enforcement (recommended)."
+      Level="2">
+      <ComponentGroupRef Id="DriverPayloadComponents" />
     </Feature>
 
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="INSTALLFOLDER" Name="WireSentinel" />
+      <Directory Id="INSTALLFOLDER" Name="WireSentinel">
+        <Directory Id="DriversDir" Name="drivers">
+          <Directory Id="GuardianDriverDir" Name="guardian" />
+          <Directory Id="NdisDriverDir" Name="ndis" />
+        </Directory>
+        <Directory Id="ScriptsDir" Name="scripts" />
+      </Directory>
     </StandardDirectory>
 
     <StandardDirectory Id="CommonAppDataFolder">
@@ -34,6 +49,22 @@
     </StandardDirectory>
 
     <StandardDirectory Id="System6432Folder" />
+
+    <CustomAction
+      Id="CA_InstallKernelDrivers"
+      Directory="INSTALLFOLDER"
+      ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install-kernel-drivers.ps1 -DriverRoot drivers -Mode Install"
+      Execute="deferred"
+      Impersonate="no"
+      Return="ignore" />
+
+    <CustomAction
+      Id="CA_UninstallKernelDrivers"
+      Directory="INSTALLFOLDER"
+      ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install-kernel-drivers.ps1 -DriverRoot drivers -Mode Uninstall"
+      Execute="deferred"
+      Impersonate="no"
+      Return="ignore" />
 
     <!-- Loopback API firewall rule (127.0.0.1:8170) — matches NSIS installer -->
     <CustomAction
@@ -61,8 +92,10 @@
       Return="ignore" />
 
     <InstallExecuteSequence>
+      <Custom Action="CA_InstallKernelDrivers" After="InstallFiles" Condition="NOT Installed AND &amp;KernelDriversFeature=3" />
       <Custom Action="CA_RollbackFirewallRule" Before="CA_AddFirewallRule" Condition="NOT Installed" />
       <Custom Action="CA_AddFirewallRule" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="CA_UninstallKernelDrivers" Before="RemoveFiles" Condition='REMOVE="ALL"' />
       <Custom Action="CA_RemoveFirewallRule" Before="RemoveFiles" Condition='REMOVE="ALL"' />
     </InstallExecuteSequence>
 
@@ -101,6 +134,36 @@
       </Component>
       <Component Id="WireguardDll" Guid="e5f6a7b8-c9d0-1234-ef01-567890123456">
         <File Source="..\..\resources\wireguard.dll" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="InstallerScriptComponents" Directory="ScriptsDir">
+      <Component Id="DriverInstallScript" Guid="d1e2f3a4-b5c6-7890-abcd-ef1234567891">
+        <File Source="..\..\scripts\install-kernel-drivers.ps1" KeyPath="yes" />
+      </Component>
+      <Component Id="DriverUninstallScript" Guid="d1e2f3a4-b5c6-7890-abcd-ef1234567892">
+        <File Source="..\..\scripts\uninstall-kernel-drivers.ps1" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="DriverPayloadComponents">
+      <Component Id="GuardianSys" Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567893" Directory="GuardianDriverDir">
+        <File Source="..\..\installer\staging\drivers\current\guardian\Guardian.sys" KeyPath="yes" />
+      </Component>
+      <Component Id="GuardianInf" Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567894" Directory="GuardianDriverDir">
+        <File Source="..\..\installer\staging\drivers\current\guardian\guardian.inf" KeyPath="yes" />
+      </Component>
+      <Component Id="GuardianCat" Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567895" Directory="GuardianDriverDir">
+        <File Source="..\..\installer\staging\drivers\current\guardian\Guardian.cat" KeyPath="yes" />
+      </Component>
+      <Component Id="NdisSys" Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567896" Directory="NdisDriverDir">
+        <File Source="..\..\installer\staging\drivers\current\ndis\guardian_lwf.sys" KeyPath="yes" />
+      </Component>
+      <Component Id="NdisInf" Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567897" Directory="NdisDriverDir">
+        <File Source="..\..\installer\staging\drivers\current\ndis\guardian_lwf.inf" KeyPath="yes" />
+      </Component>
+      <Component Id="NdisCat" Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567898" Directory="NdisDriverDir">
+        <File Source="..\..\installer\staging\drivers\current\ndis\guardian_lwf.cat" KeyPath="yes" />
       </Component>
     </ComponentGroup>
 

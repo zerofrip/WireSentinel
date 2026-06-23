@@ -95,7 +95,29 @@ Describe "WireSentinel installer — rollback" {
     }
 }
 
-Describe "WireSentinel installer — firewall (loopback API)" {
+Describe "WireSentinel installer — kernel drivers" {
+    It "WiX exposes optional KernelDriversFeature" {
+        $Script:WixText | Should -Match 'Id="KernelDriversFeature"'
+        $Script:WixText | Should -Match "DriverPayloadComponents"
+    }
+
+    It "WiX schedules kernel driver custom actions" {
+        $Script:WixText | Should -Match "CA_InstallKernelDrivers"
+        $Script:WixText | Should -Match "CA_UninstallKernelDrivers"
+        $Script:WixText | Should -Match '&amp;KernelDriversFeature=3'
+    }
+
+    It "NSIS defines optional SecKernelDrivers section" {
+        $Script:NsisText | Should -Match "SecKernelDrivers"
+        $Script:NsisText | Should -Match "install-kernel-drivers.ps1"
+    }
+
+    It "NSIS uninstalls kernel drivers when installed" {
+        $Script:NsisText | Should -Match '-Mode Uninstall'
+        $Script:NsisText | Should -Match 'KernelDrivers'
+    }
+}
+
     It "WiX adds loopback rule on port 8170" {
         $Script:WixText | Should -Match "8170"
         $Script:WixText | Should -Match "127.0.0.1"

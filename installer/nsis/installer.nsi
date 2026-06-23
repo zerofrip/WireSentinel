@@ -3,6 +3,7 @@
 ; Silent: WireSentinel-0.1.0-setup.exe /S
 
 !include "LogicLib.nsh"
+!include "Sections.nsh"
 
 !define PRODUCT_NAME "WireSentinel"
 !define PRODUCT_VERSION "0.1.0"
@@ -26,17 +27,24 @@ RequestExecutionLevel admin
 ShowInstDetails nevershow
 ShowUnInstDetails nevershow
 
+Var /GLOBAL InstallKernelDrivers
+
 Function .onInit
-  ; NSIS handles /S automatically; avoid interactive prompts during silent install.
+  StrCpy $InstallKernelDrivers "1"
+  !insertmacro SelectSection ${SecKernelDrivers}
 FunctionEnd
 
-Section "Install"
+Section "WireSentinel application" SecMain
   SetOutPath "$INSTDIR"
 
   File "..\..\target\release\wire-sentinel-service.exe"
   File "..\..\ui\src-tauri\target\release\wire-sentinel.exe"
   File "..\..\resources\tunnel.dll"
   File "..\..\resources\wireguard.dll"
+
+  SetOutPath "$INSTDIR\scripts"
+  File "..\..\scripts\install-kernel-drivers.ps1"
+  File "..\..\scripts\uninstall-kernel-drivers.ps1"
 
   ; ProgramData directories (logs, tunnels, transports)
   CreateDirectory "${DATA_DIR}"
@@ -61,7 +69,42 @@ Section "Install"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 
+Section "!Kernel drivers (Guardian + NDIS)" SecKernelDrivers
+  SetOutPath "$INSTDIR\drivers\guardian"
+  File "..\..\installer\staging\drivers\current\guardian\Guardian.sys"
+  File "..\..\installer\staging\drivers\current\guardian\guardian.inf"
+  File /nonfatal "..\..\installer\staging\drivers\current\guardian\Guardian.cat"
+
+  SetOutPath "$INSTDIR\drivers\ndis"
+  File "..\..\installer\staging\drivers\current\ndis\guardian_lwf.sys"
+  File "..\..\installer\staging\drivers\current\ndis\guardian_lwf.inf"
+  File /nonfatal "..\..\installer\staging\drivers\current\ndis\guardian_lwf.cat"
+
+  nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\scripts\install-kernel-drivers.ps1" -DriverRoot "$INSTDIR\drivers" -Mode Install'
+  WriteRegDWORD HKLM "SOFTWARE\WireSentinel\Installer" "KernelDrivers" 1
+SectionEnd
+
+Function .onSelChange
+  ${If} ${SectionIsSelected} ${SecKernelDrivers}
+    StrCpy $InstallKernelDrivers "1"
+  ${Else}
+    StrCpy $InstallKernelDrivers "0"
+    WriteRegDWORD HKLM "SOFTWARE\WireSentinel\Installer" "KernelDrivers" 0
+  ${EndIf}
+FunctionEnd
+
+Function un.onInit
+  ReadRegDWORD $InstallKernelDrivers HKLM "SOFTWARE\WireSentinel\Installer" "KernelDrivers"
+  ${If} $InstallKernelDrivers == ""
+    StrCpy $InstallKernelDrivers "0"
+  ${EndIf}
+FunctionEnd
+
 Section "Uninstall"
+  ${If} $InstallKernelDrivers == "1"
+    nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\scripts\install-kernel-drivers.ps1" -DriverRoot "$INSTDIR\drivers" -Mode Uninstall'
+  ${EndIf}
+
   nsExec::ExecToLog 'sc.exe stop WireSentinel'
   nsExec::ExecToLog 'sc.exe delete WireSentinel'
   nsExec::ExecToLog 'netsh advfirewall firewall delete rule name="WireSentinel API (loopback)"'
@@ -70,8 +113,13 @@ Section "Uninstall"
   Delete "$INSTDIR\wire-sentinel.exe"
   Delete "$INSTDIR\tunnel.dll"
   Delete "$INSTDIR\wireguard.dll"
+  Delete "$INSTDIR\scripts\install-kernel-drivers.ps1"
+  Delete "$INSTDIR\scripts\uninstall-kernel-drivers.ps1"
+  RMDir "$INSTDIR\scripts"
+  RMDir /r "$INSTDIR\drivers"
   Delete "$INSTDIR\Uninstall.exe"
   Delete "$DESKTOP\WireSentinel.lnk"
   RMDir /r "$SMPROGRAMS\WireSentinel"
+  DeleteRegKey HKLM "SOFTWARE\WireSentinel\Installer"
   RMDir "$INSTDIR"
 SectionEnd

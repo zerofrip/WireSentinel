@@ -10,6 +10,7 @@ WireSentinel ships Windows installers built with WiX (MSI) and NSIS (EXE). Relea
 | Node.js | 20+ | UI build |
 | WiX Toolset | 4.x / 5.x | MSI |
 | NSIS | 3.x | EXE setup |
+| Visual Studio 2022 + WDK | — | Kernel drivers (Guardian + NDIS) |
 | WireGuard DLLs | — | See [resources/README.md](../resources/README.md) |
 
 ## Quick build
@@ -27,6 +28,22 @@ WireSentinel ships Windows installers built with WiX (MSI) and NSIS (EXE). Relea
 # MSI or NSIS only
 .\scripts\build-installer.ps1 -MsiOnly
 .\scripts\build-installer.ps1 -NsisOnly
+
+# Skip driver test signing (unsigned placeholder .cat — not loadable)
+.\scripts\build-installer.ps1 -SkipDriverSign
+
+# Use pre-staged drivers (skip msbuild)
+.\scripts\build-installer.ps1 -SkipDriverBuild
+```
+
+### Kernel driver build (standalone)
+
+```powershell
+# Build + stage to installer/staging/drivers/{arch}/
+.\scripts\build-drivers.ps1 -Arch x64
+
+# Test-sign staged drivers (auto-creates .cache/test-signing/wiresentinel-test.pfx)
+.\scripts\sign-drivers.ps1 -Arch x64
 ```
 
 ## Release packaging
@@ -94,6 +111,36 @@ Bump all locations together when releasing.
 | `wire-sentinel.exe` | `C:\Program Files\WireSentinel\` |
 | `tunnel.dll` | `C:\Program Files\WireSentinel\` |
 | `wireguard.dll` | `C:\Program Files\WireSentinel\` |
+| `drivers\guardian\*` | Optional — Guardian WFP driver payload |
+| `drivers\ndis\*` | Optional — NDIS LWF driver payload |
+| `scripts\install-kernel-drivers.ps1` | Driver install helper (MSI/NSIS) |
+
+### Optional kernel drivers
+
+Both installers expose an optional feature (default **on**):
+
+| Installer | Feature / section | Level |
+|-----------|-------------------|-------|
+| MSI (WiX) | `KernelDriversFeature` | 2 (optional, recommended) |
+| NSIS | `SecKernelDrivers` | Optional, pre-selected via `SelectSection` |
+
+When selected, the installer registers:
+
+- **Guardian** — `pnputil /add-driver guardian.inf /install`, then `sc start WireSentinelGuardian`
+- **NDIS LWF** — `pnputil /add-driver guardian_lwf.inf /install`, then `netcfg -v -l guardian_lwf.inf -c s -i WireSentinelNdis`
+
+NDIS binds to all adapters; uninstall runs `netcfg -u` to remove the binding.
+
+**Signing:** Build scripts test-sign `.sys` / `.cat` with a self-signed code-signing certificate cached at `.cache/test-signing/wiresentinel-test.pfx`. No GitHub Secrets are required. WHQL is not implemented.
+
+**Target PC requirement:** enable Windows test-signing mode before installing kernel drivers:
+
+```powershell
+bcdedit /set testsigning on
+# Reboot required
+```
+
+Optional: import the test root certificate to `Cert:\LocalMachine\Root` if you copy the PFX from the build machine. Release artifacts are intended for development and validation, not production deployment without EV/WHQL signing.
 
 ### Directories created
 
@@ -128,6 +175,12 @@ MSI includes a **rollback custom action** (`CA_RollbackFirewallRule`) that remov
 .\WireSentinel-0.1.0-x64-setup.exe /S
 ```
 
+Omit kernel drivers in silent mode:
+
+```powershell
+.\WireSentinel-0.1.0-x64-setup.exe /S /COMPONENTS="SecMain"
+```
+
 ## Validation
 
 Static validation (no install required):
@@ -137,7 +190,7 @@ Static validation (no install required):
 .\installer\tests\installer-e2e.ps1   # Pester tests
 ```
 
-CI uses `-SkipFileRefs` when build artifacts are absent.
+CI uses `-SkipFileRefs -SkipDriverRefs` when build artifacts and staged drivers are absent.
 
 ## CI/CD
 
@@ -183,13 +236,15 @@ Each architecture (`x64`, `arm64`) produces:
 |------|-------------|
 | `WireSentinel-{version}-{arch}.msi` | WiX per-machine installer |
 | `WireSentinel-{version}-{arch}-setup.exe` | NSIS installer |
-| `WireSentinel-{version}-{arch}.zip` | Portable bundle (exes + DLLs + `version.json`) |
-| `manifest.json` | SHA256 checksums for the three files above |
+| `WireSentinel-{version}-{arch}.zip` | Portable bundle (exes + DLLs + `drivers/` + `version.json`) |
+| `manifest.json` | SHA256 checksums for installers, ZIP, and individual driver files |
 
 VPN DLLs are **not** committed to git. CI fetches them via [`scripts/fetch-vpn-resources.ps1`](../scripts/fetch-vpn-resources.ps1):
 
 - `wireguard.dll` from [WireGuardNT SDK](https://download.wireguard.com/wireguard-nt/)
 - `tunnel.dll` built from [wireguard-windows embeddable-dll-service](https://github.com/WireGuard/wireguard-windows/tree/master/embeddable-dll-service)
+
+Kernel drivers are built from sibling repos (`WireSentinel-Kernel`, `WireSentinel-Ndis`) via [`scripts/build-drivers.ps1`](../scripts/build-drivers.ps1) and test-signed in Release CI via [`scripts/sign-drivers.ps1`](../scripts/sign-drivers.ps1). The test PFX is cached under `.cache/test-signing/` (gitignored).
 
 Local release (Windows, sibling repos checked out next to WireSentinel):
 
@@ -214,4 +269,4 @@ WiX `MajorUpgrade` replaces previous versions with the same UpgradeCode. Downgra
 - MSI: Add/Remove Programs or `msiexec /x {ProductCode}`
 - NSIS: `Uninstall.exe` in install directory or Add/Remove Programs
 
-Both stop the service, remove the firewall rule, and delete program files. User data in `%ProgramData%\WireSentinel\` is retained.
+Both stop the service, remove kernel drivers (if the optional feature was installed), remove the firewall rule, and delete program files. User data in `%ProgramData%\WireSentinel\` is retained.

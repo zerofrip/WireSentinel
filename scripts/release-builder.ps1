@@ -7,7 +7,8 @@
 param(
     [ValidateSet("x64", "arm64")]
     [string]$Arch = "x64",
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$SkipDriverSign
 )
 
 $ErrorActionPreference = "Stop"
@@ -42,12 +43,30 @@ function New-ZipPackage {
     Compress-Archive -Path (Join-Path $SourceDir "*") -DestinationPath $ZipPath -CompressionLevel Optimal
 }
 
+function Add-DriverManifestEntries {
+    param(
+        [string]$DriversRoot,
+        [ref]$Entries
+    )
+    if (-not (Test-Path $DriversRoot)) { return }
+    $files = Get-ChildItem -Path $DriversRoot -Recurse -File -ErrorAction SilentlyContinue
+    foreach ($file in $files) {
+        $relative = $file.FullName.Substring($DriversRoot.Length).TrimStart("\", "/")
+        $Entries.Value += [ordered]@{
+            path       = "drivers/$relative".Replace("\", "/")
+            sha256     = Get-Sha256 -Path $file.FullName
+            size_bytes = $file.Length
+        }
+    }
+}
+
 Write-Host "WireSentinel release builder v$Version ($ArchLabel, channel=$Channel)"
 
 $BuildArgs = @{
     Arch = $Arch
 }
 if ($SkipBuild) { $BuildArgs.SkipBuild = $true }
+if ($SkipDriverSign) { $BuildArgs.SkipDriverSign = $true }
 & (Join-Path $Root "scripts\build-installer.ps1") @BuildArgs
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -103,6 +122,11 @@ Copy-Item -Force (Join-Path $Root "resources\tunnel.dll") $Staging
 Copy-Item -Force (Join-Path $Root "resources\wireguard.dll") $Staging
 Copy-Item -Force $VersionFile $Staging
 
+$DriverStage = Join-Path $Root "installer\staging\drivers\$ArchLabel"
+if (Test-Path $DriverStage) {
+    Copy-Item -Recurse -Force $DriverStage (Join-Path $Staging "drivers")
+}
+
 $ZipPath = Join-Path $ReleaseArchDir $ZipName
 New-ZipPackage -SourceDir $Staging -ZipPath $ZipPath
 Remove-Item -Recurse -Force $Staging
@@ -120,6 +144,10 @@ foreach ($item in $artifacts) {
         sha256     = Get-Sha256 -Path $item.file
         size_bytes = (Get-Item $item.file).Length
     }
+}
+
+if (Test-Path $DriverStage) {
+    Add-DriverManifestEntries -DriversRoot $DriverStage -Entries ([ref]$manifestEntries)
 }
 
 $manifest = [ordered]@{

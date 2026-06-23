@@ -5,13 +5,18 @@
 #   .\scripts\build-installer.ps1 -SkipBuild         # package only (binaries must exist)
 #   .\scripts\build-installer.ps1 -MsiOnly
 #   .\scripts\build-installer.ps1 -NsisOnly
+#   .\scripts\build-installer.ps1 -SkipDriverBuild   # use pre-staged drivers
+#   .\scripts\build-installer.ps1 -SkipDriverSign    # skip test signing (unsigned placeholder .cat)
 
 param(
     [ValidateSet("x64", "arm64")]
     [string]$Arch = "x64",
     [switch]$SkipBuild,
     [switch]$MsiOnly,
-    [switch]$NsisOnly
+    [switch]$NsisOnly,
+    [bool]$IncludeDrivers = $true,
+    [switch]$SkipDriverBuild,
+    [switch]$SkipDriverSign
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,6 +51,14 @@ if ($RustTarget) {
 $TunnelDll = Join-Path $Root "resources\tunnel.dll"
 $WireguardDll = Join-Path $Root "resources\wireguard.dll"
 
+$DriverCurrent = Join-Path $Root "installer\staging\drivers\current"
+$DriverRequired = @(
+    (Join-Path $DriverCurrent "guardian\Guardian.sys"),
+    (Join-Path $DriverCurrent "guardian\guardian.inf"),
+    (Join-Path $DriverCurrent "ndis\guardian_lwf.sys"),
+    (Join-Path $DriverCurrent "ndis\guardian_lwf.inf")
+)
+
 function Test-Prerequisites {
     param([string[]]$RequiredFiles)
     foreach ($file in $RequiredFiles) {
@@ -55,18 +68,57 @@ function Test-Prerequisites {
     }
 }
 
+function Ensure-DriverCatalogPlaceholders {
+  param([string]$StageRoot)
+  foreach ($pair in @(
+      @{ Dir = "guardian"; Cat = "Guardian.cat" },
+      @{ Dir = "ndis"; Cat = "guardian_lwf.cat" }
+  )) {
+      $catPath = Join-Path $StageRoot $pair.Dir $pair.Cat
+      if (-not (Test-Path $catPath)) {
+          New-Item -ItemType File -Force -Path $catPath | Out-Null
+          Write-Host "Created placeholder catalog: $catPath (unsigned local build)"
+      }
+  }
+}
+
 function Invoke-Validate {
-    param([switch]$SkipFileRefs)
+    param(
+        [switch]$SkipFileRefs,
+        [switch]$SkipDriverRefs
+    )
     $validate = Join-Path $Root "installer\tests\validate.ps1"
     if (-not (Test-Path $validate)) {
         throw "Missing validation script: $validate"
     }
     $args = @()
     if ($SkipFileRefs) { $args += "-SkipFileRefs" }
+    if ($SkipDriverRefs) { $args += "-SkipDriverRefs" }
     & $validate @args
     if ($LASTEXITCODE -ne 0) {
         throw "Installer validation failed (exit $LASTEXITCODE)"
     }
+}
+
+if ($IncludeDrivers) {
+    $buildDrivers = Join-Path $Root "scripts\build-drivers.ps1"
+    $signDrivers = Join-Path $Root "scripts\sign-drivers.ps1"
+
+    if (-not $SkipDriverBuild) {
+        Write-Host "Building kernel drivers ($ArchLabel)..."
+        & $buildDrivers -Arch $Arch
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    }
+
+    if (-not $SkipDriverSign) {
+        & $signDrivers -Arch $Arch
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    } else {
+        Write-Host "Skipping driver test signing (-SkipDriverSign)"
+        Ensure-DriverCatalogPlaceholders -StageRoot $DriverCurrent
+    }
+
+    Test-Prerequisites -RequiredFiles $DriverRequired
 }
 
 if (-not $SkipBuild) {

@@ -84,11 +84,38 @@ Run static validation:
 .\installer\tests\installer-e2e.ps1
 ```
 
-Use `-SkipFileRefs` on CI/Linux when binaries are not built:
+Use `-SkipFileRefs -SkipDriverRefs` on CI/Linux when binaries and staged drivers are not built:
 
 ```powershell
-.\installer\tests\validate.ps1 -SkipFileRefs
+.\installer\tests\validate.ps1 -SkipFileRefs -SkipDriverRefs
 ```
+
+## Kernel driver will not load
+
+**Symptoms:** `pnputil` or `sc start WireSentinelGuardian` fails; Device Manager shows driver blocked; Event Log reports signature policy error.
+
+**Checks:**
+
+1. Confirm test-signing is enabled (required for test-signed drivers):
+   ```powershell
+   bcdedit /enum {current} | findstr testsigning
+   ```
+   Expected: `testsigning             Yes`
+
+2. If disabled, enable and reboot:
+   ```powershell
+   bcdedit /set testsigning on
+   shutdown /r /t 0
+   ```
+
+3. Verify driver files are signed (on build machine or from ZIP `drivers/` folder):
+   ```powershell
+   signtool verify /pa "C:\Program Files\WireSentinel\drivers\guardian\Guardian.sys"
+   ```
+
+4. If you used `-SkipDriverSign` during build, drivers are unsigned and will not load — rebuild with default test signing.
+
+5. Check `pnputil /enum-drivers` for `guardian.inf` / `guardian_lwf.inf` entries after install.
 
 ## Database corruption
 

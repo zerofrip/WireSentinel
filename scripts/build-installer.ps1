@@ -97,6 +97,7 @@ function Stage-InstallerBinaries {
     Write-Host "Staged installer binaries in $stageDir"
 }
 
+function Invoke-Validate {
     param(
         [switch]$SkipFileRefs,
         [switch]$SkipDriverRefs

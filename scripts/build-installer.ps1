@@ -82,7 +82,21 @@ function Ensure-DriverCatalogPlaceholders {
   }
 }
 
-function Invoke-Validate {
+function Stage-InstallerBinaries {
+    param(
+        [string]$ServiceExe,
+        [string]$GuiExe
+    )
+    $stageDir = Join-Path $Root "installer\staging\bin"
+    if (Test-Path $stageDir) {
+        Remove-Item -Recurse -Force $stageDir
+    }
+    New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
+    Copy-Item -Force $ServiceExe (Join-Path $stageDir "wire-sentinel-service.exe")
+    Copy-Item -Force $GuiExe (Join-Path $stageDir "wire-sentinel.exe")
+    Write-Host "Staged installer binaries in $stageDir"
+}
+
     param(
         [switch]$SkipFileRefs,
         [switch]$SkipDriverRefs
@@ -146,6 +160,7 @@ if (-not $SkipBuild) {
 }
 
 Test-Prerequisites @($ServiceExe, $GuiExe, $TunnelDll, $WireguardDll)
+Stage-InstallerBinaries -ServiceExe $ServiceExe -GuiExe $GuiExe
 Invoke-Validate
 
 New-Item -ItemType Directory -Force -Path $Dist | Out-Null

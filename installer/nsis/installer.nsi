@@ -37,8 +37,8 @@ FunctionEnd
 Section "WireSentinel application" SecMain
   SetOutPath "$INSTDIR"
 
-  File "..\..\target\release\wire-sentinel-service.exe"
-  File "..\..\ui\src-tauri\target\release\wire-sentinel.exe"
+  File "..\..\installer\staging\bin\wire-sentinel-service.exe"
+  File "..\..\installer\staging\bin\wire-sentinel.exe"
   File "..\..\resources\tunnel.dll"
   File "..\..\resources\wireguard.dll"
 

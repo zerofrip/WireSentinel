@@ -85,6 +85,9 @@ jobs:
         shell: pwsh
         run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
 
+      - name: Install WiX Util extension
+        run: wix extension add -g WixToolset.Util.wixext/5.0.2
+
       - name: Install NSIS
         run: choco install nsis -y
 
@@ -199,6 +202,9 @@ jobs:
       - name: Add dotnet tools to PATH
         shell: pwsh
         run: echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
+
+      - name: Install WiX Util extension
+        run: wix extension add -g WixToolset.Util.wixext/5.0.2
 
       - name: Install NSIS
         run: choco install nsis -y

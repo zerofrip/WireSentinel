@@ -82,6 +82,20 @@ function Ensure-DriverCatalogPlaceholders {
   }
 }
 
+function Get-MakensisExe {
+    $cmd = Get-Command makensis.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+
+    foreach ($candidate in @(
+            (Join-Path ${env:ProgramFiles(x86)} "NSIS\makensis.exe"),
+            (Join-Path $env:ProgramFiles "NSIS\makensis.exe")
+        )) {
+        if (Test-Path $candidate) { return $candidate }
+    }
+
+    throw "makensis.exe not found — install NSIS"
+}
+
 function Stage-InstallerBinaries {
     param(
         [string]$ServiceExe,
@@ -186,7 +200,7 @@ if ($buildNsis) {
     Write-Host "Building NSIS setup.exe ($ArchLabel)..."
     Push-Location (Join-Path $Root "installer\nsis")
     try {
-        makensis "/DWIRESENTINEL_VERSION=$Version" "/DWIRESENTINEL_ARCH=$ArchLabel" installer.nsi
+        & (Get-MakensisExe) "/DWIRESENTINEL_VERSION=$Version" "/DWIRESENTINEL_ARCH=$ArchLabel" installer.nsi
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     } finally {
         Pop-Location

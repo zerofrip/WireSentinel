@@ -26,14 +26,99 @@ function Write-Step([string]$Message) {
     Write-Host "[sign-drivers] $Message"
 }
 
+function Get-WdkPackagesDir {
+    $parent = Split-Path -Parent $Root
+    $packagesDir = Join-Path $parent "packages"
+    if (Test-Path $packagesDir) { return $packagesDir }
+    return $null
+}
+
+function Repair-WdkInfToolLayout {
+    param([string]$PackagesDir)
+
+    if (-not $PackagesDir -or -not (Test-Path $PackagesDir)) { return }
+
+    $wdkPackages = Get-ChildItem -Path $PackagesDir -Directory -Filter "Microsoft.Windows.WDK.*" -ErrorAction SilentlyContinue
+    foreach ($pkg in $wdkPackages) {
+        $binRoot = Join-Path $pkg.FullName "c\bin"
+        if (-not (Test-Path $binRoot)) { continue }
+
+        foreach ($versionDir in Get-ChildItem -Path $binRoot -Directory) {
+            $x86Dir = Join-Path $versionDir.FullName "x86"
+            New-Item -ItemType Directory -Force -Path $x86Dir | Out-Null
+
+            $sourceArchDir = $null
+            foreach ($arch in @("x64", "ARM64")) {
+                $candidate = Join-Path $versionDir.FullName $arch
+                if (Test-Path (Join-Path $candidate "stampinf.exe")) {
+                    $sourceArchDir = $candidate
+                    break
+                }
+            }
+            if (-not $sourceArchDir) { continue }
+
+            foreach ($file in Get-ChildItem -Path $sourceArchDir -File -ErrorAction SilentlyContinue) {
+                $dest = Join-Path $x86Dir $file.Name
+                if (-not (Test-Path $dest)) {
+                    Copy-Item -Force $file.FullName $dest
+                }
+            }
+        }
+    }
+}
+
+function Get-WdkInfToolDir {
+    param(
+        [string]$PackagesDir,
+        [string]$ArchLabel
+    )
+
+    if (-not $PackagesDir) { return $null }
+
+    $pkgPattern = if ($ArchLabel -eq "arm64") {
+        "Microsoft.Windows.WDK.arm64.*"
+    } else {
+        "Microsoft.Windows.WDK.x64.*"
+    }
+    $pkg = Get-ChildItem -Path $PackagesDir -Directory -Filter $pkgPattern -ErrorAction SilentlyContinue |
+        Sort-Object Name -Descending |
+        Select-Object -First 1
+    if (-not $pkg) { return $null }
+
+    $binRoot = Join-Path $pkg.FullName "c\bin"
+    if (-not (Test-Path $binRoot)) { return $null }
+
+    foreach ($versionDir in (Get-ChildItem -Path $binRoot -Directory | Sort-Object Name -Descending)) {
+        foreach ($arch in @("x86", "x64")) {
+            $dir = Join-Path $versionDir.FullName $arch
+            if (Test-Path (Join-Path $dir "inf2cat.exe")) {
+                return $dir
+            }
+        }
+    }
+    return $null
+}
+
 function Get-ToolPath {
-    param([string]$Name)
+    param(
+        [string]$Name,
+        [string]$ArchLabel = "x64"
+    )
+
+    $packagesDir = Get-WdkPackagesDir
+    if ($packagesDir) {
+        Repair-WdkInfToolLayout -PackagesDir $packagesDir
+        $toolDir = Get-WdkInfToolDir -PackagesDir $packagesDir -ArchLabel $ArchLabel
+        if ($toolDir) {
+            $candidate = Join-Path $toolDir $Name
+            if (Test-Path $candidate) { return $candidate }
+        }
+    }
+
     $cmd = Get-Command $Name -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
 
-    $parent = Split-Path -Parent $Root
-    $packagesDir = Join-Path $parent "packages"
-    if (Test-Path $packagesDir) {
+    if ($packagesDir) {
         $match = Get-ChildItem -Path $packagesDir -Recurse -Filter $Name -ErrorAction SilentlyContinue |
             Where-Object { $_.FullName -match '\\c\\bin\\' } |
             Sort-Object FullName -Descending |
@@ -84,17 +169,25 @@ function Get-OrCreateTestPfx {
 function Invoke-Inf2Cat {
     param(
         [string]$DriverDir,
-        [string[]]$OsVersions
+        [string[]]$OsVersions,
+        [string]$ArchLabel
     )
-    $inf2cat = Get-ToolPath "inf2cat.exe"
-    $args = @("/driver:$DriverDir", "/verbose")
-    foreach ($os in $OsVersions) {
-        $args += "/os:$os"
-    }
-    Write-Step "inf2cat $($args -join ' ')"
-    & $inf2cat @args
-    if ($LASTEXITCODE -ne 0) {
-        throw "inf2cat failed for $DriverDir (exit $LASTEXITCODE)"
+    $inf2cat = Get-ToolPath -Name "inf2cat.exe" -ArchLabel $ArchLabel
+    $toolDir = Split-Path -Parent $inf2cat
+    $previousPath = $env:PATH
+  $env:PATH = "$toolDir;$previousPath"
+    try {
+        $args = @("/driver:$DriverDir", "/verbose")
+        foreach ($os in $OsVersions) {
+            $args += "/os:$os"
+        }
+        Write-Step "inf2cat $($args -join ' ')"
+        & $inf2cat @args
+        if ($LASTEXITCODE -ne 0) {
+            throw "inf2cat failed for $DriverDir (exit $LASTEXITCODE)"
+        }
+    } finally {
+        $env:PATH = $previousPath
     }
 }
 
@@ -102,9 +195,10 @@ function Invoke-SignFile {
     param(
         [string]$Path,
         [string]$PfxPath,
-        [string]$PfxPassword
+        [string]$PfxPassword,
+        [string]$ArchLabel
     )
-    $signtool = Get-ToolPath "signtool.exe"
+    $signtool = Get-ToolPath -Name "signtool.exe" -ArchLabel $ArchLabel
     # No timestamp — test certificates typically fail with public TSA endpoints.
     & $signtool sign /fd SHA256 /f $PfxPath /p $PfxPassword $Path
     if ($LASTEXITCODE -ne 0) {
@@ -120,16 +214,17 @@ function Sign-DriverPackage {
         [string]$CatName,
         [string[]]$OsVersions,
         [string]$PfxPath,
-        [string]$PfxPassword
+        [string]$PfxPassword,
+        [string]$ArchLabel
     )
     if (-not (Test-Path $PackageDir)) {
         throw "Driver package directory not found: $PackageDir"
     }
-    Invoke-Inf2Cat -DriverDir $PackageDir -OsVersions $OsVersions
-    Invoke-SignFile -Path (Join-Path $PackageDir $SysName) -PfxPath $PfxPath -PfxPassword $PfxPassword
+    Invoke-Inf2Cat -DriverDir $PackageDir -OsVersions $OsVersions -ArchLabel $ArchLabel
+    Invoke-SignFile -Path (Join-Path $PackageDir $SysName) -PfxPath $PfxPath -PfxPassword $PfxPassword -ArchLabel $ArchLabel
     $cat = Join-Path $PackageDir $CatName
     if (Test-Path $cat) {
-        Invoke-SignFile -Path $cat -PfxPath $PfxPath -PfxPassword $PfxPassword
+        Invoke-SignFile -Path $cat -PfxPath $PfxPath -PfxPassword $PfxPassword -ArchLabel $ArchLabel
     }
 }
 
@@ -151,9 +246,9 @@ if ($SkipSign) {
 $testPfx = Get-OrCreateTestPfx
 
 $osList = if ($Arch -eq "arm64") {
-    @("10_ARM64", "10_ARM64_19041")
+    @("10_NI_ARM64", "10_VB_ARM64")
 } else {
-    @("10_X64", "10_X64_19041")
+    @("10_NI_X64", "10_VB_X64")
 }
 
 Sign-DriverPackage `
@@ -162,7 +257,8 @@ Sign-DriverPackage `
     -CatName "Guardian.cat" `
     -OsVersions $osList `
     -PfxPath $testPfx.Path `
-    -PfxPassword $testPfx.Password
+    -PfxPassword $testPfx.Password `
+    -ArchLabel $ArchLabel
 
 Sign-DriverPackage `
     -PackageDir (Join-Path $StageRoot "ndis") `
@@ -170,7 +266,8 @@ Sign-DriverPackage `
     -CatName "guardian_lwf.cat" `
     -OsVersions $osList `
     -PfxPath $testPfx.Path `
-    -PfxPassword $testPfx.Password
+    -PfxPassword $testPfx.Password `
+    -ArchLabel $ArchLabel
 
 Sync-CurrentStaging
 

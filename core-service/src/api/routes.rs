@@ -37,10 +37,10 @@ use chrono::Utc;
 use filter_lists::filters_cache_dir;
 use serde::Deserialize;
 use shared_types::{
-    AppSummary, AuditLogQuery, ChainProfile, DnsProviderRecord, DnsSettings, EnterprisePolicy,
+    AuditLogQuery, ChainProfile, DnsProviderRecord, DnsSettings, EnterprisePolicy,
     FilterListRecord, KernelStatistics, KernelTelemetryV2, LeakIncident, LogLevel, PolicyMode,
     PrivacyScoreSnapshot, RouteStatisticsQuery, Rule, SecurityAuditEntry, SecurityFinding,
-    ServiceEventInner, ServiceStatus, TailscaleStatus, TorStatus, TrafficRoute, TransportProfile,
+    ServiceEventInner, ServiceStatus, TailscaleStatus, TorStatus, TransportProfile,
     TransportStatusRecord, VPNProfile, ValidationReport,
 };
 use std::sync::Arc;

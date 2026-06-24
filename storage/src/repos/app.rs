@@ -76,7 +76,10 @@ fn row_to_app(
     };
 
     if record.exit_config.is_none() {
-        record.exit_config = record.default_route.as_ref().map(|r| AppExitConfig::from_single(r.clone()));
+        record.exit_config = record
+            .default_route
+            .as_ref()
+            .map(|r| AppExitConfig::from_single(r.clone()));
     }
     record.sync_legacy_default_route();
     Ok(record)
@@ -91,10 +94,8 @@ impl AppRepository for SqliteAppRepository {
             .await
             .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
-        row.map(|r| {
-            row_to_app(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9)
-        })
-        .transpose()
+        row.map(|r| row_to_app(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9))
+            .transpose()
     }
 
     async fn find_by_exe_path(&self, path: &Path) -> Result<Option<AppRecord>> {
@@ -105,10 +106,8 @@ impl AppRepository for SqliteAppRepository {
             .await
             .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
-        row.map(|r| {
-            row_to_app(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9)
-        })
-        .transpose()
+        row.map(|r| row_to_app(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9))
+            .transpose()
     }
 
     async fn find_by_sha256(&self, sha256: &str) -> Result<Option<AppRecord>> {
@@ -118,10 +117,8 @@ impl AppRepository for SqliteAppRepository {
             .await
             .map_err(|e| WireSentinelError::Config(e.to_string()))?;
 
-        row.map(|r| {
-            row_to_app(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9)
-        })
-        .transpose()
+        row.map(|r| row_to_app(r.0, r.1, r.2, r.3, r.4, r.5, r.6, r.7, r.8, r.9))
+            .transpose()
     }
 
     async fn upsert(&self, app: &AppRecord) -> Result<()> {

@@ -1,9 +1,9 @@
-use crate::api::app_routes::{list_apps, set_app_route};
 use crate::api::anonymity_routes::{
     create_anonymous_service, get_anonymity_entropy, get_anonymity_status,
     get_privacy_anonymity_analytics, list_anonymous_services, list_katzenpost_profiles,
     list_loopix_profiles, simulate_decoy_route, start_katzenpost, start_loopix,
 };
+use crate::api::app_routes::{list_apps, set_app_route};
 use crate::api::kernel_routes::{
     kernel_packets, kernel_routes, kernel_status, kernel_telemetry, ndis_status,
 };

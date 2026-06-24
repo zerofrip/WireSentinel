@@ -40,7 +40,12 @@ impl ExitFailoverService {
     pub fn resolve_active_route(
         &self,
         record: &AppRecord,
-    ) -> (Vec<TrafficRoute>, usize, Option<TrafficRoute>, ExitOnExhaustion) {
+    ) -> (
+        Vec<TrafficRoute>,
+        usize,
+        Option<TrafficRoute>,
+        ExitOnExhaustion,
+    ) {
         let config = record.effective_exit_config();
         let routes = config
             .as_ref()
@@ -50,7 +55,9 @@ impl ExitFailoverService {
             .as_ref()
             .map(|c| c.on_exhaustion)
             .unwrap_or(ExitOnExhaustion::Blocked);
-        let index = self.active_index(record.app_id).min(routes.len().saturating_sub(1));
+        let index = self
+            .active_index(record.app_id)
+            .min(routes.len().saturating_sub(1));
         let route = routes.get(index).cloned();
         (routes, index, route, on_exhaustion)
     }
@@ -99,12 +106,13 @@ impl ExitFailoverService {
         if let Some(next_route) = config.routes.get(next_index).cloned() {
             self.active_index.write().insert(app_id, next_index);
             info!(%app_id, from_index, next_index, "exit route failover");
-            deps.events.publish(ServiceEvent::now(ServiceEventInner::ExitFailover {
-                app_id,
-                from_index,
-                to_index: next_index,
-                route: next_route.clone(),
-            }));
+            deps.events
+                .publish(ServiceEvent::now(ServiceEventInner::ExitFailover {
+                    app_id,
+                    from_index,
+                    to_index: next_index,
+                    route: next_route.clone(),
+                }));
             let app = AppIdentity::new(0, record.clone());
             let decision = Decision {
                 route: next_route.clone(),
@@ -133,10 +141,11 @@ impl ExitFailoverService {
         app_id: Uuid,
     ) -> shared_types::Result<()> {
         info!(%app_id, ?on_exhaustion, "exit routes exhausted");
-        deps.events.publish(ServiceEvent::now(ServiceEventInner::ExitExhausted {
-            app_id,
-            action: on_exhaustion,
-        }));
+        deps.events
+            .publish(ServiceEvent::now(ServiceEventInner::ExitExhausted {
+                app_id,
+                action: on_exhaustion,
+            }));
 
         let route = match on_exhaustion {
             ExitOnExhaustion::KillSwitch => {

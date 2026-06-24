@@ -1,10 +1,5 @@
 use crate::api::AppState;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::IntoResponse,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::Deserialize;
 use shared_types::{AppExitConfig, AppSummary, TrafficRoute};
 use std::sync::Arc;
@@ -51,9 +46,7 @@ pub async fn set_app_route(
         body.route.map(AppExitConfig::from_single)
     };
 
-    let new_route = exit_config
-        .as_ref()
-        .and_then(|c| c.routes.first().cloned());
+    let new_route = exit_config.as_ref().and_then(|c| c.routes.first().cloned());
 
     match state
         .deps

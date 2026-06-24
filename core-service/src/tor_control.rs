@@ -24,14 +24,11 @@ pub async fn poll_tor_metrics(control_port: u16, timeout: Duration) -> Result<To
     };
 
     while Instant::now() < deadline {
-        match query_tor_metrics(control_port).await {
-            Ok(metrics) => {
-                last = metrics;
-                if metrics.bootstrap_progress >= 100 {
-                    return Ok(metrics);
-                }
+        if let Ok(metrics) = query_tor_metrics(control_port).await {
+            last = metrics;
+            if metrics.bootstrap_progress >= 100 {
+                return Ok(metrics);
             }
-            Err(_) => {}
         }
         sleep(Duration::from_millis(500)).await;
     }
@@ -83,7 +80,9 @@ async fn query_tor_metrics(control_port: u16) -> Result<TorMetrics> {
     })
 }
 
-async fn read_until_ok(lines: &mut tokio::io::Lines<BufReader<tokio::net::tcp::OwnedReadHalf>>) -> Result<()> {
+async fn read_until_ok(
+    lines: &mut tokio::io::Lines<BufReader<tokio::net::tcp::OwnedReadHalf>>,
+) -> Result<()> {
     while let Some(line) = lines
         .next_line()
         .await
@@ -93,7 +92,9 @@ async fn read_until_ok(lines: &mut tokio::io::Lines<BufReader<tokio::net::tcp::O
             return Ok(());
         }
         if line.starts_with("5") {
-            return Err(WireSentinelError::Other(format!("tor control error: {line}")));
+            return Err(WireSentinelError::Other(format!(
+                "tor control error: {line}"
+            )));
         }
     }
     Err(WireSentinelError::Other("tor control closed".into()))
@@ -115,7 +116,9 @@ async fn read_response_body(
             body.push_str(line.trim_start_matches("250-"));
             body.push('\n');
         } else if line.starts_with("5") {
-            return Err(WireSentinelError::Other(format!("tor control error: {line}")));
+            return Err(WireSentinelError::Other(format!(
+                "tor control error: {line}"
+            )));
         }
     }
     Ok(body)

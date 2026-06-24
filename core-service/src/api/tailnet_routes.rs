@@ -16,10 +16,7 @@ use uuid::Uuid;
     path = "/api/v1/tailnet/profiles/{id}/join",
     responses((status = 200, body = TailnetProfile))
 )]
-pub async fn tailnet_join(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
-) -> Response {
+pub async fn tailnet_join(State(state): State<Arc<AppState>>, Path(id): Path<Uuid>) -> Response {
     match state.deps.tailscale.join(id).await {
         Ok(profile) => Json(profile).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
@@ -31,10 +28,7 @@ pub async fn tailnet_join(
     path = "/api/v1/tailnet/profiles/{id}/leave",
     responses((status = 200, body = TailscaleStatus))
 )]
-pub async fn tailnet_leave(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
-) -> Response {
+pub async fn tailnet_leave(State(state): State<Arc<AppState>>, Path(id): Path<Uuid>) -> Response {
     if let Err(e) = state.deps.tailscale.leave(id, "user requested").await {
         return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response();
     }

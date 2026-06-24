@@ -28,7 +28,9 @@ impl MixnetTransport {
         tokio::time::timeout(Duration::from_secs(5), TcpStream::connect(addr))
             .await
             .map_err(|_| WireSentinelError::Other(format!("mixnet upstream timeout: {addr}")))?
-            .map_err(|e| WireSentinelError::Other(format!("mixnet upstream connect {addr}: {e}")))?;
+            .map_err(|e| {
+                WireSentinelError::Other(format!("mixnet upstream connect {addr}: {e}"))
+            })?;
         Ok(())
     }
 }

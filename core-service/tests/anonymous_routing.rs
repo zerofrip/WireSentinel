@@ -18,9 +18,21 @@ use shared_types::{
 use std::path::PathBuf;
 use std::sync::Arc;
 use storage::{init_pool_in_memory, Storage};
+use transport_engine::{BridgeManager, ProcessManager, TorSingBoxRunner, TransportConfigStore};
 use uuid::Uuid;
 use vpn_engine::{default_dll_path, default_factory, VpnManager};
 use wfp::{UserspaceWfpEngine, WfpEngine};
+
+fn test_tor_service(storage: Arc<Storage>, events: EventBus) -> Arc<TorService> {
+    let tor_runner = Arc::new(TorSingBoxRunner::new(
+        Arc::new(ProcessManager::new()),
+        Arc::new(TransportConfigStore::new()),
+        PathBuf::from("sing-box"),
+        PathBuf::from("tor"),
+    ));
+    let bridge_manager = Arc::new(BridgeManager::new(Arc::clone(&tor_runner)));
+    Arc::new(TorService::new(storage, events, tor_runner, bridge_manager))
+}
 
 fn build_engine(
     storage: Arc<Storage>,
@@ -73,7 +85,7 @@ async fn anonymous_route_does_not_fall_back_to_direct() {
         Arc::clone(&listen_ports),
         Arc::clone(&mixnet_security),
     ));
-    let tor = Arc::new(TorService::new(Arc::clone(&storage), events.clone()));
+    let tor = test_tor_service(Arc::clone(&storage), events.clone());
     let anonymity_security = Arc::new(AnonymitySecurityPolicy::new(events.clone()));
     let anonymity = Arc::new(AnonymityService::new(
         Arc::clone(&storage),

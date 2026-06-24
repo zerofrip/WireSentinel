@@ -56,7 +56,9 @@ impl DiagnosticsService {
         };
         SubsystemHealth {
             status: status.into(),
-            message: driver.message.or(Some(format!("engine: {}", driver.engine))),
+            message: driver
+                .message
+                .or(Some(format!("engine: {}", driver.engine))),
         }
     }
 

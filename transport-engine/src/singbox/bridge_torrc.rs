@@ -82,7 +82,7 @@ mod tests {
     fn empty_bridges_only_client_only() {
         let (torrc, extra) = bridges_to_tor_options(&[]);
         assert_eq!(torrc.get("ClientOnly"), Some(&"1".to_string()));
-        assert!(torrc.get("UseBridges").is_none());
+        assert!(!torrc.contains_key("UseBridges"));
         assert!(extra.is_empty());
     }
 }

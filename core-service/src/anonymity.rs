@@ -89,7 +89,10 @@ impl AnonymityService {
         })
     }
 
-    fn katzenpost_discovery(&self, profile: &KatzenpostProfile) -> Result<KatzenpostGatewayDiscovery> {
+    fn katzenpost_discovery(
+        &self,
+        profile: &KatzenpostProfile,
+    ) -> Result<KatzenpostGatewayDiscovery> {
         if let Some(json) = &profile.config_json {
             if let Ok(discovery) = KatzenpostGatewayDiscovery::from_json(&json.to_string()) {
                 return Ok(discovery);

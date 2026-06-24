@@ -42,9 +42,7 @@ impl TailscaleBackend {
                 "tailscale up failed — is tailscale installed?".into(),
             ));
         }
-        self.active
-            .write()
-            .insert(profile.id, VpnStatus::Connected);
+        self.active.write().insert(profile.id, VpnStatus::Connected);
         Ok(())
     }
 

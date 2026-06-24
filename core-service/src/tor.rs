@@ -11,8 +11,8 @@ use shared_types::{
     TorStatus, WireSentinelError,
 };
 use std::path::PathBuf;
-use std::time::Duration;
 use std::sync::Arc;
+use std::time::Duration;
 use storage::Storage;
 use transport_engine::{
     bridge_line, bridges_to_tor_options, BridgeManager, TorOutboundSpec, TorSingBoxRunner,
@@ -166,7 +166,12 @@ impl TorService {
             .await?;
 
         let control_port = control_port_for_socks(profile.socks_port);
-        let metrics = poll_tor_metrics(control_port, Duration::from_secs(120)).await.unwrap_or(crate::tor_control::TorMetrics { bootstrap_progress: 100, circuit_count: 1 });
+        let metrics = poll_tor_metrics(control_port, Duration::from_secs(120))
+            .await
+            .unwrap_or(crate::tor_control::TorMetrics {
+                bootstrap_progress: 100,
+                circuit_count: 1,
+            });
         *self.bootstrap_progress.write() = metrics.bootstrap_progress;
         *self.active_profile.write() = Some(profile.clone());
         *self.running.write() = true;

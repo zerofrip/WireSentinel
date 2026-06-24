@@ -277,12 +277,7 @@ async fn get_vpn_handshake_proxy(
     Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
     match state.deps.vpn.get_profile(id) {
-        Some(profile) => Json(
-            profile
-                .handshake_proxy
-                .unwrap_or_default(),
-        )
-        .into_response(),
+        Some(profile) => Json(profile.handshake_proxy.unwrap_or_default()).into_response(),
         None => StatusCode::NOT_FOUND.into_response(),
     }
 }

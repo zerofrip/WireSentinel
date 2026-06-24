@@ -62,6 +62,8 @@ async fn singbox_config_generation_and_start() {
         upstream_socks: None,
         obfuscation_preset: None,
         tor_spec: None,
+        proxy_profile: None,
+        mixnet_upstream: None,
     };
 
     transport.start(&ctx).await.unwrap();
@@ -139,6 +141,8 @@ async fn xray_reality_config_and_transform_registry() {
         upstream_socks: None,
         obfuscation_preset: None,
         tor_spec: None,
+        proxy_profile: None,
+        mixnet_upstream: None,
     };
 
     transport.start(&ctx).await.unwrap();

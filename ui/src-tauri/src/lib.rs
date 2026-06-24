@@ -1,5 +1,3 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
 use std::path::PathBuf;
 
 fn data_dir() -> PathBuf {
@@ -10,6 +8,21 @@ fn data_dir() -> PathBuf {
     } else {
         PathBuf::from("/tmp/WireSentinel")
     }
+}
+
+#[cfg(debug_assertions)]
+fn init_debug_logging() {
+    use tracing_subscriber::{fmt, EnvFilter};
+
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let _ = fmt()
+        .with_writer(std::io::stderr)
+        .with_env_filter(filter)
+        .try_init();
+
+    std::panic::set_hook(Box::new(|info| {
+        tracing::error!(panic = %info, "WireSentinel UI panicked");
+    }));
 }
 
 #[cfg(windows)]
@@ -35,9 +48,28 @@ fn decrypt_token(ciphertext: &[u8]) -> Result<Vec<u8>, String> {
 #[tauri::command]
 fn read_api_token() -> Result<String, String> {
     let path = data_dir().join(".api-token");
-    let bytes = std::fs::read(&path).map_err(|e| format!("read token: {e}"))?;
-    let plain = decrypt_token(&bytes)?;
-    String::from_utf8(plain).map_err(|e| format!("token utf8: {e}"))
+    match std::fs::read(&path) {
+        Ok(bytes) => match decrypt_token(&bytes) {
+            Ok(plain) => match String::from_utf8(plain) {
+                Ok(token) => {
+                    tracing::debug!(path = %path.display(), "API token loaded");
+                    Ok(token)
+                }
+                Err(e) => {
+                    tracing::warn!(path = %path.display(), error = %e, "API token UTF-8 decode failed");
+                    Err(format!("token utf8: {e}"))
+                }
+            },
+            Err(e) => {
+                tracing::warn!(path = %path.display(), error = %e, "API token decrypt failed");
+                Err(e)
+            }
+        },
+        Err(e) => {
+            tracing::warn!(path = %path.display(), error = %e, "API token file not readable");
+            Err(format!("read token: {e}"))
+        }
+    }
 }
 
 #[tauri::command]
@@ -47,8 +79,19 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    #[cfg(debug_assertions)]
+    init_debug_logging();
+
+    tracing::info!(version = env!("CARGO_PKG_VERSION"), "WireSentinel UI starting");
+
+    if let Err(e) = tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![greet, read_api_token])
         .run(tauri::generate_context!())
-        .expect("error while running WireSentinel UI");
+    {
+        tracing::error!(error = %e, "WireSentinel UI exited with error");
+        eprintln!("error while running WireSentinel UI: {e}");
+        std::process::exit(1);
+    }
+
+    tracing::info!("WireSentinel UI shut down");
 }

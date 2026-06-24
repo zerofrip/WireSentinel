@@ -32,10 +32,20 @@ API listens on `http://127.0.0.1:8170`
 
 ### UI
 
+**Release** (`wire-sentinel.exe` from `npm run tauri build`): GUI window only — no console. Requires `wire-sentinel-service` running (Windows Service or console).
+
+**Debug** (`npm run tauri dev`): GUI plus a console window with Rust-side logs on stderr.
+
 ```bash
 cd ui
 npm install
 npm run tauri dev
+```
+
+Optional verbose Rust logs:
+
+```bash
+RUST_LOG=debug npm run tauri dev
 ```
 
 ### Tests

@@ -10,7 +10,9 @@ mod imp {
     use super::*;
     use crate::ffi::{WinDivertHandle, WinDivertLib};
     use async_trait::async_trait;
-    use shared_types::{AppIdentity, NdisHealth, Result, TrafficRoute, TunnelIface, WireSentinelError};
+    use shared_types::{
+        AppIdentity, NdisHealth, Result, TrafficRoute, TunnelIface, WireSentinelError,
+    };
     use std::collections::HashMap;
     use std::path::PathBuf;
     use uuid::Uuid;
@@ -317,4 +319,7 @@ mod stub {
 }
 
 #[cfg(not(windows))]
-pub use stub::{windivert_available, StubWinDivertEngine as WinDivertEngine, WinDivertEngineApi, WinDivertHealth};
+pub use stub::{
+    windivert_available, StubWinDivertEngine as WinDivertEngine, WinDivertEngineApi,
+    WinDivertHealth,
+};

@@ -182,9 +182,7 @@ async fn create_wfp_engine(
     let mapping = crate::enforcement::resolve_mapping(storage)
         .await
         .unwrap_or_else(|_| {
-            shared_types::EnforcementMapping::from_backend(
-                shared_types::EnforcementBackend::Signed,
-            )
+            shared_types::EnforcementMapping::from_backend(shared_types::EnforcementBackend::Signed)
         });
     wfp::create_wfp_engine(mapping.backend.as_str(), listen_ports)
 }

@@ -325,7 +325,9 @@ pub fn ndis_driver_available() -> std::result::Result<String, String> {
 pub fn create_ndis_engine(use_windivert: bool) -> Arc<dyn NdisEngine> {
     #[cfg(all(windows, feature = "signed-stack"))]
     if use_windivert {
-        return windivert_ndis::create_windivert_ndis_engine();
+        return crate::windivert_ndis::create_windivert_ndis_engine();
     }
+    #[cfg(not(all(windows, feature = "signed-stack")))]
+    let _ = use_windivert;
     Arc::new(NdisCalloutEngine::new())
 }

@@ -53,10 +53,8 @@ pub async fn get_enforcement_settings(State(state): State<Arc<AppState>>) -> imp
     let windivert_probe = windivert_engine::windivert_available().ok();
     let transports = state.deps.transport.status().await.unwrap_or_default();
     let singbox_running = transports.iter().any(|t| {
-        matches!(
-            t.kind,
-            shared_types::TransportProfileKind::SingBox
-        ) && matches!(t.state, shared_types::TransportState::Running)
+        matches!(t.kind, shared_types::TransportProfileKind::SingBox)
+            && matches!(t.state, shared_types::TransportState::Running)
     });
 
     let response = EnforcementSettingsResponse {

@@ -27,9 +27,10 @@ async fn repairs_stale_migration_checksum_on_disk() {
     drop(pool);
 
     let pool = init_pool(Some(&db_path)).await.expect("repair init");
-    let checksum: Vec<u8> = sqlx::query_scalar("SELECT checksum FROM _sqlx_migrations WHERE version = 1")
-        .fetch_one(&pool)
-        .await
-        .expect("read checksum");
+    let checksum: Vec<u8> =
+        sqlx::query_scalar("SELECT checksum FROM _sqlx_migrations WHERE version = 1")
+            .fetch_one(&pool)
+            .await
+            .expect("read checksum");
     assert_ne!(checksum, fake_checksum());
 }

@@ -74,9 +74,7 @@ pub async fn kernel_status(State(state): State<Arc<AppState>>) -> impl IntoRespo
     let mapping = crate::enforcement::resolve_mapping(&state.deps.storage)
         .await
         .unwrap_or_else(|_| {
-            shared_types::EnforcementMapping::from_backend(
-                shared_types::EnforcementBackend::Signed,
-            )
+            shared_types::EnforcementMapping::from_backend(shared_types::EnforcementBackend::Signed)
         });
     let wfp_engine = state
         .deps

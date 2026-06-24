@@ -6,7 +6,7 @@ use storage::Storage;
 /// Load persisted backend and derive low-level driver mapping.
 pub async fn resolve_mapping(storage: &Storage) -> Result<EnforcementMapping> {
     if let Some(raw) = storage.settings.get("enforcement_backend").await? {
-        let backend = serde_json::from_str::<String>(&raw).unwrap_or_else(|_| raw);
+        let backend = serde_json::from_str::<String>(&raw).unwrap_or(raw);
         let trimmed = backend.trim_matches('"');
         return Ok(EnforcementMapping::from_backend(EnforcementBackend::parse(
             trimmed,

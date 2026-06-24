@@ -87,13 +87,8 @@ pub fn build_config(
     })
 }
 
-
 /// TUN inbound config for signed-stack full tunnel / strict routing.
-pub fn build_tun_config(
-    outbound: &SingBoxOutboundSpec,
-    tun_name: &str,
-    mtu: u16,
-) -> Value {
+pub fn build_tun_config(outbound: &SingBoxOutboundSpec, tun_name: &str, mtu: u16) -> Value {
     let outbound_value = outbound_to_json(outbound);
     json!({
         "log": { "level": "info" },
@@ -127,10 +122,7 @@ pub fn build_tun_config(
 }
 
 /// Per-app routing rules for split tunnel sync (process_name on Windows).
-pub fn build_split_tunnel_route_rules(
-    app_exe_names: &[String],
-    proxy_tag: &str,
-) -> Value {
+pub fn build_split_tunnel_route_rules(app_exe_names: &[String], proxy_tag: &str) -> Value {
     let rules: Vec<Value> = app_exe_names
         .iter()
         .map(|name| {

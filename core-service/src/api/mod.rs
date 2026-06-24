@@ -7,8 +7,8 @@ mod mixnet_routes;
 mod openapi;
 mod proxy_routes;
 pub mod routes;
-pub mod wiresock;
 mod settings_routes;
+pub mod wiresock;
 mod ws;
 
 use crate::deps::ServiceDeps;

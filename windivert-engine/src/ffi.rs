@@ -13,8 +13,13 @@ type WinDivertOpenFn = unsafe extern "system" fn(
 ) -> WinDivertHandle;
 
 type WinDivertCloseFn = unsafe extern "system" fn(handle: WinDivertHandle) -> i32;
-type WinDivertSendFn =
-    unsafe extern "system" fn(handle: WinDivertHandle, packet: *const u8, size: u32, addr: *const u8, addr_len: *mut u32) -> i32;
+type WinDivertSendFn = unsafe extern "system" fn(
+    handle: WinDivertHandle,
+    packet: *const u8,
+    size: u32,
+    addr: *const u8,
+    addr_len: *mut u32,
+) -> i32;
 
 pub struct WinDivertLib {
     _lib: libloading::Library,
@@ -27,15 +32,10 @@ impl WinDivertLib {
     pub fn load(path: &Path) -> Result<Self, String> {
         unsafe {
             let lib = libloading::Library::new(path).map_err(|e| e.to_string())?;
-            let open: WinDivertOpenFn = *lib
-                .get(b"WinDivertOpen\0")
-                .map_err(|e| e.to_string())?;
-            let close: WinDivertCloseFn = *lib
-                .get(b"WinDivertClose\0")
-                .map_err(|e| e.to_string())?;
-            let send: WinDivertSendFn = *lib
-                .get(b"WinDivertSend\0")
-                .map_err(|e| e.to_string())?;
+            let open: WinDivertOpenFn = *lib.get(b"WinDivertOpen\0").map_err(|e| e.to_string())?;
+            let close: WinDivertCloseFn =
+                *lib.get(b"WinDivertClose\0").map_err(|e| e.to_string())?;
+            let send: WinDivertSendFn = *lib.get(b"WinDivertSend\0").map_err(|e| e.to_string())?;
             Ok(Self {
                 _lib: lib,
                 open,
@@ -45,7 +45,13 @@ impl WinDivertLib {
         }
     }
 
-    pub fn open(&self, filter: &str, layer: i32, priority: i16, flags: u64) -> Result<WinDivertHandle, String> {
+    pub fn open(
+        &self,
+        filter: &str,
+        layer: i32,
+        priority: i16,
+        flags: u64,
+    ) -> Result<WinDivertHandle, String> {
         let wide: Vec<u16> = filter.encode_utf16().chain(std::iter::once(0)).collect();
         let handle = unsafe { (self.open)(wide.as_ptr(), layer, priority, flags) };
         if handle == -1 {

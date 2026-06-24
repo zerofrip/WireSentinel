@@ -2,7 +2,8 @@
 
 #[test]
 fn signed_backend_defaults() {
-    let m = shared_types::EnforcementMapping::from_backend(shared_types::EnforcementBackend::Signed);
+    let m =
+        shared_types::EnforcementMapping::from_backend(shared_types::EnforcementBackend::Signed);
     assert_eq!(m.guardian_mode, shared_types::GuardianMode::Wfp);
     assert_eq!(m.wfp_engine_impl, "userspace");
     assert!(m.use_windivert);
@@ -10,8 +11,9 @@ fn signed_backend_defaults() {
 
 #[test]
 fn custom_kernel_backend_maps_hybrid() {
-    let m =
-        shared_types::EnforcementMapping::from_backend(shared_types::EnforcementBackend::CustomKernel);
+    let m = shared_types::EnforcementMapping::from_backend(
+        shared_types::EnforcementBackend::CustomKernel,
+    );
     assert_eq!(m.guardian_mode, shared_types::GuardianMode::Hybrid);
     assert_eq!(m.wfp_engine_impl, "kernel");
     assert!(!m.use_windivert);

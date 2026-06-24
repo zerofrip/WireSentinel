@@ -15,7 +15,7 @@ mod userspace;
 mod hybrid;
 mod ndis;
 
-#[cfg(feature = "signed-stack")]
+#[cfg(all(windows, feature = "signed-stack"))]
 mod windivert_ndis;
 
 pub use engine::{RouteEnforcer, WfpEngine, WfpEvent, WfpEventKind};

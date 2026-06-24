@@ -143,8 +143,8 @@ impl UserspaceWfpEngine {
         use std::os::windows::ffi::OsStrExt;
         use windows::core::PCWSTR;
         use windows::Win32::System::Services::{
-            CloseServiceHandle, OpenSCManagerW, OpenServiceW, QueryServiceStatus, SC_MANAGER_CONNECT,
-            SERVICE_QUERY_STATUS, SERVICE_RUNNING, SERVICE_STATUS,
+            CloseServiceHandle, OpenSCManagerW, OpenServiceW, QueryServiceStatus,
+            SC_MANAGER_CONNECT, SERVICE_QUERY_STATUS, SERVICE_RUNNING, SERVICE_STATUS,
         };
 
         let wide = |s: &str| {
@@ -156,27 +156,21 @@ impl UserspaceWfpEngine {
 
         unsafe {
             let scm = wide("ServicesActive");
-            let scm_handle = match OpenSCManagerW(
-                PCWSTR::null(),
-                PCWSTR(scm.as_ptr()),
-                SC_MANAGER_CONNECT,
-            ) {
-                Ok(h) => h,
-                Err(_) => return false,
-            };
+            let scm_handle =
+                match OpenSCManagerW(PCWSTR::null(), PCWSTR(scm.as_ptr()), SC_MANAGER_CONNECT) {
+                    Ok(h) => h,
+                    Err(_) => return false,
+                };
 
             let svc_name = wide("BFE");
-            let svc_handle = match OpenServiceW(
-                scm_handle,
-                PCWSTR(svc_name.as_ptr()),
-                SERVICE_QUERY_STATUS,
-            ) {
-                Ok(h) => h,
-                Err(_) => {
-                    let _ = CloseServiceHandle(scm_handle);
-                    return false;
-                }
-            };
+            let svc_handle =
+                match OpenServiceW(scm_handle, PCWSTR(svc_name.as_ptr()), SERVICE_QUERY_STATUS) {
+                    Ok(h) => h,
+                    Err(_) => {
+                        let _ = CloseServiceHandle(scm_handle);
+                        return false;
+                    }
+                };
 
             let mut status = SERVICE_STATUS::default();
             let ok = QueryServiceStatus(svc_handle, &mut status).is_ok()

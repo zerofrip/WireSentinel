@@ -1,4 +1,4 @@
--- Phase 5 schema: runtime state, performance, enterprise policy, backup manifest
+-- Runtime state, performance, enterprise policy, backup manifest
 
 CREATE TABLE IF NOT EXISTS runtime_state (
     id TEXT PRIMARY KEY NOT NULL,

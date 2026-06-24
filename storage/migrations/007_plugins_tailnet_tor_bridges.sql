@@ -1,4 +1,4 @@
--- Phase 7 schema: plugins, tailnet, tor, bridges, proxy profiles
+-- Plugins, tailnet, tor, bridges, proxy profiles
 
 CREATE TABLE IF NOT EXISTS plugins (
     id TEXT PRIMARY KEY NOT NULL,

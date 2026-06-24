@@ -1,4 +1,4 @@
--- Phase 3 schema: route statistics, audit, domain cache, WFP state, firewall decisions
+-- Route statistics, audit, domain cache, WFP state, firewall decisions
 
 CREATE TABLE IF NOT EXISTS route_statistics (
     id TEXT PRIMARY KEY NOT NULL,

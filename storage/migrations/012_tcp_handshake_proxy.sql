@@ -1,4 +1,4 @@
--- Phase 18.5: TCP termination + handshake proxy on VPN profiles
+-- TCP termination + handshake proxy on VPN profiles
 
 ALTER TABLE vpn_profiles ADD COLUMN handshake_proxy_json TEXT;
 

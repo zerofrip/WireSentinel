@@ -1,4 +1,4 @@
--- Phase 12 schema: kernel / NDIS telemetry snapshots
+-- Kernel / NDIS telemetry snapshots
 
 CREATE TABLE IF NOT EXISTS kernel_telemetry_snapshots (
     id TEXT PRIMARY KEY NOT NULL,

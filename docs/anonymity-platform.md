@@ -24,7 +24,7 @@ Anonymous nested routes also support `AnonymousRoute::Katzenpost`, `Loopix`, and
 
 ## Storage
 
-Migration `011_phase13.sql` adds:
+Migration `011_katzenpost_loopix_anonymous_services.sql` adds:
 
 - `katzenpost_profiles`, `katzenpost_gateways`
 - `loopix_profiles`, `loopix_providers`

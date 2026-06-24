@@ -1,4 +1,4 @@
--- Phase 9 schema: proxy health columns and proxy chains
+-- Proxy health columns and proxy chains
 
 ALTER TABLE proxy_profiles ADD COLUMN active INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE proxy_profiles ADD COLUMN last_health_at TEXT;

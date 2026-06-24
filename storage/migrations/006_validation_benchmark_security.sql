@@ -1,4 +1,4 @@
--- Phase 6 schema: validation, benchmark, security findings
+-- Validation, benchmark, security findings
 
 CREATE TABLE IF NOT EXISTS validation_results (
     id TEXT PRIMARY KEY NOT NULL,

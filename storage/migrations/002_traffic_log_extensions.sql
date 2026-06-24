@@ -1,4 +1,4 @@
--- Phase 2 schema extensions
+-- Traffic log and DNS log column extensions
 
 ALTER TABLE traffic_logs ADD COLUMN process_id INTEGER;
 ALTER TABLE traffic_logs ADD COLUMN source_ip TEXT;

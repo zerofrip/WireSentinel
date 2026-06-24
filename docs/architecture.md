@@ -80,7 +80,7 @@ Built on **Axum 0.7** with:
 
 ## Phase 6 additions
 
-Phase 6 introduces release packaging, installer hardening, validation/benchmark storage, security findings, and operational documentation. See `shared-types/src/phase6.rs` and migration `006_phase6.sql`.
+Phase 6 introduces release packaging, installer hardening, validation/benchmark storage, security findings, and operational documentation. See `shared-types/src/validation_release.rs` and migration `006_validation_benchmark_security.sql`.
 
 ## Deployment topology
 

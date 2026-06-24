@@ -1,4 +1,4 @@
--- Phase 10 schema: mixnet, anonymous chains, cover traffic, privacy analytics
+-- Mixnet, anonymous chains, cover traffic, privacy analytics
 
 CREATE TABLE IF NOT EXISTS mixnet_profiles (
     id TEXT PRIMARY KEY NOT NULL,

@@ -88,7 +88,7 @@ dist/
 }
 ```
 
-Matches `ReleaseManifest` in `shared-types/src/phase6.rs`.
+Matches `ReleaseManifest` in `shared-types/src/validation_release.rs`.
 
 ## Version management
 

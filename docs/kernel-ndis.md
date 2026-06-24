@@ -24,6 +24,6 @@ Configure via settings key `guardian_mode` (default `wfp`).
 
 ## Persistence
 
-Telemetry snapshots are stored in `kernel_telemetry_snapshots` (migration `010_phase12.sql`).
+Telemetry snapshots are stored in `kernel_telemetry_snapshots` (migration `010_kernel_ndis_telemetry.sql`).
 
 See also [WireSentinel-Ndis architecture](../../WireSentinel-Ndis/docs/architecture.md).

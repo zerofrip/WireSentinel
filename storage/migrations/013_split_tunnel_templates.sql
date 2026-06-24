@@ -1,4 +1,4 @@
--- Phase 18.5: Global split tunnel templates
+-- Global split tunnel templates
 
 CREATE TABLE IF NOT EXISTS split_tunnel_templates (
     id TEXT PRIMARY KEY NOT NULL,

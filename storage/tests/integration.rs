@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod phase2_tests {
+mod traffic_log_extensions_tests {
     use chrono::Utc;
     use shared_types::{
         AppIdentity, AppRecord, DNSQueryLog, Direction, FilterListRecord, FilterListType, Protocol,
@@ -139,7 +139,7 @@ mod phase2_tests {
 }
 
 #[cfg(test)]
-mod phase3_tests {
+mod audit_routing_firewall_tests {
     use chrono::Utc;
     use shared_types::{
         AuditLogEntry, AuditLogQuery, ChainHop, ChainProfile, DnsProviderRecord, DomainCacheEntry,
@@ -332,7 +332,7 @@ mod phase3_tests {
 }
 
 #[cfg(test)]
-mod phase5_tests {
+mod runtime_ops_tests {
     use chrono::Utc;
     use shared_types::{
         BackupManifestEntry, EnterprisePolicy, PerformanceSnapshot, RuntimeStateRecord,
@@ -439,7 +439,7 @@ mod phase5_tests {
     }
 
     #[tokio::test]
-    async fn phase6_validation_benchmark_security_repos() {
+    async fn validation_benchmark_security_repos() {
         use shared_types::{
             BenchmarkSnapshot, SecurityFinding, SecuritySeverity, ValidationCheck, ValidationStatus,
         };
@@ -486,7 +486,7 @@ mod phase5_tests {
     }
 
     #[tokio::test]
-    async fn phase7_plugin_tailnet_tor_bridge_repos() {
+    async fn plugins_tailnet_tor_bridge_repos() {
         use shared_types::{
             BridgeProfile, BridgeType, PluginFormat, PluginManifest, PluginPermission,
             PluginRecord, PluginState, TailnetProfile, TorProfile,

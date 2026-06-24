@@ -1,4 +1,4 @@
--- Phase 4 schema: transport, chains, obfuscation, DNS providers, leaks, privacy
+-- Transport, chains, obfuscation, DNS providers, leaks, privacy
 
 CREATE TABLE IF NOT EXISTS transport_profiles (
     id TEXT PRIMARY KEY NOT NULL,

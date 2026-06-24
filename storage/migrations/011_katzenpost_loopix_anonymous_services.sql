@@ -1,4 +1,4 @@
--- Phase 13 schema: Katzenpost, Loopix, anonymous services
+-- Katzenpost, Loopix, anonymous services
 
 CREATE TABLE IF NOT EXISTS katzenpost_profiles (
     id TEXT PRIMARY KEY NOT NULL,

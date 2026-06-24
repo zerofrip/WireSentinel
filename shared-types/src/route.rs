@@ -1,4 +1,4 @@
-use crate::phase7::AnonymousRoute;
+use crate::plugins_anonymous_routing::AnonymousRoute;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;

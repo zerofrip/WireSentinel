@@ -1,4 +1,4 @@
-//! TCP socket termination engine for WireSock-style reconnect policies.
+//! TCP socket termination engine for VPN gateway compatibility reconnect policies.
 
 mod engine;
 mod platform;

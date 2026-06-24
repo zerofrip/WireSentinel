@@ -11,7 +11,7 @@ pub mod routes;
 mod settings_routes;
 mod tailnet_routes;
 mod tor_routes;
-pub mod wiresock;
+pub mod vpn_gateway_compat;
 mod ws;
 
 use crate::deps::ServiceDeps;

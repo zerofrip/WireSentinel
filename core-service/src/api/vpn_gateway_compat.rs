@@ -1,4 +1,4 @@
-//! Phase 18.5 WireSock API routes.
+//! VPN gateway compatibility API routes.
 
 use axum::{
     extract::{Path, State},
@@ -51,12 +51,12 @@ pub fn routes() -> axum::Router<Arc<AppState>> {
             axum::routing::get(get_vpn_handshake_proxy).put(put_vpn_handshake_proxy),
         )
         .route(
-            "/diagnostics/wiresock",
-            axum::routing::get(get_wiresock_diagnostics),
+            "/diagnostics/vpn-gateway-compat",
+            axum::routing::get(get_vpn_gateway_compat_diagnostics),
         )
         .route(
-            "/diagnostics/wiresock/template-trace",
-            axum::routing::post(run_wiresock_template_trace),
+            "/diagnostics/vpn-gateway-compat/template-trace",
+            axum::routing::post(run_vpn_gateway_compat_template_trace),
         )
 }
 
@@ -199,7 +199,7 @@ async fn put_split_mode(
 }
 
 #[derive(serde::Serialize)]
-pub struct WiresockDiagnostics {
+pub struct VpnGatewayCompatDiagnostics {
     pub tcp_sessions: Vec<shared_types::TcpConnectionSnapshot>,
     pub template_trace: Option<shared_types::TemplateResolutionTrace>,
     pub handshake_proxy_profiles: Vec<HandshakeProxyProfileStatus>,
@@ -212,7 +212,9 @@ pub struct HandshakeProxyProfileStatus {
     settings: Option<HandshakeProxySettings>,
 }
 
-async fn get_wiresock_diagnostics(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+async fn get_vpn_gateway_compat_diagnostics(
+    State(state): State<Arc<AppState>>,
+) -> impl IntoResponse {
     let tcp_sessions = state.deps.tcp_termination.engine().enumerate();
     let template_trace = state.deps.split_templates.last_trace();
     let handshake_proxy_profiles = state
@@ -226,7 +228,7 @@ async fn get_wiresock_diagnostics(State(state): State<Arc<AppState>>) -> impl In
             settings: p.handshake_proxy,
         })
         .collect();
-    Json(WiresockDiagnostics {
+    Json(VpnGatewayCompatDiagnostics {
         tcp_sessions,
         template_trace,
         handshake_proxy_profiles,
@@ -234,7 +236,9 @@ async fn get_wiresock_diagnostics(State(state): State<Arc<AppState>>) -> impl In
     .into_response()
 }
 
-async fn run_wiresock_template_trace(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+async fn run_vpn_gateway_compat_template_trace(
+    State(state): State<Arc<AppState>>,
+) -> impl IntoResponse {
     let trace = state.deps.split_templates.manager().resolve_trace();
     state.deps.split_templates.store_trace(trace.clone());
     Json(trace).into_response()

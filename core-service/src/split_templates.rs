@@ -1,4 +1,4 @@
-//! Phase 18.5 split tunnel template service.
+//! VPN gateway compatibility split tunnel template service.
 
 use parking_lot::RwLock;
 use shared_types::{ResolvedTemplate, Result, SplitTemplateModeSettings, SplitTunnelTemplate};

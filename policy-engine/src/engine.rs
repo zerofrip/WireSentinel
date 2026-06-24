@@ -147,7 +147,7 @@ impl PolicyEngine {
         }
     }
 
-    /// Evaluate with optional global split-tunnel template (Phase 18.5).
+    /// Evaluate with optional global split-tunnel template (VPN gateway compatibility).
     pub fn decide_with_template(
         &self,
         ctx: &ConnectionContext,

@@ -781,16 +781,16 @@ export interface TcpConnectionSnapshot {
   remote_domain?: string | null;
 }
 
-export interface WiresockHandshakeProxyProfile {
+export interface VpnGatewayCompatHandshakeProxyProfile {
   profile_id: string;
   profile_name: string;
   settings?: HandshakeProxySettings | null;
 }
 
-export interface WiresockDiagnostics {
+export interface VpnGatewayCompatDiagnostics {
   tcp_sessions: TcpConnectionSnapshot[];
   template_trace?: TemplateResolutionTrace | null;
-  handshake_proxy_profiles: WiresockHandshakeProxyProfile[];
+  handshake_proxy_profiles: VpnGatewayCompatHandshakeProxyProfile[];
 }
 
 export type SecuritySeverity = "info" | "low" | "medium" | "high" | "critical";
@@ -1264,10 +1264,10 @@ export const apiClient = {
       body: JSON.stringify(settings),
     }),
 
-  diagnosticsWiresock: () =>
-    api<WiresockDiagnostics>("/api/v1/diagnostics/wiresock"),
-  runWiresockTemplateTrace: () =>
-    api<TemplateResolutionTrace>("/api/v1/diagnostics/wiresock/template-trace", {
+  diagnosticsVpnGatewayCompat: () =>
+    api<VpnGatewayCompatDiagnostics>("/api/v1/diagnostics/vpn-gateway-compat"),
+  runVpnGatewayCompatTemplateTrace: () =>
+    api<TemplateResolutionTrace>("/api/v1/diagnostics/vpn-gateway-compat/template-trace", {
       method: "POST",
     }),
 };

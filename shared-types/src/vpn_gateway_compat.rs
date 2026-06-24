@@ -1,4 +1,4 @@
-//! Phase 18.5 WireSock compatibility shared DTOs.
+//! VPN gateway compatibility shared DTOs.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

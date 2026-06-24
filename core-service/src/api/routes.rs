@@ -97,7 +97,7 @@ pub fn router(state: AppState) -> Router {
         .route("/chains/{id}/start", post(start_chain))
         .route("/chains/{id}/stop", post(stop_chain))
         .route("/plugins", get(list_plugins))
-        .merge(crate::api::wiresock::routes())
+        .merge(crate::api::vpn_gateway_compat::routes())
         .route("/plugins/load", post(load_plugin))
         .route("/plugins/unload", post(unload_plugin))
         .route("/tailnet", get(list_tailnet).post(upsert_tailnet))

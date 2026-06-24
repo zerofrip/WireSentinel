@@ -1,4 +1,4 @@
-//! Phase 18.5 TCP termination service wrapper.
+//! VPN gateway compatibility TCP termination service wrapper.
 
 use shared_types::Result;
 use std::sync::Arc;

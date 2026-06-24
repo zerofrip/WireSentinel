@@ -8,7 +8,7 @@ import {
   type TemplateResolutionTrace,
   type ValidationReport,
   type TrafficRoute,
-  type WiresockHandshakeProxyProfile,
+  type VpnGatewayCompatHandshakeProxyProfile,
 } from "../api/client";
 import { routeLabel as formatRouteLabel } from "../lib/routeLabels";
 
@@ -73,7 +73,7 @@ function TcpSessionRow({ conn }: { conn: TcpConnectionSnapshot }) {
   );
 }
 
-function HandshakeProxyRow({ entry }: { entry: WiresockHandshakeProxyProfile }) {
+function HandshakeProxyRow({ entry }: { entry: VpnGatewayCompatHandshakeProxyProfile }) {
   const settings = entry.settings;
   const enabled = settings?.enabled ?? false;
   return (
@@ -104,7 +104,7 @@ export function Diagnostics() {
   const [validation, setValidation] = useState<ValidationReport | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [tcpSessions, setTcpSessions] = useState<TcpConnectionSnapshot[]>([]);
-  const [handshakeProfiles, setHandshakeProfiles] = useState<WiresockHandshakeProxyProfile[]>([]);
+  const [handshakeProfiles, setHandshakeProfiles] = useState<VpnGatewayCompatHandshakeProxyProfile[]>([]);
   const [templateTrace, setTemplateTrace] = useState<TemplateResolutionTrace | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -114,18 +114,18 @@ export function Diagnostics() {
     setLoading(true);
     setError(null);
     try {
-      const [diag, recentLogs, validationReport, wiresock] = await Promise.all([
+      const [diag, recentLogs, validationReport, gatewayCompat] = await Promise.all([
         apiClient.diagnostics(),
         apiClient.logs({ limit: 30 }),
         apiClient.validation(),
-        apiClient.diagnosticsWiresock(),
+        apiClient.diagnosticsVpnGatewayCompat(),
       ]);
       setHealth(diag);
       setValidation(validationReport);
       setLogs(recentLogs);
-      setTcpSessions(wiresock.tcp_sessions);
-      setHandshakeProfiles(wiresock.handshake_proxy_profiles);
-      setTemplateTrace(wiresock.template_trace ?? null);
+      setTcpSessions(gatewayCompat.tcp_sessions);
+      setHandshakeProfiles(gatewayCompat.handshake_proxy_profiles);
+      setTemplateTrace(gatewayCompat.template_trace ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load diagnostics");
     } finally {
@@ -140,7 +140,7 @@ export function Diagnostics() {
   const runTemplateTrace = async () => {
     setError(null);
     try {
-      const trace = await apiClient.runWiresockTemplateTrace();
+      const trace = await apiClient.runVpnGatewayCompatTemplateTrace();
       setTemplateTrace(trace);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Template trace failed");
@@ -231,7 +231,7 @@ export function Diagnostics() {
       )}
 
       <div className="bg-sentinel-panel rounded-lg border border-slate-700 p-4">
-        <h3 className="font-medium mb-3">TCP Sessions (WireSock)</h3>
+        <h3 className="font-medium mb-3">TCP Sessions</h3>
         {tcpSessions.length === 0 ? (
           <p className="text-sentinel-muted text-sm">No active TCP sessions tracked</p>
         ) : (

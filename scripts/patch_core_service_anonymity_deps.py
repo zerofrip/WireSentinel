@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
+"""Patch core-service deps.rs to register anonymity-related services."""
+
 from pathlib import Path
 
-ROOT = Path("/home/zero/github/WireSentinel")
+ROOT = Path(__file__).resolve().parent.parent
 
 def patch(path, old, new, label):
     p = ROOT / path

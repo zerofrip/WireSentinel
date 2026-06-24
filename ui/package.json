@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "sync:legal": "node scripts/sync-legal.mjs",
-    "gen:licenses": "license-checker --production --json --out src/generated/npm-licenses.json",
+    "gen:licenses": "license-checker --production --json --out src/generated/npm-licenses.json && node scripts/relativize-npm-licenses.mjs",
     "prebuild": "npm run sync:legal && npm run gen:licenses",
     "build": "tsc && vite build",
     "preview": "vite preview",

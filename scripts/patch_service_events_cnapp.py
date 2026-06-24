@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Patch shared-types events.rs with Phase 18 CNAPP service events."""
+"""Add CNAPP service events to shared-types events.rs."""
 
 from pathlib import Path
 
-EVENTS = Path("shared-types/src/events.rs")
+ROOT = Path(__file__).resolve().parent.parent
+EVENTS = ROOT / "shared-types/src/events.rs"
 text = EVENTS.read_text()
 
 if "CloudMisconfigurationDetected" in text:

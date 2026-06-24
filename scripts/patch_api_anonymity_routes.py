@@ -1,6 +1,11 @@
+#!/usr/bin/env python3
+"""Patch core-service API routes.rs to add anonymity endpoints."""
+
 from pathlib import Path
 
-p = Path("core-service/src/api/routes.rs")
+ROOT = Path(__file__).resolve().parent.parent
+
+p = ROOT / "core-service/src/api/routes.rs"
 text = p.read_text()
 old_import = """use crate::api::mixnet_routes::{
     create_anonymous_route, delete_anonymous_route, get_anonymous_route,

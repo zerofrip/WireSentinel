@@ -3,6 +3,9 @@
 debug
 target
 
+# Cursor IDE local state
+.cursor/
+
 # UI
 ui/node_modules/
 ui/dist/

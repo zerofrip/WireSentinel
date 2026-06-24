@@ -38,10 +38,7 @@ pub async fn init_pool(db_path: Option<&Path>) -> Result<SqlitePool, WireSentine
         .await
         .map_err(|e| WireSentinelError::Config(format!("sqlite connect: {e}")))?;
 
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .map_err(|e| WireSentinelError::Config(format!("migration: {e}")))?;
+    crate::migrations::run_migrations(&pool).await?;
 
     info!(path = %path.display(), "SQLite database initialized");
     Ok(pool)
@@ -53,10 +50,7 @@ pub async fn init_pool_in_memory() -> Result<SqlitePool, WireSentinelError> {
         .await
         .map_err(|e| WireSentinelError::Config(format!("sqlite memory: {e}")))?;
 
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .map_err(|e| WireSentinelError::Config(format!("migration: {e}")))?;
+    crate::migrations::run_migrations(&pool).await?;
 
     Ok(pool)
 }

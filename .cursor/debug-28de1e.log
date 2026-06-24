@@ -1,0 +1,2 @@
+{"sessionId":"28de1e","timestamp":1782246889383000,"location":"build-windows-cross.sh","message":"clang-cl resolved","data":{"clang_cl":"/home/zero/github/WireSentinel/.cache/ws-cross/bin/clang-cl"},"hypothesisId":"H1","runId":"post-fix"}
+{"sessionId":"28de1e","timestamp":1782246889771000,"location":"build-windows-cross.sh","message":"llvm-lib resolved","data":{"llvm_lib":"/usr/lib/llvm-18/bin/llvm-lib","lld_link":"/usr/lib/llvm-18/bin/lld-link"},"hypothesisId":"H2","runId":"post-fix"}

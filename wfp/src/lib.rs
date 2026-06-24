@@ -4,6 +4,9 @@ mod engine;
 mod stub;
 
 #[cfg(windows)]
+mod debug_agent;
+
+#[cfg(windows)]
 mod kernel;
 
 #[cfg(windows)]

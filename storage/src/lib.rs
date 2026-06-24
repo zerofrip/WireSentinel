@@ -4,6 +4,7 @@
 #![allow(clippy::type_complexity)]
 
 mod migrate_legacy;
+mod migrations;
 mod pool;
 pub mod repos;
 

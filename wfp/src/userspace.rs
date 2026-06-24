@@ -66,14 +66,54 @@ impl UserspaceWfpEngine {
     }
 
     fn open_engine(&self) -> Result<WfpEngineHandle> {
+        use crate::debug_agent::agent_log;
         use windows::core::PCWSTR;
         use windows::Win32::Foundation::HANDLE;
         use windows::Win32::NetworkManagement::WindowsFilteringPlatform::{
             FwpmEngineOpen0, FWPM_SESSION0,
         };
+        use windows::Win32::System::Rpc::RPC_C_AUTHN_WINNT;
+        use windows::Win32::UI::Shell::IsUserAnAdmin;
+
+        // #region agent log
+        let elevated = unsafe { IsUserAnAdmin().as_bool() };
+        let bfe_running = Self::debug_bfe_running();
+        agent_log(
+            "B",
+            "userspace.rs:open_engine:pre",
+            "environment before FwpmEngineOpen0",
+            &format!(
+                r#"{{"elevated":{elevated},"bfe_running":{bfe_running},"authn_current":2,"authn_winnt":{}}}"#,
+                RPC_C_AUTHN_WINNT
+            ),
+        );
+
+        let mut probe_handle = HANDLE::default();
+        let session = FWPM_SESSION0::default();
+        let probe_status = unsafe {
+            FwpmEngineOpen0(
+                PCWSTR::null(),
+                RPC_C_AUTHN_WINNT,
+                None,
+                Some(&session),
+                &mut probe_handle,
+            )
+        };
+        agent_log(
+            "A",
+            "userspace.rs:open_engine:probe_winnt",
+            "FwpmEngineOpen0 probe with RPC_C_AUTHN_WINNT",
+            &format!(r#"{{"status":{probe_status}}}"#),
+        );
+        if probe_status == windows::Win32::Foundation::NO_ERROR.0 && !probe_handle.is_invalid() {
+            use windows::Win32::NetworkManagement::WindowsFilteringPlatform::FwpmEngineClose0;
+            unsafe {
+                let _ = FwpmEngineClose0(probe_handle);
+            }
+        }
+        // #endregion
 
         let mut handle = HANDLE::default();
-        let session = FWPM_SESSION0::default();
         let status = unsafe {
             FwpmEngineOpen0(
                 PCWSTR::null(),
@@ -83,8 +123,73 @@ impl UserspaceWfpEngine {
                 &mut handle,
             )
         };
+
+        // #region agent log
+        agent_log(
+            "A",
+            "userspace.rs:open_engine:current",
+            "FwpmEngineOpen0 with authnService=0x2 (production path)",
+            &format!(r#"{{"status":{status}}}"#),
+        );
+        // #endregion
+
         win32_ok(status, "FwpmEngineOpen0")?;
         Ok(store_handle(handle))
+    }
+
+    #[cfg(windows)]
+    fn debug_bfe_running() -> bool {
+        use std::ffi::OsStr;
+        use std::os::windows::ffi::OsStrExt;
+        use windows::core::PCWSTR;
+        use windows::Win32::System::Services::{
+            CloseServiceHandle, OpenSCManagerW, OpenServiceW, QueryServiceStatus, SC_MANAGER_CONNECT,
+            SERVICE_QUERY_STATUS, SERVICE_RUNNING, SERVICE_STATUS,
+        };
+
+        let wide = |s: &str| {
+            OsStr::new(s)
+                .encode_wide()
+                .chain(std::iter::once(0))
+                .collect::<Vec<_>>()
+        };
+
+        unsafe {
+            let scm = wide("ServicesActive");
+            let scm_handle = match OpenSCManagerW(
+                PCWSTR::null(),
+                PCWSTR(scm.as_ptr()),
+                SC_MANAGER_CONNECT,
+            ) {
+                Ok(h) => h,
+                Err(_) => return false,
+            };
+
+            let svc_name = wide("BFE");
+            let svc_handle = match OpenServiceW(
+                scm_handle,
+                PCWSTR(svc_name.as_ptr()),
+                SERVICE_QUERY_STATUS,
+            ) {
+                Ok(h) => h,
+                Err(_) => {
+                    let _ = CloseServiceHandle(scm_handle);
+                    return false;
+                }
+            };
+
+            let mut status = SERVICE_STATUS::default();
+            let ok = QueryServiceStatus(svc_handle, &mut status).is_ok()
+                && status.dwCurrentState == SERVICE_RUNNING;
+            let _ = CloseServiceHandle(svc_handle);
+            let _ = CloseServiceHandle(scm_handle);
+            ok
+        }
+    }
+
+    #[cfg(not(windows))]
+    fn debug_bfe_running() -> bool {
+        false
     }
 
     fn close_engine(handle: WfpEngineHandle) {

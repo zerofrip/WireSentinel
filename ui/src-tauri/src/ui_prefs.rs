@@ -135,9 +135,13 @@ pub fn ensure_tray(app: &AppHandle) -> Result<(), String> {
 }
 
 pub fn remove_tray(app: &AppHandle) {
-    let state = app.state::<AppUiState>();
-    if let Some(id) = state.tray_id.lock().unwrap().take() {
-        let _ = app.remove_tray_by_id(id);
+    let id = {
+        let state = app.state::<AppUiState>();
+        let mut guard = state.tray_id.lock().unwrap();
+        guard.take()
+    };
+    if let Some(id) = id {
+        let _ = app.remove_tray_by_id(&id);
     }
 }
 

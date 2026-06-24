@@ -20,6 +20,7 @@ import type {
   VpnState,
   PerformanceSnapshot,
   SecurityAuditEntry,
+  TorStatus,
 } from "../api/client";
 
 export type AppRecordWire = {
@@ -81,6 +82,7 @@ export type ServiceEvent =
   | { kind: "tailnet_left"; profile_id: string; reason: string; timestamp: string }
   | { kind: "tor_started"; profile_id: string; timestamp: string }
   | { kind: "tor_stopped"; profile_id: string; reason: string; timestamp: string }
+  | { kind: "tor_circuit_changed"; profile_id: string; circuit_count: number; timestamp: string }
   | { kind: "transport_chain_updated"; chain: ChainProfile; timestamp: string }
   | { kind: "transport_chain_started"; chain_id: string; name: string; timestamp: string }
   | { kind: "transport_chain_stopped"; chain_id: string; reason: string; timestamp: string }
@@ -121,6 +123,7 @@ export interface EventState {
   performanceSnapshots: PerformanceSnapshot[];
   securityAudit: SecurityAuditEntry[];
   recovery: RecoveryState;
+  torStatus: TorStatus | null;
   recentEvents: ServiceEvent[];
   lastEvent: ServiceEvent | null;
 }
@@ -146,6 +149,7 @@ export const initialEventState: EventState = {
   performanceSnapshots: [],
   securityAudit: [],
   recovery: { status: "idle", restoredCount: null, lastError: null },
+  torStatus: null,
   recentEvents: [],
   lastEvent: null,
 };
@@ -473,6 +477,82 @@ export function reduceEvent(state: EventState, event: ServiceEvent): EventState 
         lastEvent: event,
         recentEvents: pushRecent(state, event),
       };
+    case "tor_started":
+      return {
+        ...state,
+        torStatus: state.torStatus
+          ? { ...state.torStatus, running: true, bootstrap_progress: 100 }
+          : state.torStatus,
+        lastEvent: event,
+        recentEvents: pushRecent(state, event),
+      };
+    case "tor_stopped":
+      return {
+        ...state,
+        torStatus: state.torStatus
+          ? {
+              ...state.torStatus,
+              running: false,
+              bootstrap_progress: 0,
+              circuit_count: 0,
+            }
+          : state.torStatus,
+        lastEvent: event,
+        recentEvents: pushRecent(state, event),
+      };
+    case "tor_circuit_changed":
+      return {
+        ...state,
+        torStatus: state.torStatus
+          ? { ...state.torStatus, circuit_count: event.circuit_count }
+          : state.torStatus,
+        lastEvent: event,
+        recentEvents: pushRecent(state, event),
+      };
+    case "transport_chain_started":
+      return {
+        ...state,
+        transportStatus: upsertTransportStatus(state.transportStatus, { id: event.chain_id, name: event.name, kind: "sing_box", state: "running" }),
+        lastEvent: event,
+        recentEvents: pushRecent(state, event),
+      };
+    case "transport_chain_stopped":
+      return {
+        ...state,
+        transportStatus: upsertTransportStatus(state.transportStatus, { id: event.chain_id, name: event.chain_id.slice(0,8), kind: "sing_box", state: "stopped" }),
+        lastEvent: event,
+        recentEvents: pushRecent(state, event),
+      };
+    case "proxy_connected":
+    case "proxy_disconnected":
+    case "proxy_failed":
+      return {
+        ...state,
+        transportStatus: upsertTransportStatus(state.transportStatus, { id: event.profile_id, name: event.profile_id.slice(0, 8), kind: "sing_box", state: event.kind === "proxy_connected" ? "running" : "stopped" }),
+        lastEvent: event,
+        recentEvents: pushRecent(state, event),
+      };
+    case "proxy_chain_started":
+    case "proxy_chain_stopped":
+      return {
+        ...state,
+        lastEvent: event,
+        recentEvents: pushRecent(state, event),
+      };
+    case "plugin_loaded":
+    case "plugin_unloaded":
+    case "plugin_failed":
+    case "tailnet_joined":
+    case "tailnet_left":
+      return { ...state, lastEvent: event, recentEvents: pushRecent(state, event) };
+    case "traffic_observed":
+    case "traffic_allowed":
+    case "traffic_blocked":
+    case "obfuscation_profile_applied":
+    case "agent_enrolled":
+    case "agent_revoked":
+      return { ...state, lastEvent: event, recentEvents: pushRecent(state, event) };
+
     default:
       return { ...state, lastEvent: event, recentEvents: pushRecent(state, event) };
   }

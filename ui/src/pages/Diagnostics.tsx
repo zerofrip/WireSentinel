@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import {
   apiClient,
   type DiagnosticsHealth,
-  type HandshakeProxyStatus,
   type LogEntry,
   type SubsystemHealth,
-  type TcpSessionEvent,
+  type TcpConnectionSnapshot,
   type TemplateResolutionTrace,
   type ValidationReport,
   type TrafficRoute,
+  type WiresockHandshakeProxyProfile,
 } from "../api/client";
 import { routeLabel as formatRouteLabel } from "../lib/routeLabels";
 
@@ -55,16 +55,57 @@ function HealthCard({ label, health }: { label: string; health: SubsystemHealth 
   );
 }
 
+function TcpSessionRow({ conn }: { conn: TcpConnectionSnapshot }) {
+  return (
+    <li className="p-2 bg-slate-800/50 rounded text-sm">
+      <div className="flex justify-between gap-4">
+        <span className="font-medium">{conn.exe_name}</span>
+        <span className="text-xs text-sentinel-muted">PID {conn.pid}</span>
+      </div>
+      <p className="text-xs text-sentinel-muted mt-1 font-mono">
+        {conn.local_addr} → {conn.remote_addr}
+        {conn.remote_domain ? ` (${conn.remote_domain})` : ""}
+      </p>
+      <p className="text-xs text-sentinel-muted">
+        {conn.protocol} · {conn.state}
+      </p>
+    </li>
+  );
+}
+
+function HandshakeProxyRow({ entry }: { entry: WiresockHandshakeProxyProfile }) {
+  const settings = entry.settings;
+  const enabled = settings?.enabled ?? false;
+  return (
+    <li className="p-3 bg-slate-800/50 rounded flex flex-wrap justify-between gap-2 text-sm">
+      <div>
+        <p className="font-medium">{entry.profile_name || entry.profile_id.slice(0, 8)}</p>
+        <p className="text-xs text-sentinel-muted">
+          {enabled && settings?.host
+            ? `${settings.host}:${settings.port ?? "—"}`
+            : enabled
+              ? "Enabled (no host)"
+              : "Disabled"}
+        </p>
+      </div>
+      <span
+        className={
+          enabled ? "text-yellow-400 text-xs font-semibold uppercase" : "text-sentinel-muted text-xs uppercase"
+        }
+      >
+        {enabled ? "Configured" : "Off"}
+      </span>
+    </li>
+  );
+}
+
 export function Diagnostics() {
   const [health, setHealth] = useState<DiagnosticsHealth | null>(null);
   const [validation, setValidation] = useState<ValidationReport | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [tcpEvents, setTcpEvents] = useState<TcpSessionEvent[]>([]);
-  const [handshakeStatus, setHandshakeStatus] = useState<HandshakeProxyStatus | null>(null);
+  const [tcpSessions, setTcpSessions] = useState<TcpConnectionSnapshot[]>([]);
+  const [handshakeProfiles, setHandshakeProfiles] = useState<WiresockHandshakeProxyProfile[]>([]);
   const [templateTrace, setTemplateTrace] = useState<TemplateResolutionTrace | null>(null);
-  const [traceAppId, setTraceAppId] = useState("");
-  const [traceDomain, setTraceDomain] = useState("");
-  const [tracePid, setTracePid] = useState("");
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,20 +114,18 @@ export function Diagnostics() {
     setLoading(true);
     setError(null);
     try {
-      const [diag, recentLogs, validationReport, tcp, proxy, trace] = await Promise.all([
+      const [diag, recentLogs, validationReport, wiresock] = await Promise.all([
         apiClient.diagnostics(),
         apiClient.logs({ limit: 30 }),
         apiClient.validation(),
-        apiClient.diagnosticsTcpEvents(50).catch(() => [] as TcpSessionEvent[]),
-        apiClient.diagnosticsHandshakeProxy().catch(() => ({ profiles: [] })),
-        apiClient.diagnosticsTemplateTrace().catch(() => null),
+        apiClient.diagnosticsWiresock(),
       ]);
       setHealth(diag);
       setValidation(validationReport);
       setLogs(recentLogs);
-      setTcpEvents(tcp);
-      setHandshakeStatus(proxy);
-      setTemplateTrace(trace);
+      setTcpSessions(wiresock.tcp_sessions);
+      setHandshakeProfiles(wiresock.handshake_proxy_profiles);
+      setTemplateTrace(wiresock.template_trace ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load diagnostics");
     } finally {
@@ -101,11 +140,7 @@ export function Diagnostics() {
   const runTemplateTrace = async () => {
     setError(null);
     try {
-      const trace = await apiClient.diagnosticsTemplateTrace({
-        app_id: traceAppId.trim() || undefined,
-        domain: traceDomain.trim() || undefined,
-        pid: tracePid.trim() ? Number(tracePid) : undefined,
-      });
+      const trace = await apiClient.runWiresockTemplateTrace();
       setTemplateTrace(trace);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Template trace failed");
@@ -196,112 +231,34 @@ export function Diagnostics() {
       )}
 
       <div className="bg-sentinel-panel rounded-lg border border-slate-700 p-4">
-        <h3 className="font-medium mb-3">TCP Session Events</h3>
-        {tcpEvents.length === 0 ? (
-          <p className="text-sentinel-muted text-sm">No recent TCP termination events</p>
+        <h3 className="font-medium mb-3">TCP Sessions (WireSock)</h3>
+        {tcpSessions.length === 0 ? (
+          <p className="text-sentinel-muted text-sm">No active TCP sessions tracked</p>
         ) : (
-          <ul className="space-y-2 text-sm max-h-48 overflow-auto">
-            {tcpEvents.map((ev, i) => (
-              <li key={i} className="p-2 bg-slate-800/50 rounded flex justify-between gap-4">
-                <div>
-                  <span
-                    className={
-                      ev.kind === "termination_failed"
-                        ? "text-sentinel-danger font-medium"
-                        : "text-sentinel-success font-medium"
-                    }
-                  >
-                    {ev.kind === "termination_failed" ? "Failed" : "Terminated"}
-                  </span>
-                  {ev.count != null && (
-                    <span className="text-sentinel-muted ml-2">{ev.count} session(s)</span>
-                  )}
-                  {ev.mode && (
-                    <span className="text-xs text-sentinel-muted ml-2">mode: {ev.mode}</span>
-                  )}
-                  {ev.error && (
-                    <p className="text-xs text-sentinel-danger mt-1">{ev.error}</p>
-                  )}
-                </div>
-                <span className="text-xs text-sentinel-muted whitespace-nowrap">
-                  {new Date(ev.timestamp).toLocaleString()}
-                </span>
-              </li>
+          <ul className="space-y-2 max-h-48 overflow-auto">
+            {tcpSessions.map((conn, i) => (
+              <TcpSessionRow key={`${conn.pid}-${conn.local_addr}-${i}`} conn={conn} />
             ))}
           </ul>
         )}
       </div>
 
       <div className="bg-sentinel-panel rounded-lg border border-slate-700 p-4">
-        <h3 className="font-medium mb-3">Handshake Proxy Status</h3>
-        {!handshakeStatus || handshakeStatus.profiles.length === 0 ? (
-          <p className="text-sentinel-muted text-sm">No handshake proxy status available</p>
+        <h3 className="font-medium mb-3">Handshake Proxy Profiles</h3>
+        {handshakeProfiles.length === 0 ? (
+          <p className="text-sentinel-muted text-sm">No VPN profiles configured</p>
         ) : (
-          <ul className="space-y-2 text-sm">
-            {handshakeStatus.profiles.map((entry) => (
-              <li
-                key={entry.profile_id}
-                className="p-3 bg-slate-800/50 rounded flex flex-wrap justify-between gap-2"
-              >
-                <div>
-                  <p className="font-medium">{entry.profile_name ?? entry.profile_id.slice(0, 8)}</p>
-                  <p className="text-xs text-sentinel-muted">
-                    {entry.enabled
-                      ? entry.proxy_host
-                        ? `${entry.proxy_host}:${entry.proxy_port ?? "—"}`
-                        : "Enabled (no host)"
-                      : "Disabled"}
-                  </p>
-                  {entry.last_error && (
-                    <p className="text-xs text-sentinel-danger mt-1">{entry.last_error}</p>
-                  )}
-                </div>
-                <span
-                  className={
-                    entry.connected
-                      ? "text-sentinel-success text-xs font-semibold uppercase"
-                      : entry.enabled
-                        ? "text-yellow-400 text-xs font-semibold uppercase"
-                        : "text-sentinel-muted text-xs uppercase"
-                  }
-                >
-                  {entry.connected ? "Connected" : entry.enabled ? "Idle" : "Off"}
-                </span>
-              </li>
+          <ul className="space-y-2">
+            {handshakeProfiles.map((entry) => (
+              <HandshakeProxyRow key={entry.profile_id} entry={entry} />
             ))}
           </ul>
         )}
       </div>
 
       <div className="bg-sentinel-panel rounded-lg border border-slate-700 p-4 space-y-4">
-        <h3 className="font-medium">Template Resolution Trace</h3>
-        <div className="flex flex-wrap gap-2 items-end">
-          <div>
-            <label className="block text-xs text-sentinel-muted mb-1">App ID</label>
-            <input
-              value={traceAppId}
-              onChange={(e) => setTraceAppId(e.target.value)}
-              className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-sentinel-muted mb-1">Domain</label>
-            <input
-              value={traceDomain}
-              onChange={(e) => setTraceDomain(e.target.value)}
-              placeholder="example.com"
-              className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-sentinel-muted mb-1">PID</label>
-            <input
-              value={tracePid}
-              onChange={(e) => setTracePid(e.target.value)}
-              type="number"
-              className="w-24 px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm"
-            />
-          </div>
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium">Template Resolution Trace</h3>
           <button
             onClick={runTemplateTrace}
             className="px-4 py-2 bg-sentinel-accent rounded text-sm hover:bg-blue-600"
@@ -310,7 +267,7 @@ export function Diagnostics() {
           </button>
         </div>
         {!templateTrace ? (
-          <p className="text-sentinel-muted text-sm">Run a trace to inspect template resolution steps</p>
+          <p className="text-sentinel-muted text-sm">Run a trace to inspect active split-tunnel template resolution</p>
         ) : (
           <div className="space-y-3 text-sm">
             <div className="flex gap-4 text-xs text-sentinel-muted">

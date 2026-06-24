@@ -54,7 +54,16 @@ impl TailscaleService {
                 WireSentinelError::Config(format!("tailnet profile {profile_id} not found"))
             })?;
 
-        profile.connected = true;
+        self.backend.connect_tailnet(&profile).await?;
+
+        let runtime = self.backend.query_status().await;
+        profile.connected = runtime.connected;
+        if runtime.hostname.is_some() {
+            profile.hostname = runtime.hostname;
+        }
+        if runtime.tailnet_ip.is_some() {
+            profile.tailnet_ip = runtime.tailnet_ip;
+        }
         profile.updated_at = Utc::now();
         self.storage.tailnet_profiles.update(&profile).await?;
 
@@ -68,6 +77,8 @@ impl TailscaleService {
     }
 
     pub async fn leave(&self, profile_id: Uuid, reason: &str) -> Result<()> {
+        self.backend.disconnect_tailnet(profile_id).await?;
+
         if let Some(mut profile) = self.storage.tailnet_profiles.get(profile_id).await? {
             profile.connected = false;
             profile.updated_at = Utc::now();

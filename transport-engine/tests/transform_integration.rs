@@ -61,6 +61,7 @@ async fn singbox_config_generation_and_start() {
         listen_port: Some(1080),
         upstream_socks: None,
         obfuscation_preset: None,
+        tor_spec: None,
     };
 
     transport.start(&ctx).await.unwrap();
@@ -137,6 +138,7 @@ async fn xray_reality_config_and_transform_registry() {
         listen_port: Some(1081),
         upstream_socks: None,
         obfuscation_preset: None,
+        tor_spec: None,
     };
 
     transport.start(&ctx).await.unwrap();

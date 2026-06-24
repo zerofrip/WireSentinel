@@ -5,6 +5,7 @@ export function Mixnet() {
   const [profiles, setProfiles] = useState<MixnetProfile[]>([]);
   const [status, setStatus] = useState<MixnetStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const refresh = () => {
     Promise.all([apiClient.mixnet(), apiClient.mixnetStatus()])
@@ -20,9 +21,41 @@ export function Mixnet() {
     refresh();
   }, []);
 
+  const runGlobal = async (action: "start" | "stop") => {
+    setBusy(action);
+    setError(null);
+    try {
+      if (action === "start") await apiClient.mixnetStart();
+      else await apiClient.mixnetStop();
+      refresh();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold">Mixnet</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">Mixnet</h2>
+        <div className="flex gap-2">
+          <button
+            className="px-3 py-1.5 bg-sentinel-accent rounded text-sm disabled:opacity-50"
+            disabled={busy !== null}
+            onClick={() => runGlobal("start")}
+          >
+            {busy === "start" ? "Starting..." : "Start active"}
+          </button>
+          <button
+            className="px-3 py-1.5 bg-slate-700 rounded text-sm disabled:opacity-50"
+            disabled={busy !== null}
+            onClick={() => runGlobal("stop")}
+          >
+            {busy === "stop" ? "Stopping..." : "Stop"}
+          </button>
+        </div>
+      </div>
       {error && <p className="text-sentinel-danger text-sm">{error}</p>}
 
       <div className="bg-sentinel-panel rounded-lg border border-slate-700 p-4">

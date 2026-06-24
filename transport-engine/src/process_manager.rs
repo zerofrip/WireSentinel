@@ -33,6 +33,10 @@ impl ProcessManager {
         self.processes.read().contains_key(&id)
     }
 
+    pub fn running_ids(&self) -> Vec<Uuid> {
+        self.processes.read().keys().copied().collect()
+    }
+
     pub fn pid(&self, id: Uuid) -> Option<u32> {
         self.processes.read().get(&id).map(|p| p.pid)
     }

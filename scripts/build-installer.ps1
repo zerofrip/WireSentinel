@@ -162,7 +162,8 @@ function Stage-InstallerBinaries {
             @{ Src = $WireguardDll; Dst = "wireguard.dll" },
             @{ Src = (Join-Path $Root "resources\WinDivert.dll"); Dst = "WinDivert.dll" },
             @{ Src = (Join-Path $Root "resources\WinDivert64.sys"); Dst = "WinDivert64.sys" },
-            @{ Src = (Join-Path $Root "resources\sing-box.exe"); Dst = "sing-box.exe" }
+            @{ Src = (Join-Path $Root "resources\sing-box.exe"); Dst = "sing-box.exe" },
+            @{ Src = (Join-Path $Root "resources\tor.exe"); Dst = "tor.exe" }
         )) {
         if (Test-Path $pair.Src) {
             Copy-Item -Force $pair.Src (Join-Path $stageDir $pair.Dst)

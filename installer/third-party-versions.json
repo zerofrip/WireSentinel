@@ -5,6 +5,12 @@
     "source_tarball": "https://github.com/SagerNet/sing-box/archive/refs/tags/v1.11.8.tar.gz",
     "binary_release": "https://github.com/SagerNet/sing-box/releases/tag/v1.11.8"
   },
+  "tor": {
+    "version": "0.4.8.14",
+    "upstream": "https://www.torproject.org/",
+    "expert_bundle": "https://www.torproject.org/download/tor/",
+    "license": "BSD-3-Clause"
+  },
   "windivert": {
     "version": "2.2.2-A",
     "upstream": "https://reqrypt.org/windivert.html",

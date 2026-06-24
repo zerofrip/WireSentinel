@@ -2,7 +2,7 @@
 
 use dpi_transforms::TransformPipeline;
 use shared_types::{
-    ChainProfile, ObfuscationPreset, Result, TransportProfile, TransportState,
+    ChainProfile, ObfuscationPreset, Result, TransportKind, TransportProfile, TransportState,
     TransportStatusRecord,
 };
 use std::sync::Arc;
@@ -13,16 +13,23 @@ use transport_engine::{
 };
 use uuid::Uuid;
 
+use crate::mixnet::MixnetService;
+
 pub struct TransportManager {
     storage: Arc<Storage>,
     #[allow(dead_code)]
     factory: Arc<TransportBackendFactory>,
     chains: Arc<ChainOrchestrator>,
     process_manager: Arc<ProcessManager>,
+    mixnet: Arc<MixnetService>,
 }
 
 impl TransportManager {
-    pub fn new(storage: Arc<Storage>, vpn_factory: &vpn_engine::VpnBackendFactory) -> Self {
+    pub fn new(
+        storage: Arc<Storage>,
+        vpn_factory: &vpn_engine::VpnBackendFactory,
+        mixnet: Arc<MixnetService>,
+    ) -> Self {
         let process_manager = Arc::new(ProcessManager::new());
         let config_store = Arc::new(TransportConfigStore::new());
         let factory = Arc::new(TransportBackendFactory::new(
@@ -37,7 +44,12 @@ impl TransportManager {
             factory,
             chains,
             process_manager,
+            mixnet,
         }
+    }
+
+    pub fn process_manager(&self) -> Arc<ProcessManager> {
+        Arc::clone(&self.process_manager)
     }
 
     pub fn chain_orchestrator(&self) -> Arc<ChainOrchestrator> {
@@ -103,6 +115,19 @@ impl TransportManager {
             }
             if let Some(tp_id) = hop.transport_profile_id {
                 ctx.transport_profile = self.storage.transport_profiles.get(tp_id).await?;
+            }
+
+            if hop.kind == TransportKind::Mixnet {
+                if let Some(profile_id) = hop.profile_id {
+                    let port = self.mixnet.ensure_profile_ready(profile_id).await?;
+                    ctx.mixnet_upstream = Some(format!("127.0.0.1:{port}"));
+                }
+            }
+
+            if hop.kind == TransportKind::Proxy {
+                if let Some(profile_id) = hop.profile_id {
+                    ctx.proxy_profile = self.storage.proxy_profiles.get(profile_id).await?;
+                }
             }
 
             if let (Some(tp), Some(ref pipe)) = (&ctx.transport_profile, &pipeline) {

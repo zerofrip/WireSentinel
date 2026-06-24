@@ -4,13 +4,32 @@ import { apiClient, type PluginRecord } from "../api/client";
 export function Plugins() {
   const [plugins, setPlugins] = useState<PluginRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  useEffect(() => {
+  const refresh = () => {
     apiClient
       .plugins()
       .then(setPlugins)
       .catch((e) => setError(String(e)));
+  };
+
+  useEffect(() => {
+    refresh();
   }, []);
+
+  const run = async (id: string, action: "load" | "unload") => {
+    setBusy(id);
+    setError(null);
+    try {
+      if (action === "load") await apiClient.loadPlugin(id);
+      else await apiClient.unloadPlugin(id);
+      refresh();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const loaded = plugins.filter((p) => p.state === "loaded");
 
@@ -41,24 +60,46 @@ export function Plugins() {
         ) : (
           <ul className="space-y-2 text-sm">
             {plugins.map((p) => (
-              <li key={p.id} className="flex justify-between p-2 bg-slate-800/50 rounded">
+              <li
+                key={p.id}
+                className="flex flex-wrap justify-between items-center gap-2 p-2 bg-slate-800/50 rounded"
+              >
                 <div>
                   <p className="font-medium">{p.manifest.name}</p>
                   <p className="text-xs text-sentinel-muted">
                     {p.manifest.version} · {p.manifest.format}
                   </p>
                 </div>
-                <span
-                  className={
-                    p.state === "loaded"
-                      ? "text-sentinel-success"
-                      : p.state === "failed"
-                        ? "text-sentinel-danger"
-                        : "text-sentinel-muted"
-                  }
-                >
-                  {p.state}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={
+                      p.state === "loaded"
+                        ? "text-sentinel-success"
+                        : p.state === "failed"
+                          ? "text-sentinel-danger"
+                          : "text-sentinel-muted"
+                    }
+                  >
+                    {p.state}
+                  </span>
+                  {p.state !== "loaded" ? (
+                    <button
+                      className="px-2 py-1 rounded bg-sentinel-accent text-xs disabled:opacity-50"
+                      disabled={busy === p.id}
+                      onClick={() => run(p.id, "load")}
+                    >
+                      Load
+                    </button>
+                  ) : (
+                    <button
+                      className="px-2 py-1 rounded border border-slate-600 text-xs disabled:opacity-50"
+                      disabled={busy === p.id}
+                      onClick={() => run(p.id, "unload")}
+                    >
+                      Unload
+                    </button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

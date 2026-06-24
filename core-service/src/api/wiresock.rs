@@ -43,8 +43,20 @@ pub fn routes() -> axum::Router<Arc<AppState>> {
             axum::routing::put(update_split_template).delete(delete_split_template),
         )
         .route(
+            "/split-templates/:id/clone",
+            axum::routing::post(clone_split_template),
+        )
+        .route(
+            "/vpn/:id/handshake-proxy",
+            axum::routing::get(get_vpn_handshake_proxy).put(put_vpn_handshake_proxy),
+        )
+        .route(
             "/diagnostics/wiresock",
             axum::routing::get(get_wiresock_diagnostics),
+        )
+        .route(
+            "/diagnostics/wiresock/template-trace",
+            axum::routing::post(run_wiresock_template_trace),
         )
 }
 
@@ -187,14 +199,14 @@ async fn put_split_mode(
 }
 
 #[derive(serde::Serialize)]
-struct WiresockDiagnostics {
-    tcp_sessions: Vec<shared_types::TcpConnectionSnapshot>,
-    template_trace: Option<shared_types::TemplateResolutionTrace>,
-    handshake_proxy_profiles: Vec<HandshakeProxyProfileStatus>,
+pub struct WiresockDiagnostics {
+    pub tcp_sessions: Vec<shared_types::TcpConnectionSnapshot>,
+    pub template_trace: Option<shared_types::TemplateResolutionTrace>,
+    pub handshake_proxy_profiles: Vec<HandshakeProxyProfileStatus>,
 }
 
 #[derive(serde::Serialize)]
-struct HandshakeProxyProfileStatus {
+pub struct HandshakeProxyProfileStatus {
     profile_id: Uuid,
     profile_name: String,
     settings: Option<HandshakeProxySettings>,
@@ -220,4 +232,77 @@ async fn get_wiresock_diagnostics(State(state): State<Arc<AppState>>) -> impl In
         handshake_proxy_profiles,
     })
     .into_response()
+}
+
+async fn run_wiresock_template_trace(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let trace = state.deps.split_templates.manager().resolve_trace();
+    state.deps.split_templates.store_trace(trace.clone());
+    Json(trace).into_response()
+}
+
+#[derive(serde::Deserialize)]
+struct CloneTemplateBody {
+    name: Option<String>,
+}
+
+async fn clone_split_template(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<CloneTemplateBody>,
+) -> impl IntoResponse {
+    let templates = match state.deps.split_templates.list().await {
+        Ok(t) => t,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    };
+    let Some(source) = templates.into_iter().find(|t| t.id == id) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let now = Utc::now();
+    let mut clone = source;
+    clone.id = Uuid::new_v4();
+    clone.name = body
+        .name
+        .filter(|n| !n.trim().is_empty())
+        .unwrap_or_else(|| format!("{} (copy)", clone.name));
+    clone.created_at = now;
+    clone.updated_at = now;
+    if let Err(e) = state.deps.split_templates.upsert(clone.clone()).await {
+        return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response();
+    }
+    (StatusCode::CREATED, Json(clone)).into_response()
+}
+
+async fn get_vpn_handshake_proxy(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    match state.deps.vpn.get_profile(id) {
+        Some(profile) => Json(
+            profile
+                .handshake_proxy
+                .unwrap_or_default(),
+        )
+        .into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
+async fn put_vpn_handshake_proxy(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<Uuid>,
+    Json(settings): Json<HandshakeProxySettings>,
+) -> impl IntoResponse {
+    let mut profiles = match state.deps.storage.vpn_profiles.list().await {
+        Ok(p) => p,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    };
+    let Some(profile) = profiles.iter_mut().find(|p| p.id == id) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    profile.handshake_proxy = Some(settings.clone());
+    if let Err(e) = state.deps.storage.vpn_profiles.update(profile, None).await {
+        return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response();
+    }
+    state.deps.vpn.set_profiles(profiles);
+    Json(settings).into_response()
 }

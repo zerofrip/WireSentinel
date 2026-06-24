@@ -21,8 +21,8 @@ use uuid::Uuid;
 
 use crate::anonymity_security::AnonymitySecurityPolicy;
 
-const DEFAULT_KATZENPOST_GATEWAYS: &str = r#"{"gateways":[{"id":"gw1","address":"127.0.0.1:4444","identity_key":"k1","country":"DE","latency_ms":25,"healthy":true,"last_seen":null}]}"#;
-const DEFAULT_LOOPIX_PROVIDERS: &str = r#"{"providers":[{"id":"p1","address":"127.0.0.1:5555","public_key":"pk1","layer":1,"latency_ms":30,"healthy":true,"last_seen":null}]}"#;
+const LAB_KATZENPOST_GATEWAYS: &str = r#"{"gateways":[{"id":"lab-gw1","address":"127.0.0.1:4444","identity_key":"k1","country":"LAB","latency_ms":25,"healthy":true,"last_seen":null}]}"#;
+const LAB_LOOPIX_PROVIDERS: &str = r#"{"providers":[{"id":"lab-p1","address":"127.0.0.1:5555","public_key":"pk1","layer":1,"latency_ms":30,"healthy":true,"last_seen":null}]}"#;
 
 pub struct AnonymityService {
     storage: Arc<Storage>,
@@ -83,7 +83,42 @@ impl AnonymityService {
             federated_active: self.federation.discover().len() > 1,
             active_providers,
             entropy_score,
+            katzenpost_stub_mode: katzenpost_active && self.security.is_lab_mode(),
+            loopix_stub_mode: loopix_active && self.security.is_lab_mode(),
+            lab_mode: self.security.is_lab_mode(),
         })
+    }
+
+    fn katzenpost_discovery(&self, profile: &KatzenpostProfile) -> Result<KatzenpostGatewayDiscovery> {
+        if let Some(json) = &profile.config_json {
+            if let Ok(discovery) = KatzenpostGatewayDiscovery::from_json(&json.to_string()) {
+                return Ok(discovery);
+            }
+        }
+        if self.security.is_lab_mode() {
+            KatzenpostGatewayDiscovery::from_json(LAB_KATZENPOST_GATEWAYS)
+                .map_err(|e| WireSentinelError::Config(e.to_string()))
+        } else {
+            Err(WireSentinelError::Config(
+                "katzenpost gateways not configured; set config_json or enable lab mode".into(),
+            ))
+        }
+    }
+
+    fn loopix_discovery(&self, profile: &LoopixProfile) -> Result<LoopixProviderDiscovery> {
+        if let Some(json) = &profile.config_json {
+            if let Ok(discovery) = LoopixProviderDiscovery::from_json(&json.to_string()) {
+                return Ok(discovery);
+            }
+        }
+        if self.security.is_lab_mode() {
+            LoopixProviderDiscovery::from_json(LAB_LOOPIX_PROVIDERS)
+                .map_err(|e| WireSentinelError::Config(e.to_string()))
+        } else {
+            Err(WireSentinelError::Config(
+                "loopix providers not configured; set config_json or enable lab mode".into(),
+            ))
+        }
     }
 
     fn katzenpost_backend(&self, profile: &KatzenpostProfile) -> Result<Arc<dyn AnonymityBackend>> {
@@ -97,8 +132,7 @@ impl AnonymityService {
             created_at: profile.created_at,
             updated_at: profile.updated_at,
         };
-        let discovery = KatzenpostGatewayDiscovery::from_json(DEFAULT_KATZENPOST_GATEWAYS)
-            .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let discovery = self.katzenpost_discovery(profile)?;
         Ok(KatzenpostBackend::new(core_profile, discovery))
     }
 
@@ -113,8 +147,7 @@ impl AnonymityService {
             created_at: profile.created_at,
             updated_at: profile.updated_at,
         };
-        let discovery = LoopixProviderDiscovery::from_json(DEFAULT_LOOPIX_PROVIDERS)
-            .map_err(|e| WireSentinelError::Config(e.to_string()))?;
+        let discovery = self.loopix_discovery(profile)?;
         Ok(LoopixBackend::new(core_profile, discovery))
     }
 

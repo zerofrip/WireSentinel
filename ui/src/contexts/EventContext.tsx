@@ -149,7 +149,11 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         dnsProviders,
         leakIncidents,
         performanceSnapshots: performance.snapshots,
-        securityAudit: [],
+        securityAudit: (await apiClient.securityAudit().catch(() => [])).map((f) => ({
+          action: f.title,
+          detail: `${f.severity}: ${f.category}`,
+          timestamp: f.created_at,
+        })),
       });
       setConnected(true);
       setError(null);

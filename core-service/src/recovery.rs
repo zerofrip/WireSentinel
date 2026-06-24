@@ -9,6 +9,7 @@ use tracing::{info, warn};
 use uuid::Uuid;
 use vpn_engine::{materialize_profile_config, VpnManager};
 
+use crate::tor::TorService;
 use crate::transport::TransportManager;
 
 pub struct RecoveryService {
@@ -77,10 +78,25 @@ impl RecoveryService {
             .await
     }
 
+    pub async fn persist_tor(&self, profile_id: Uuid, running: bool) -> Result<()> {
+        let state_json = serde_json::json!({ "running": running }).to_string();
+        self.storage
+            .runtime_state
+            .upsert(&RuntimeStateRecord {
+                id: Uuid::new_v4(),
+                scope: "tor".into(),
+                entity_id: profile_id.to_string(),
+                state_json,
+                updated_at: Utc::now(),
+            })
+            .await
+    }
+
     pub async fn recover_all(
         &self,
         vpn: &VpnManager,
         transport: &TransportManager,
+        tor: &TorService,
         enabled: bool,
     ) -> Result<u32> {
         if !enabled {
@@ -98,6 +114,7 @@ impl RecoveryService {
 
         restored += self.recover_vpn(vpn).await;
         restored += self.recover_chains(transport).await;
+        restored += self.recover_tor(tor).await;
 
         self.events.publish(
             ServiceEventInner::RecoveryCompleted {
@@ -202,6 +219,39 @@ impl RecoveryService {
         count
     }
 
+    async fn recover_tor(&self, tor: &TorService) -> u32 {
+        let mut count = 0u32;
+        let records = match self.storage.runtime_state.list_by_scope("tor").await {
+            Ok(r) => r,
+            Err(e) => {
+                warn!(error = %e, "failed to load tor runtime state");
+                return 0;
+            }
+        };
+
+        for record in records {
+            let Ok(state) = serde_json::from_str::<serde_json::Value>(&record.state_json) else {
+                continue;
+            };
+            if !state
+                .get("running")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
+            {
+                continue;
+            }
+            let Ok(profile_id) = Uuid::parse_str(&record.entity_id) else {
+                continue;
+            };
+            if tor.start(profile_id).await.is_ok() {
+                count += 1;
+            } else {
+                self.emit_failed("tor", format!("start failed for {profile_id}"));
+            }
+        }
+        count
+    }
+
     fn emit_failed(&self, scope: &str, error: String) {
         warn!(scope, error, "recovery partial failure");
         self.events.publish(
@@ -217,6 +267,7 @@ impl RecoveryService {
         &self,
         vpn: &VpnManager,
         transport: &TransportManager,
+        tor: &TorService,
     ) -> Result<()> {
         for profile in vpn.profiles() {
             let connected = vpn
@@ -237,6 +288,10 @@ impl RecoveryService {
                 })
                 .unwrap_or(false);
             self.persist_chain(chain.id, running).await?;
+        }
+        for profile in self.storage.tor_profiles.list().await? {
+            let running = tor.is_running_profile(profile.id);
+            self.persist_tor(profile.id, running).await?;
         }
         Ok(())
     }

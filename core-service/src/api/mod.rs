@@ -9,6 +9,8 @@ mod openapi;
 mod proxy_routes;
 pub mod routes;
 mod settings_routes;
+mod tailnet_routes;
+mod tor_routes;
 pub mod wiresock;
 mod ws;
 

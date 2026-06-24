@@ -4,6 +4,7 @@ use crate::config_store::TransportConfigStore;
 use crate::direct::DirectTransport;
 use crate::mixnet::MixnetTransport;
 use crate::process_manager::ProcessManager;
+use crate::proxy::ProxyTransport;
 use crate::singbox::SingBoxTransport;
 use crate::tls_tunnel::TlsTunnelTransport;
 use crate::tor::TorTransport;
@@ -75,7 +76,7 @@ impl TransportBackendFactory {
                 Arc::clone(&self.config_store),
             )),
             TransportKind::Mixnet => Arc::new(MixnetTransport::new()),
-            TransportKind::Proxy => Arc::new(DirectTransport::new()),
+            TransportKind::Proxy => Arc::new(ProxyTransport::new()),
         }
     }
 }

@@ -31,7 +31,7 @@ impl UpdateManager {
 
     pub async fn check(&self) -> Result<UpdateInfo> {
         let channel = self.storage.settings.update_channel().await?;
-        let feed_url = std::env::var("WIRESENTINEL_UPDATE_FEED").ok();
+        let feed_url = self.resolve_feed_url();
 
         if let Some(url) = feed_url {
             if let Ok(latest) = self.fetch_latest(&url, &channel).await {
@@ -76,6 +76,20 @@ impl UpdateManager {
             .and_then(|v| v.as_str())
             .map(str::to_string)
             .ok_or_else(|| WireSentinelError::Config("missing version in update feed".into()))
+    }
+
+    fn resolve_feed_url(&self) -> Option<String> {
+        if let Ok(url) = std::env::var("WIRESENTINEL_UPDATE_FEED") {
+            let trimmed = url.trim().to_string();
+            if !trimmed.is_empty() {
+                return Some(trimmed);
+            }
+        }
+        let path = storage::data_dir().join("update_feed.url");
+        std::fs::read_to_string(path)
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
     }
 }
 

@@ -48,9 +48,15 @@ impl DiagnosticsService {
     }
 
     async fn check_wfp(&self) -> SubsystemHealth {
+        let driver = self.wfp.driver_state().await;
+        let status = match driver.state.as_str() {
+            "ok" | "running" | "loaded" => "ok",
+            "stub" | "disabled" => "disabled",
+            _ => "error",
+        };
         SubsystemHealth {
-            status: "ok".into(),
-            message: Some("engine loaded".into()),
+            status: status.into(),
+            message: driver.message.or(Some(format!("engine: {}", driver.engine))),
         }
     }
 

@@ -37,6 +37,7 @@
 | WireGuard NT (`wireguard.dll`, `tunnel.dll`) | MIT | Bundled DLL | MIT notice + `licenses/MIT.txt` |
 | WinDivert (`WinDivert.dll`, `WinDivert64.sys`) | LGPL-3.0 | Dynamic load via `windivert-engine` | LGPL full text + upstream URL |
 | sing-box (`sing-box.exe`) | GPL-3.0 | Subprocess only (`transport-engine`) | GPL full text + versioned source URL |
+| Tor (`tor.exe`) | BSD-3-Clause | Subprocess only (spawned by sing-box tor outbound) | BSD full text + upstream URL |
 | Wintun | Prebuilt / GPLv2 source | Indirect via `wireguard.dll` | No standalone `wintun.dll` shipped |
 
 Pinned versions: [`installer/third-party-versions.json`](../installer/third-party-versions.json).
@@ -56,9 +57,11 @@ flowchart LR
   end
   subgraph gpl [GPL subprocess]
     SB[sing-box.exe]
+    Tor[tor.exe]
   end
   Service -->|LoadLibrary| WD
   Service -->|spawn IPC| SB
+  SB -->|spawn| Tor
 ```
 
 - **GPL contamination:** No GPL Rust crates linked into `core-service`, `wfp`, or `storage`.

@@ -408,7 +408,10 @@ export interface PluginRecord {
 export interface TailnetProfile {
   id: string;
   name: string;
+  auth_key?: string | null;
   exit_node?: string | null;
+  subnet_router?: boolean;
+  magic_dns?: boolean;
   hostname?: string | null;
   tailnet_ip?: string | null;
   connected: boolean;
@@ -428,6 +431,8 @@ export interface TorProfile {
   name: string;
   control_port: number;
   socks_port: number;
+  data_dir: string;
+  bridge_ids: string[];
   enabled: boolean;
   bootstrap_progress: number;
   circuit_count: number;
@@ -445,7 +450,15 @@ export interface BridgeProfile {
   id: string;
   name: string;
   bridge_type: "obfs4" | "snowflake" | "meek" | "webtunnel";
+  config_json?: { line?: string };
   enabled: boolean;
+}
+
+export interface BridgeTestResult {
+  bridge_id: string;
+  success: boolean;
+  latency_ms?: number | null;
+  error?: string | null;
 }
 
 export interface ProxyProfile {
@@ -577,10 +590,17 @@ export interface AnonymousChain {
   updated_at: string;
 }
 
+export type CoverTrafficProfile =
+  | "disabled"
+  | "low"
+  | "medium"
+  | "high"
+  | "maximum";
+
 export interface CoverTrafficSettings {
   id: string;
   mixnet_profile_id?: string | null;
-  profile: string;
+  profile: CoverTrafficProfile;
   enabled: boolean;
   rate_bps?: number | null;
   created_at: string;
@@ -747,6 +767,43 @@ export interface HandshakeProxyStatusEntry {
 
 export interface HandshakeProxyStatus {
   profiles: HandshakeProxyStatusEntry[];
+}
+
+export interface TcpConnectionSnapshot {
+  pid: number;
+  app_id?: string | null;
+  exe_name: string;
+  exe_path?: string | null;
+  protocol: string;
+  local_addr: string;
+  remote_addr: string;
+  state: string;
+  remote_domain?: string | null;
+}
+
+export interface WiresockHandshakeProxyProfile {
+  profile_id: string;
+  profile_name: string;
+  settings?: HandshakeProxySettings | null;
+}
+
+export interface WiresockDiagnostics {
+  tcp_sessions: TcpConnectionSnapshot[];
+  template_trace?: TemplateResolutionTrace | null;
+  handshake_proxy_profiles: WiresockHandshakeProxyProfile[];
+}
+
+export type SecuritySeverity = "info" | "low" | "medium" | "high" | "critical";
+
+export interface SecurityFinding {
+  id: string;
+  severity: SecuritySeverity;
+  category: string;
+  title: string;
+  detail_json: Record<string, unknown>;
+  resolved: boolean;
+  created_at: string;
+  resolved_at?: string | null;
 }
 
 export interface RuntimeSettings {
@@ -955,9 +1012,37 @@ export const apiClient = {
   plugins: () => api<PluginRecord[]>("/api/v1/plugins"),
   tailnetProfiles: () => api<TailnetProfile[]>("/api/v1/tailnet"),
   tailnetStatus: () => api<TailscaleStatus>("/api/v1/tailnet/status"),
+  upsertTailnetProfile: (profile: TailnetProfile) =>
+    api<TailnetProfile>("/api/v1/tailnet", {
+      method: "POST",
+      body: JSON.stringify(profile),
+    }),
+  tailnetJoin: (id: string) =>
+    api<TailnetProfile>(`/api/v1/tailnet/profiles/${id}/join`, { method: "POST" }),
+  tailnetLeave: (id: string) =>
+    api<TailscaleStatus>(`/api/v1/tailnet/profiles/${id}/leave`, { method: "POST" }),
   torProfiles: () => api<TorProfile[]>("/api/v1/tor"),
   torStatus: () => api<TorStatus>("/api/v1/tor/status"),
+  torStart: (id: string) =>
+    api<TorProfile>(`/api/v1/tor/profiles/${id}/start`, { method: "POST" }),
+  torStop: (id: string) =>
+    api<TorStatus>(`/api/v1/tor/profiles/${id}/stop`, { method: "POST" }),
+  upsertTorProfile: (profile: TorProfile) =>
+    api<TorProfile>("/api/v1/tor", {
+      method: "POST",
+      body: JSON.stringify(profile),
+    }),
   bridges: () => api<BridgeProfile[]>("/api/v1/bridges"),
+  createBridge: (bridge: BridgeProfile) =>
+    api<BridgeProfile>("/api/v1/bridges", {
+      method: "POST",
+      body: JSON.stringify(bridge),
+    }),
+  testBridge: (bridgeId: string) =>
+    api<BridgeTestResult>("/api/v1/bridges/test", {
+      method: "POST",
+      body: JSON.stringify({ bridge_id: bridgeId }),
+    }),
   proxies: () => api<ProxyProfile[]>("/api/v1/proxies"),
   getProxy: (id: string) => api<ProxyProfile>(`/api/v1/proxies/${id}`),
   createProxy: (profile: ProxyProfile) =>
@@ -1076,17 +1161,50 @@ export const apiClient = {
   anonymousRoutes: () =>
     api<AnonymousChain[]>("/api/v1/anonymous-routes").catch(() => [] as AnonymousChain[]),
   coverTraffic: () =>
-    api<CoverTrafficSettings[]>("/api/v1/cover-traffic").catch(() => [] as CoverTrafficSettings[]),
+    api<CoverTrafficSettings>("/api/v1/cover-traffic/settings").catch(() => null),
+  setCoverTrafficSettings: (settings: CoverTrafficSettings) =>
+    api<CoverTrafficSettings>("/api/v1/cover-traffic/settings", {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    }),
   privacyAnalytics: () =>
     api<PrivacyAnalyticsSnapshot | null>("/api/v1/privacy/analytics").catch(() => null),
   privacyAnonymity: () =>
     api<AnonymityPrivacySnapshot | null>("/api/v1/privacy/anonymity").catch(() => null),
   anonymityHealth: () =>
     api<AnonymityHealthSummary | null>("/api/v1/anonymity").catch(() => null),
-  anonymityRoutes: () =>
-    api<AnonymousChain[]>("/api/v1/anonymity/routes").catch(() => [] as AnonymousChain[]),
-  anonymityAnalytics: () =>
-    api<Record<string, unknown> | null>("/api/v1/anonymity/analytics").catch(() => null),
+  mixnetStart: () =>
+    api<{ ok: boolean }>("/api/v1/mixnet/start", { method: "POST" }),
+  mixnetStop: () =>
+    api<{ ok: boolean }>("/api/v1/mixnet/stop", { method: "POST" }),
+  startAnonymousRoute: (id: string) =>
+    api<AnonymousChain>(`/api/v1/anonymous-routes/${id}/start`, { method: "POST" }),
+  stopAnonymousRoute: (id: string) =>
+    api<AnonymousChain>(`/api/v1/anonymous-routes/${id}/stop`, { method: "POST" }),
+  upsertAnonymousRoute: (route: AnonymousChain) =>
+    api<AnonymousChain>("/api/v1/anonymous-routes", {
+      method: "POST",
+      body: JSON.stringify(route),
+    }),
+  updateAnonymousRoute: (id: string, route: AnonymousChain) =>
+    api<AnonymousChain>(`/api/v1/anonymous-routes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(route),
+    }),
+  loadPlugin: (id: string) =>
+    api<PluginRecord>("/api/v1/plugins/load", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    }),
+  unloadPlugin: (id: string) =>
+    api<{ ok: boolean }>(`/api/v1/plugins/unload`, {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    }),
+  securityAudit: () =>
+    api<SecurityFinding[]>("/api/v1/security/audit").catch(() => [] as SecurityFinding[]),
+  runSecurityAudit: () =>
+    api<SecurityFinding[]>("/api/v1/security/audit/run", { method: "POST" }),
 
   tcpTerminationSettings: () =>
     api<TcpTerminationSettings>("/api/v1/tcp-termination/settings"),
@@ -1146,20 +1264,12 @@ export const apiClient = {
       body: JSON.stringify(settings),
     }),
 
-  diagnosticsTcpEvents: (limit = 50) =>
-    api<TcpSessionEvent[]>(`/api/v1/diagnostics/tcp-events?limit=${limit}`),
-  diagnosticsHandshakeProxy: () =>
-    api<HandshakeProxyStatus>("/api/v1/diagnostics/handshake-proxy"),
-  diagnosticsTemplateTrace: (params?: { app_id?: string; domain?: string; pid?: number }) => {
-    const q = new URLSearchParams();
-    if (params?.app_id) q.set("app_id", params.app_id);
-    if (params?.domain) q.set("domain", params.domain);
-    if (params?.pid) q.set("pid", String(params.pid));
-    const qs = q.toString();
-    return api<TemplateResolutionTrace>(
-      `/api/v1/diagnostics/template-trace${qs ? `?${qs}` : ""}`
-    );
-  },
+  diagnosticsWiresock: () =>
+    api<WiresockDiagnostics>("/api/v1/diagnostics/wiresock"),
+  runWiresockTemplateTrace: () =>
+    api<TemplateResolutionTrace>("/api/v1/diagnostics/wiresock/template-trace", {
+      method: "POST",
+    }),
 };
 
 export function connectEvents(onEvent: (data: unknown) => void): WebSocket {

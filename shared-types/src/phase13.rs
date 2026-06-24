@@ -128,6 +128,12 @@ pub struct AnonymityStatus {
     pub federated_active: bool,
     pub active_providers: u32,
     pub entropy_score: f64,
+    #[serde(default)]
+    pub katzenpost_stub_mode: bool,
+    #[serde(default)]
+    pub loopix_stub_mode: bool,
+    #[serde(default)]
+    pub lab_mode: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]

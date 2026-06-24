@@ -25,8 +25,9 @@ async fn fault_inject_dns_crash_verifies_recovery() {
             "dns_crash",
             &deps.vpn,
             &deps.transport,
+            &deps.tor,
             deps.wfp.as_ref(),
-            deps.dns.settings().enabled,
+            deps.dns.as_ref(),
         )
         .await
         .expect("inject");

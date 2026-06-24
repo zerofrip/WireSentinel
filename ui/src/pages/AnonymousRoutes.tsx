@@ -4,13 +4,32 @@ import { apiClient, type AnonymousChain } from "../api/client";
 export function AnonymousRoutes() {
   const [chains, setChains] = useState<AnonymousChain[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  useEffect(() => {
+  const refresh = () => {
     apiClient
       .anonymousRoutes()
       .then(setChains)
       .catch((e) => setError(String(e)));
+  };
+
+  useEffect(() => {
+    refresh();
   }, []);
+
+  const run = async (id: string, action: "start" | "stop") => {
+    setBusy(id);
+    setError(null);
+    try {
+      if (action === "start") await apiClient.startAnonymousRoute(id);
+      else await apiClient.stopAnonymousRoute(id);
+      refresh();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -25,15 +44,33 @@ export function AnonymousRoutes() {
           <ul className="space-y-2 text-sm">
             {chains.map((c) => (
               <li key={c.id} className="p-3 bg-slate-800/50 rounded">
-                <div className="flex justify-between gap-2">
-                  <span className="font-medium">{c.name}</span>
-                  <span className={c.enabled ? "text-sentinel-success" : "text-sentinel-muted"}>
-                    {c.enabled ? "enabled" : "disabled"}
-                  </span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{c.name}</p>
+                    <p className="text-xs text-sentinel-muted mt-1">
+                      {c.hops.map((h) => h.kind).join(" → ")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={c.enabled ? "text-sentinel-success" : "text-sentinel-muted"}>
+                      {c.enabled ? "enabled" : "disabled"}
+                    </span>
+                    <button
+                      className="px-2 py-1 rounded bg-sentinel-accent text-xs disabled:opacity-50"
+                      disabled={busy === c.id}
+                      onClick={() => run(c.id, "start")}
+                    >
+                      Start
+                    </button>
+                    <button
+                      className="px-2 py-1 rounded border border-slate-600 text-xs disabled:opacity-50"
+                      disabled={busy === c.id}
+                      onClick={() => run(c.id, "stop")}
+                    >
+                      Stop
+                    </button>
+                  </div>
                 </div>
-                <p className="text-xs text-sentinel-muted mt-1">
-                  {c.hops.map((h) => h.kind).join(" → ")}
-                </p>
               </li>
             ))}
           </ul>

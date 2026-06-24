@@ -21,6 +21,8 @@ use crate::api::proxy_routes::{
     list_proxy_chains, start_proxy_chain, stop_proxy_chain, update_proxy, update_proxy_chain,
 };
 use crate::api::settings_routes::{get_enforcement_settings, set_enforcement_settings};
+use crate::api::tailnet_routes::{tailnet_join, tailnet_leave};
+use crate::api::tor_routes::{tor_start, tor_stop};
 use crate::api::AppState;
 use crate::enterprise::PolicyProvider;
 use crate::route_stats::RouteStatsAggregator;
@@ -100,8 +102,12 @@ pub fn router(state: AppState) -> Router {
         .route("/plugins/unload", post(unload_plugin))
         .route("/tailnet", get(list_tailnet).post(upsert_tailnet))
         .route("/tailnet/status", get(tailnet_status))
+        .route("/tailnet/profiles/{id}/join", post(tailnet_join))
+        .route("/tailnet/profiles/{id}/leave", post(tailnet_leave))
         .route("/tor", get(list_tor).post(upsert_tor))
         .route("/tor/status", get(tor_status))
+        .route("/tor/profiles/{id}/start", post(tor_start))
+        .route("/tor/profiles/{id}/stop", post(tor_stop))
         .route("/bridges", get(list_bridges).post(create_bridge))
         .route("/bridges/test", post(test_bridge))
         .route("/proxies", get(list_proxies).post(create_proxy))
@@ -1551,7 +1557,6 @@ async fn fault_inject(
     State(state): State<Arc<AppState>>,
     Json(body): Json<FaultInjectBody>,
 ) -> impl IntoResponse {
-    let dns_enabled = state.deps.dns.settings().enabled;
     match state
         .deps
         .fault_injection
@@ -1559,8 +1564,9 @@ async fn fault_inject(
             &body.scenario,
             &state.deps.vpn,
             &state.deps.transport,
+            &state.deps.tor,
             state.deps.wfp.as_ref(),
-            dns_enabled,
+            state.deps.dns.as_ref(),
         )
         .await
     {

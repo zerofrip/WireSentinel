@@ -392,7 +392,12 @@ impl Orchestrator {
         let _ = self
             .deps
             .recovery
-            .recover_all(&self.deps.vpn, &self.deps.transport, recovery_enabled)
+            .recover_all(
+                &self.deps.vpn,
+                &self.deps.transport,
+                &self.deps.tor,
+                recovery_enabled,
+            )
             .await;
 
         let metrics_interval = self
@@ -546,7 +551,7 @@ impl Orchestrator {
         if let Err(e) = self
             .deps
             .recovery
-            .flush_before_stop(&self.deps.vpn, &self.deps.transport)
+            .flush_before_stop(&self.deps.vpn, &self.deps.transport, &self.deps.tor)
             .await
         {
             warn!(error = %e, "recovery flush before stop failed");

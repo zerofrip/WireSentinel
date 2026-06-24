@@ -22,8 +22,9 @@ impl FaultInjectionService {
         scenario: &str,
         vpn: &vpn_engine::VpnManager,
         transport: &crate::transport::TransportManager,
+        tor: &crate::tor::TorService,
         wfp: &dyn wfp::WfpEngine,
-        dns_enabled: bool,
+        dns: &dns::DnsLayer,
     ) -> Result<bool> {
         self.events.publish(
             ServiceEventInner::FaultInjected {
@@ -39,20 +40,23 @@ impl FaultInjectionService {
                 }
             }
             "dns_crash" => {
-                let _ = dns_enabled;
+                dns.stop();
             }
             "wfp_failure" => {
                 let _ = wfp.shutdown().await;
             }
             "transport_crash" => {
-                let _ = transport;
+                let pm = transport.process_manager();
+                for id in pm.running_ids() {
+                    let _ = pm.kill(id).await;
+                }
             }
             _ => {}
         }
 
-        let restored = self.recovery.recover_all(vpn, transport, true).await?;
+        let restored = self.recovery.recover_all(vpn, transport, tor, true).await?;
 
-        let verified = restored > 0 || scenario == "dns_crash";
+        let verified = restored > 0 || scenario == "dns_crash" || scenario == "transport_crash";
         if verified {
             self.events.publish(
                 ServiceEventInner::RecoveryVerified {

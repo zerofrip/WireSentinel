@@ -122,7 +122,7 @@ Copy-Item -Force (Join-Path $Root "resources\tunnel.dll") $Staging
 Copy-Item -Force (Join-Path $Root "resources\wireguard.dll") $Staging
 Copy-Item -Force $VersionFile $Staging
 
-foreach ($optional in @("WinDivert.dll", "WinDivert64.sys", "sing-box.exe")) {
+foreach ($optional in @("WinDivert.dll", "WinDivert64.sys", "sing-box.exe", "tor.exe")) {
     $src = Join-Path $Root "resources\$optional"
     if (Test-Path $src) {
         Copy-Item -Force $src $Staging

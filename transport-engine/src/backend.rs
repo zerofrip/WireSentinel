@@ -1,7 +1,8 @@
+use crate::singbox::TorOutboundSpec;
 use async_trait::async_trait;
 use shared_types::{
-    ObfuscationPreset, Result, TransportHealth, TransportKind, TransportProfile, TransportState,
-    VPNProfile,
+    ObfuscationPreset, ProxyProfile, Result, TransportHealth, TransportKind, TransportProfile,
+    TransportState, VPNProfile,
 };
 use std::path::PathBuf;
 use uuid::Uuid;
@@ -20,6 +21,12 @@ pub struct TransportContext {
     pub upstream_socks: Option<String>,
     /// Obfuscation preset applied to proxy transport configs at start time.
     pub obfuscation_preset: Option<ObfuscationPreset>,
+    /// Tor outbound spec when starting `TransportKind::Tor`.
+    pub tor_spec: Option<TorOutboundSpec>,
+    /// SOCKS5/HTTP proxy profile for `TransportKind::Proxy` hops.
+    pub proxy_profile: Option<ProxyProfile>,
+    /// Upstream mixnet SOCKS (`host:port`) for `TransportKind::Mixnet` hops.
+    pub mixnet_upstream: Option<String>,
 }
 
 impl TransportContext {
@@ -33,6 +40,9 @@ impl TransportContext {
             listen_port: None,
             upstream_socks: None,
             obfuscation_preset: None,
+            tor_spec: None,
+            proxy_profile: None,
+            mixnet_upstream: None,
         }
     }
 }

@@ -22,6 +22,7 @@ use std::sync::Arc;
 use storage::Storage;
 use tcp_termination::TcpTerminationEngine;
 use traffic_monitor::TrafficMonitor;
+use transport_engine::{BridgeManager, ProcessManager, TorSingBoxRunner, TransportConfigStore};
 use uuid::Uuid;
 use vpn_engine::{default_dll_path, default_factory, VpnBackendFactory, VpnManager};
 use wfp::WfpEngine;
@@ -35,6 +36,7 @@ use crate::anonymous_routing::AnonymousRoutingService;
 use crate::audit::AuditRecorder;
 use crate::backup::BackupService;
 use crate::benchmark::BenchmarkService;
+use crate::binary_paths::{resolve_singbox_exe, resolve_tor_exe};
 use crate::correlation::TrafficCorrelator;
 use crate::cover_traffic::CoverTrafficService;
 use crate::diagnostics::DiagnosticsService;
@@ -345,7 +347,21 @@ impl ServiceDeps {
             events.clone(),
         ));
 
-        let tor = Arc::new(TorService::new(Arc::clone(&storage), events.clone()));
+        let tor_process_manager = Arc::new(ProcessManager::new());
+        let tor_config_store = Arc::new(TransportConfigStore::new());
+        let tor_runner = Arc::new(TorSingBoxRunner::new(
+            Arc::clone(&tor_process_manager),
+            tor_config_store,
+            resolve_singbox_exe(None),
+            resolve_tor_exe(None),
+        ));
+        let bridge_manager = Arc::new(BridgeManager::new(Arc::clone(&tor_runner)));
+        let tor = Arc::new(TorService::new(
+            Arc::clone(&storage),
+            events.clone(),
+            tor_runner,
+            bridge_manager,
+        ));
         let _ = tor.load_profiles().await;
 
         let ndis = wfp
@@ -458,6 +474,7 @@ impl ServiceDeps {
         let transport = Arc::new(TransportManager::new(
             Arc::clone(&storage),
             vpn_factory.as_ref(),
+            Arc::clone(&mixnet),
         ));
         let recovery = Arc::new(RecoveryService::new(Arc::clone(&storage), events.clone()));
         let performance = Arc::new(PerformanceMonitor::new(

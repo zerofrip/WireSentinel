@@ -68,6 +68,17 @@ See [LICENSE-AUDIT.md](LICENSE-AUDIT.md) for the full audit matrix.
   - Do not imply sing-box project endorsement of WireSentinel
   - WireSentinel communicates via JSON config and process IPC only
 
+## Tor (`tor.exe`)
+
+- **License:** **BSD 3-Clause**
+- **Version:** See `installer/third-party-versions.json` (default 0.4.8.14)
+- **Upstream:** [The Tor Project](https://www.torproject.org/)
+- **Expert bundle:** https://www.torproject.org/download/tor/
+- **Distribution:** **Separate subprocess only** — spawned by sing-box `tor` outbound, never linked into WireSentinel binaries
+- **Obligation:**
+  - Include BSD license text (`licenses/BSD-3-Clause-Tor.txt`)
+  - Do not imply Tor Project endorsement of WireSentinel
+
 ## Custom kernel drivers (optional, `custom_kernel` mode)
 
 - **Guardian.sys** / **guardian_lwf.sys** — WireSentinel project drivers (Apache-2.0 source); test-signed for development

@@ -18,6 +18,6 @@ dpi-transforms = { workspace = true }
 parking_lot = { workspace = true }
 
 [dev-dependencies]
+chrono = { workspace = true }
 dpi-transforms = { workspace = true }
 tokio = { workspace = true, features = ["rt", "macros"] }
-chrono = { workspace = true }

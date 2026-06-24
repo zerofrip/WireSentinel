@@ -38,6 +38,21 @@ License: **GPLv3** — used only as a **subprocess**, never linked into WireSent
 copy sing-box-*.exe resources\sing-box.exe
 ```
 
+## Tor (anonymity transport)
+
+| File | Source |
+|------|--------|
+| `tor.exe` | [Tor Expert Bundle](https://www.torproject.org/download/tor/) (windows-x86_64) |
+
+License: **BSD 3-Clause** — used only as a **subprocess** (spawned by sing-box `tor` outbound), never linked into WireSentinel.
+
+```powershell
+# Extract tor.exe from the Expert Bundle archive
+copy tor-win64-0.4.8.14\tor\tor.exe resources\tor.exe
+```
+
+Record the exact version and SHA256 of the binary you ship in release notes.
+
 ## Build WireGuard (Windows)
 
 ```powershell

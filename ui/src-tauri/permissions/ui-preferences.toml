@@ -1,0 +1,9 @@
+[[permission]]
+identifier = "allow-get-ui-preferences"
+description = "Enables the get_ui_preferences command."
+commands.allow = ["get_ui_preferences"]
+
+[[permission]]
+identifier = "allow-set-ui-preferences"
+description = "Enables the set_ui_preferences command."
+commands.allow = ["set_ui_preferences"]

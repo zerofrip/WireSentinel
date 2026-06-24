@@ -6,6 +6,33 @@ use uuid::Uuid;
 
 use crate::TrafficRoute;
 
+/// Action when all ordered exit routes for an app are exhausted.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ExitOnExhaustion {
+    KillSwitch,
+    #[default]
+    Blocked,
+    Direct,
+}
+
+/// Ordered per-app exit routes with failover exhaustion policy.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct AppExitConfig {
+    pub routes: Vec<TrafficRoute>,
+    #[serde(default)]
+    pub on_exhaustion: ExitOnExhaustion,
+}
+
+impl AppExitConfig {
+    pub fn from_single(route: TrafficRoute) -> Self {
+        Self {
+            routes: vec![route],
+            on_exhaustion: ExitOnExhaustion::Blocked,
+        }
+    }
+}
+
 /// Persistent application record in the registry.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AppRecord {
@@ -17,8 +44,11 @@ pub struct AppRecord {
     pub icon_path: Option<PathBuf>,
     pub first_seen: DateTime<Utc>,
     pub last_seen: DateTime<Utc>,
-    /// Per-app default route override (optional).
+    /// Per-app default route override (legacy; kept in sync with `exit_config.routes[0]`).
     pub default_route: Option<TrafficRoute>,
+    /// Ordered exit routes with failover policy.
+    #[serde(default)]
+    pub exit_config: Option<AppExitConfig>,
 }
 
 impl AppRecord {
@@ -39,11 +69,31 @@ impl AppRecord {
             first_seen: now,
             last_seen: now,
             default_route: None,
+            exit_config: None,
         }
     }
 
     pub fn touch(&mut self) {
         self.last_seen = Utc::now();
+    }
+
+    /// Effective exit configuration, migrating legacy `default_route` when needed.
+    pub fn effective_exit_config(&self) -> Option<AppExitConfig> {
+        if let Some(config) = &self.exit_config {
+            if !config.routes.is_empty() {
+                return Some(config.clone());
+            }
+        }
+        self.default_route
+            .as_ref()
+            .map(|r| AppExitConfig::from_single(r.clone()))
+    }
+
+    pub fn sync_legacy_default_route(&mut self) {
+        self.default_route = self
+            .exit_config
+            .as_ref()
+            .and_then(|c| c.routes.first().cloned());
     }
 }
 
@@ -83,6 +133,7 @@ pub struct AppSummary {
     pub publisher: Option<String>,
     pub sha256: Option<String>,
     pub default_route: Option<TrafficRoute>,
+    pub exit_config: Option<AppExitConfig>,
     pub bytes_in: u64,
     pub bytes_out: u64,
     pub connection_count: u32,
@@ -90,6 +141,7 @@ pub struct AppSummary {
 
 impl From<AppRecord> for AppSummary {
     fn from(r: AppRecord) -> Self {
+        let exit_config = r.effective_exit_config();
         Self {
             id: r.app_id,
             pid: None,
@@ -97,7 +149,11 @@ impl From<AppRecord> for AppSummary {
             exe_path: r.exe_path,
             publisher: r.publisher,
             sha256: r.sha256,
-            default_route: r.default_route,
+            default_route: exit_config
+                .as_ref()
+                .and_then(|c| c.routes.first().cloned())
+                .or(r.default_route),
+            exit_config,
             bytes_in: 0,
             bytes_out: 0,
             connection_count: 0,

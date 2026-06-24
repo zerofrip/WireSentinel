@@ -182,6 +182,7 @@ fn parse_traffic_row(
         first_seen: now,
         last_seen: now,
         default_route: None,
+        exit_config: None,
     };
     let route: TrafficRoute = serde_json::from_str(&route_json).unwrap_or(TrafficRoute::Direct);
     let verdict: Verdict = verdict_json

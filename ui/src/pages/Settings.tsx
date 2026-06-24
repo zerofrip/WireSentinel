@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiClient, type BackupBundle, type EnforcementBackend, type EnforcementSettings, type EnterprisePolicy, type LogLevel, type RuntimeSettings, type TcpTerminationMode, type TcpTerminationSettings } from "../api/client";
+import { getUiPreferences, setUiPreferences, type UiPreferences } from "../api/tauri";
 import { useEvents } from "../contexts/ServiceContext";
 
 const LOG_LEVELS: LogLevel[] = ["info", "warn", "error", "debug", "trace"];
@@ -23,6 +24,8 @@ export function Settings() {
   const [tcpSaving, setTcpSaving] = useState(false);
   const [enforcement, setEnforcement] = useState<EnforcementSettings | null>(null);
   const [enforcementSaving, setEnforcementSaving] = useState(false);
+  const [uiPrefs, setUiPrefs] = useState<UiPreferences | null>(null);
+  const [uiPrefsSaving, setUiPrefsSaving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +43,11 @@ export function Settings() {
       setPolicy(enterprise);
       setTcpSettings(tcp);
       setEnforcement(enf);
+      try {
+        setUiPrefs(await getUiPreferences());
+      } catch {
+        setUiPrefs({ close_to_tray: true });
+      }
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load settings");
@@ -107,6 +115,19 @@ export function Settings() {
     }
   };
 
+  const saveCloseToTray = async (closeToTray: boolean) => {
+    setUiPrefsSaving(true);
+    setError(null);
+    try {
+      await setUiPreferences({ close_to_tray: closeToTray });
+      setUiPrefs({ close_to_tray: closeToTray });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Window preference save failed");
+    } finally {
+      setUiPrefsSaving(false);
+    }
+  };
+
   const saveTcpMode = async (mode: TcpTerminationMode) => {
     setTcpSaving(true);
     setError(null);
@@ -130,7 +151,7 @@ export function Settings() {
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">Settings</h2>
       <p className="text-sm text-sentinel-muted">
-        <Link to="/legal" className="text-sentinel-accent hover:underline">
+        <Link to="/system/legal" className="text-sentinel-accent hover:underline">
           Legal &amp; third-party licenses
         </Link>
       </p>
@@ -221,6 +242,28 @@ export function Settings() {
         </button>
       </div>
 
+      <div className="bg-sentinel-panel rounded-lg border border-slate-700 p-4 space-y-4 max-w-lg">
+        <h3 className="font-medium">Window</h3>
+        <p className="text-xs text-sentinel-muted">When closing the window</p>
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={uiPrefs?.close_to_tray ?? true}
+            disabled={uiPrefsSaving || uiPrefs === null}
+            onChange={(e) => saveCloseToTray(e.target.checked)}
+          />
+          <span className="text-sm">
+            {uiPrefs?.close_to_tray ?? true
+              ? "Keep running in the system tray"
+              : "Exit the application"}
+          </span>
+        </label>
+        <p className="text-xs text-sentinel-muted">
+          The backend service (wire-sentinel-service) runs as a separate process and usually
+          continues when you close the UI.
+        </p>
+      </div>
 
       <div className="bg-sentinel-panel rounded-lg border border-slate-700 p-4 space-y-4 max-w-lg">
         <h3 className="font-medium">Enforcement backend</h3>

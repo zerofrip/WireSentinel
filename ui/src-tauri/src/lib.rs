@@ -1,4 +1,11 @@
+mod ui_prefs;
+
 use std::path::PathBuf;
+use tauri::{Manager, WindowEvent};
+use ui_prefs::{
+    ensure_tray, get_ui_preferences, load_ui_preferences, set_ui_preferences, AppUiState,
+    MAIN_WINDOW_LABEL,
+};
 
 fn data_dir() -> PathBuf {
     if cfg!(windows) {
@@ -85,7 +92,31 @@ pub fn run() {
     tracing::info!(version = env!("CARGO_PKG_VERSION"), "WireSentinel UI starting");
 
     if let Err(e) = tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, read_api_token])
+        .setup(|app| {
+            let prefs = load_ui_preferences(app.handle());
+            app.manage(AppUiState::new(prefs.clone()));
+            if prefs.close_to_tray {
+                ensure_tray(app.handle())?;
+            }
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            read_api_token,
+            get_ui_preferences,
+            set_ui_preferences,
+        ])
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                let app = window.app_handle();
+                let state = app.state::<AppUiState>();
+                let close_to_tray = state.prefs.lock().unwrap().close_to_tray;
+                if close_to_tray && window.label() == MAIN_WINDOW_LABEL {
+                    let _ = window.hide();
+                    api.prevent_close();
+                }
+            }
+        })
         .run(tauri::generate_context!())
     {
         tracing::error!(error = %e, "WireSentinel UI exited with error");

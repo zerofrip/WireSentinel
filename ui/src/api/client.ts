@@ -47,11 +47,36 @@ export interface ServiceStatus {
   api_port: number;
 }
 
+export type AnonymousRoute =
+  | { type: "tor"; value: string }
+  | { type: "tor_bridge"; value: string }
+  | { type: "multi_hop"; value: string[] }
+  | { type: "future_mixnet"; value: string }
+  | { type: "katzenpost"; value: string }
+  | { type: "loopix"; value: string }
+  | { type: "federated_mixnet"; value: { profile_id: string; federation_id?: string } };
+
 export type TrafficRoute =
   | { type: "direct" }
   | { type: "wire_guard"; value: string }
   | { type: "amnezia_wg"; value: string }
-  | { type: "blocked" };
+  | { type: "blocked" }
+  | { type: "tailnet"; value: string }
+  | { type: "tor"; value: string }
+  | { type: "anonymous"; value: AnonymousRoute }
+  | { type: "proxy"; value: string }
+  | { type: "proxy_chain"; value: string }
+  | { type: "chain"; value: string }
+  | { type: "katzenpost"; value: string }
+  | { type: "loopix"; value: string }
+  | { type: "federated_mixnet"; value: string };
+
+export type ExitOnExhaustion = "kill_switch" | "blocked" | "direct";
+
+export interface AppExitConfig {
+  routes: TrafficRoute[];
+  on_exhaustion?: ExitOnExhaustion;
+}
 
 export interface AppSummary {
   id: string;
@@ -61,6 +86,7 @@ export interface AppSummary {
   publisher?: string | null;
   sha256?: string | null;
   default_route?: TrafficRoute | null;
+  exit_config?: AppExitConfig | null;
   bytes_in: number;
   bytes_out: number;
   connection_count: number;
@@ -774,6 +800,11 @@ export const apiClient = {
     api<AppSummary>("/api/v1/apps", {
       method: "POST",
       body: JSON.stringify({ app_id, route }),
+    }),
+  setAppExitConfig: (app_id: string, exit_config: AppExitConfig | null) =>
+    api<AppSummary>("/api/v1/apps", {
+      method: "POST",
+      body: JSON.stringify({ app_id, exit_config }),
     }),
   vpnList: () => api<VpnListEntry[]>("/api/v1/vpn"),
   addVpn: (name: string, config_plaintext: string) =>

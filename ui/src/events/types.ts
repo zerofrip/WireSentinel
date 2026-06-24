@@ -51,6 +51,8 @@ export type ServiceEvent =
   | { kind: "route_usage_updated"; stats: RouteStatisticsRecord; timestamp: string }
   | { kind: "policy_changed"; field: string; old_value?: string | null; new_value?: string | null; timestamp: string }
   | { kind: "route_changed"; app_id: string; old_route?: TrafficRoute | null; new_route?: TrafficRoute | null; timestamp: string }
+  | { kind: "exit_failover"; app_id: string; from_index: number; to_index: number; route: TrafficRoute; timestamp: string }
+  | { kind: "exit_exhausted"; app_id: string; action: string; timestamp: string }
   | { kind: "system_warning"; message: string; timestamp: string }
   | { kind: "system_error"; message: string; timestamp: string }
   | { kind: "service_status"; status: ServiceStatus; timestamp: string }
@@ -306,6 +308,21 @@ export function reduceEvent(state: EventState, event: ServiceEvent): EventState 
         apps: state.apps.map((a) =>
           a.id === event.app_id ? { ...a, default_route: event.new_route ?? null } : a
         ),
+        lastEvent: event,
+        recentEvents: pushRecent(state, event),
+      };
+    case "exit_failover":
+      return {
+        ...state,
+        apps: state.apps.map((a) =>
+          a.id === event.app_id ? { ...a, default_route: event.route } : a,
+        ),
+        lastEvent: event,
+        recentEvents: pushRecent(state, event),
+      };
+    case "exit_exhausted":
+      return {
+        ...state,
         lastEvent: event,
         recentEvents: pushRecent(state, event),
       };

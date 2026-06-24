@@ -60,6 +60,7 @@ use crate::security_audit::SecurityAuditService;
 use crate::split_templates::SplitTemplateService;
 use crate::split_tunnel::SplitTunnelEngine;
 use crate::sse_agent::SseAgent;
+use crate::exit_failover::ExitFailoverService;
 use crate::tailscale::TailscaleService;
 use crate::tcp_termination::TcpTerminationService;
 use crate::tor::TorService;
@@ -156,6 +157,7 @@ pub struct ServiceDeps {
     pub xdr: Arc<XdrAgent>,
     pub tcp_termination: Arc<TcpTerminationService>,
     pub split_templates: Arc<SplitTemplateService>,
+    pub exit_failover: Arc<crate::exit_failover::ExitFailoverService>,
     pub api_token: Arc<RwLock<String>>,
 }
 
@@ -512,6 +514,8 @@ impl ServiceDeps {
         ));
         let _ = split_templates.reload().await;
 
+        let exit_failover = Arc::new(ExitFailoverService::new());
+
         Ok(Self {
             storage,
             events,
@@ -567,6 +571,7 @@ impl ServiceDeps {
             xdr,
             tcp_termination,
             split_templates,
+            exit_failover,
             api_token,
         })
     }

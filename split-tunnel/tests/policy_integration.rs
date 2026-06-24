@@ -40,6 +40,8 @@ fn override_uses_template_app_rule() {
         vpn_connected: true,
         active_vpn_profile: Some(vpn_id),
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
     let (decision, _) = engine.decide_with_template(&ctx, Some(&tmpl));
@@ -77,6 +79,8 @@ fn merge_falls_through_to_policy_block() {
         vpn_connected: true,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
     let (decision, _) = engine.decide_with_template(&ctx, Some(&tmpl));

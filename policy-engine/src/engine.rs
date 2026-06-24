@@ -13,7 +13,10 @@ pub struct ConnectionContext {
     pub domain: Option<String>,
     pub vpn_connected: bool,
     pub active_vpn_profile: Option<Uuid>,
+    /// Active route from ordered per-app exit list (legacy field name).
     pub default_route: Option<TrafficRoute>,
+    pub exit_routes: Vec<TrafficRoute>,
+    pub active_exit_index: usize,
     /// Optional ZTNA subject for zero-trust pre-policy evaluation.
     pub ztna_subject: Option<Subject>,
 }
@@ -345,6 +348,8 @@ mod tests {
             vpn_connected: true,
             active_vpn_profile: Some(Uuid::new_v4()),
             default_route: None,
+            exit_routes: Vec::new(),
+            active_exit_index: 0,
             ztna_subject: None,
         }
     }
@@ -381,6 +386,8 @@ mod tests {
             vpn_connected: false,
             active_vpn_profile: None,
             default_route: None,
+            exit_routes: Vec::new(),
+            active_exit_index: 0,
             ztna_subject: None,
         });
         assert!(!allow.is_blocked());
@@ -391,6 +398,8 @@ mod tests {
             vpn_connected: false,
             active_vpn_profile: None,
             default_route: None,
+            exit_routes: Vec::new(),
+            active_exit_index: 0,
             ztna_subject: None,
         });
         assert!(block.is_blocked());
@@ -415,6 +424,8 @@ mod tests {
             vpn_connected: true,
             active_vpn_profile: Some(profile),
             default_route: None,
+            exit_routes: Vec::new(),
+            active_exit_index: 0,
             ztna_subject: None,
         });
         assert_eq!(decision.route, TrafficRoute::WireGuard(profile));
@@ -439,6 +450,8 @@ mod tests {
             vpn_connected: true,
             active_vpn_profile: Some(profile),
             default_route: None,
+            exit_routes: Vec::new(),
+            active_exit_index: 0,
             ztna_subject: None,
         });
         assert_eq!(decision.route, TrafficRoute::AmneziaWG(profile));
@@ -457,6 +470,8 @@ mod tests {
             vpn_connected: false,
             active_vpn_profile: None,
             default_route: None,
+            exit_routes: Vec::new(),
+            active_exit_index: 0,
             ztna_subject: None,
         });
         assert!(decision.is_blocked());

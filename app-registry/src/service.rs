@@ -84,12 +84,22 @@ impl AppRegistryService {
         app_id: Uuid,
         route: Option<shared_types::TrafficRoute>,
     ) -> Result<Option<AppRecord>, WireSentinelError> {
+        let exit_config = route.map(shared_types::AppExitConfig::from_single);
+        self.set_exit_config(app_id, exit_config).await
+    }
+
+    pub async fn set_exit_config(
+        &self,
+        app_id: Uuid,
+        exit_config: Option<shared_types::AppExitConfig>,
+    ) -> Result<Option<AppRecord>, WireSentinelError> {
         let mut record = self
             .apps
             .find_by_id(app_id)
             .await?
             .ok_or_else(|| WireSentinelError::Config("app not found".into()))?;
-        record.default_route = route;
+        record.exit_config = exit_config;
+        record.sync_legacy_default_route();
         record.touch();
         self.apps.upsert(&record).await?;
         self.events.publish(

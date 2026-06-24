@@ -4,7 +4,7 @@ use crate::{
     ComplianceCheckKind, ComplianceControl, ComplianceScore, ConditionalAccessResult,
     ContainerFinding, CopilotResponse, CorrelatedThreat, DNSQueryLog, DependencyRecord,
     DetectionTrigger, DevicePosture, DeviceTrustRecord, DlpIncident, DriverState, ExecutiveReport,
-    FirewallDecisionRecord, GatewayConnectionResult, IacFinding, IdentityProviderKind,
+    ExitOnExhaustion, FirewallDecisionRecord, GatewayConnectionResult, IacFinding, IdentityProviderKind,
     IdentityThreat, Incident, InvestigationReport, IsolationSession, KubernetesFinding,
     LateralMovementFinding, LeakIncident, MaliciousExecution, NetworkThreat, ObfuscationPreset,
     PerformanceSnapshot, PersistenceFinding, PlaybookExecution, PluginRecord, PostureFinding,
@@ -124,6 +124,18 @@ pub enum ServiceEvent {
         app_id: Uuid,
         old_route: Option<TrafficRoute>,
         new_route: Option<TrafficRoute>,
+        timestamp: DateTime<Utc>,
+    },
+    ExitFailover {
+        app_id: Uuid,
+        from_index: usize,
+        to_index: usize,
+        route: TrafficRoute,
+        timestamp: DateTime<Utc>,
+    },
+    ExitExhausted {
+        app_id: Uuid,
+        action: ExitOnExhaustion,
         timestamp: DateTime<Utc>,
     },
     TransportStarted {
@@ -1041,6 +1053,16 @@ pub enum ServiceEventInner {
         old_route: Option<TrafficRoute>,
         new_route: Option<TrafficRoute>,
     },
+    ExitFailover {
+        app_id: Uuid,
+        from_index: usize,
+        to_index: usize,
+        route: TrafficRoute,
+    },
+    ExitExhausted {
+        app_id: Uuid,
+        action: ExitOnExhaustion,
+    },
     TransportStarted {
         transport_id: Uuid,
         name: String,
@@ -1776,6 +1798,23 @@ impl ServiceEventInner {
                 app_id,
                 old_route,
                 new_route,
+                timestamp,
+            },
+            Self::ExitFailover {
+                app_id,
+                from_index,
+                to_index,
+                route,
+            } => ServiceEvent::ExitFailover {
+                app_id,
+                from_index,
+                to_index,
+                route,
+                timestamp,
+            },
+            Self::ExitExhausted { app_id, action } => ServiceEvent::ExitExhausted {
+                app_id,
+                action,
                 timestamp,
             },
             Self::TransportStarted { transport_id, name } => ServiceEvent::TransportStarted {

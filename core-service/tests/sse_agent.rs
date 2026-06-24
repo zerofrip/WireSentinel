@@ -55,6 +55,8 @@ fn sse_policy_gate_denies_threat_domain() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
 
@@ -71,6 +73,8 @@ fn sse_policy_gate_allows_when_disabled() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
     assert!(evaluate_sse_gate(&agent, &ctx).is_none());
@@ -86,6 +90,8 @@ fn sse_lookup_returns_none_without_domain() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
     assert!(SsePolicyLookup::evaluate(&agent, &ctx).is_none());
@@ -116,6 +122,8 @@ fn sse_dlp_blocks_sensitive_content() {
         vpn_connected: true,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
 
@@ -148,6 +156,8 @@ fn sse_swg_allows_clean_domain() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
 
@@ -181,6 +191,8 @@ fn sse_swg_blocks_category() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
 

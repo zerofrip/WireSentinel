@@ -21,6 +21,8 @@ fn route_via_anonymous_maps_to_traffic_route() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     });
 
@@ -48,6 +50,8 @@ fn route_via_mixnet_maps_to_future_mixnet_anonymous() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     });
 

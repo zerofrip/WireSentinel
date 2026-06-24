@@ -1,29 +1,19 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useEvents } from "../contexts/ServiceContext";
 import {
   apiClient,
   AppSummary,
+  type AppExitConfig,
+  type ExitOnExhaustion,
   TcpTerminationRule,
-  TrafficRoute,
   VpnListEntry,
 } from "../api/client";
+import { RoutePicker } from "../components/routing/RoutePicker";
+import { ExitExhaustionSelect } from "../components/ui/ExitExhaustionSelect";
+import { buildExitCatalog } from "../lib/exitCatalog";
+import { routeLabel } from "../lib/routeLabels";
 
 type Tab = "routes" | "tcp";
-
-function routeLabel(route: TrafficRoute | null | undefined): string {
-  if (!route) return "Default (policy)";
-  switch (route.type) {
-    case "direct":
-      return "Direct";
-    case "blocked":
-      return "Blocked";
-    case "wire_guard":
-    case "amnezia_wg":
-      return `VPN (${route.value.slice(0, 8)}…)`;
-    default:
-      return "Unknown";
-  }
-}
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -40,6 +30,54 @@ export function Applications() {
   const [processName, setProcessName] = useState("");
   const [processPath, setProcessPath] = useState("");
   const [profileId, setProfileId] = useState("");
+  const [expandedApp, setExpandedApp] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, AppExitConfig>>({});
+  const [savingApp, setSavingApp] = useState<string | null>(null);
+
+  const exitCatalog = useMemo(() => buildExitCatalog({ vpnProfiles }), [vpnProfiles]);
+
+  const getDraft = (app: AppSummary): AppExitConfig => {
+    if (drafts[app.id]) return drafts[app.id];
+    const existing = app.exit_config;
+    if (existing) {
+      return { routes: [...existing.routes], on_exhaustion: existing.on_exhaustion ?? "blocked" };
+    }
+    if (app.default_route) {
+      return { routes: [app.default_route], on_exhaustion: "blocked" };
+    }
+    return { routes: [], on_exhaustion: "blocked" };
+  };
+
+  const saveExitConfig = async (app: AppSummary) => {
+    const draft = getDraft(app);
+    setSavingApp(app.id);
+    try {
+      await apiClient.setAppExitConfig(app.id, draft.routes.length > 0 ? draft : null);
+      await refresh();
+      setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[app.id];
+        return next;
+      });
+    } finally {
+      setSavingApp(null);
+    }
+  };
+
+  const clearExitConfig = async (app: AppSummary) => {
+    setSavingApp(app.id);
+    try {
+      await apiClient.setAppExitConfig(app.id, null);
+      await refresh();
+      setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[app.id];
+        return next;
+      });
+    } finally {
+      setSavingApp(null);
+    }
+  };
 
   const loadTcpRules = async () => {
     setTcpLoading(true);
@@ -59,11 +97,6 @@ export function Applications() {
       loadTcpRules();
     }
   }, [tab]);
-
-  const setRoute = async (app: AppSummary, route: TrafficRoute | null) => {
-    await apiClient.setAppRoute(app.id, route);
-    await refresh();
-  };
 
   const vpnOptions = vpnProfiles.map((e: VpnListEntry) => e.profile);
 
@@ -154,16 +187,16 @@ export function Applications() {
       {tab === "routes" && (
         <>
           <p className="text-sentinel-muted text-sm">
-            Per-app route assignment with live bandwidth and recent DNS activity
+            Per-app ordered exit routes with failover. Configure providers under Connect.
           </p>
           <div className="bg-sentinel-panel rounded-lg border border-slate-700 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-slate-800/50 text-sentinel-muted">
                 <tr>
                   <th className="text-left p-3">Application</th>
-                  <th className="text-left p-3">Route</th>
+                  <th className="text-left p-3">Active exit</th>
                   <th className="text-right p-3">Traffic</th>
-                  <th className="text-right p-3">Assign</th>
+                  <th className="text-right p-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -177,61 +210,91 @@ export function Applications() {
                 {apps.map((app) => {
                   const bw = bytesFor(app.id);
                   const recentDns = dnsLogs.find((l) => l.qname)?.qname;
+                  const draft = getDraft(app);
+                  const isOpen = expandedApp === app.id;
                   return (
-                    <tr key={app.id} className="border-t border-slate-700">
-                      <td className="p-3">
-                        <p className="font-medium">{app.display_name}</p>
-                        {recentDns && (
-                          <p className="text-xs text-sentinel-muted truncate">DNS: {recentDns}</p>
-                        )}
-                      </td>
-                      <td className="p-3">{routeLabel(app.default_route)}</td>
-                      <td className="p-3 text-right text-xs text-sentinel-muted">
-                        ↓ {formatBytes(bw.total_bytes_in ?? bw.bytes_in_per_sec)} / ↑{" "}
-                        {formatBytes(bw.total_bytes_out ?? bw.bytes_out_per_sec)}
-                      </td>
-                      <td className="p-3 text-right space-x-2">
-                        <button
-                          onClick={() => setRoute(app, { type: "direct" })}
-                          className="px-3 py-1 rounded bg-green-800/50 hover:bg-green-700/50 text-xs"
-                        >
-                          Direct
-                        </button>
-                        <button
-                          onClick={() => setRoute(app, { type: "blocked" })}
-                          className="px-3 py-1 rounded bg-red-800/50 hover:bg-red-700/50 text-xs"
-                        >
-                          Block
-                        </button>
-                        {vpnOptions.map((p) => (
+                    <Fragment key={app.id}>
+                      <tr className="border-t border-slate-700">
+                        <td className="p-3">
+                          <p className="font-medium">{app.display_name}</p>
+                          {recentDns && (
+                            <p className="text-xs text-sentinel-muted truncate">DNS: {recentDns}</p>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {draft.routes.length > 0
+                            ? `${draft.routes.length} route(s) — ${routeLabel(draft.routes[0])}`
+                            : routeLabel(null)}
+                        </td>
+                        <td className="p-3 text-right text-xs text-sentinel-muted">
+                          ↓ {formatBytes(bw.total_bytes_in ?? bw.bytes_in_per_sec)} / ↑{" "}
+                          {formatBytes(bw.total_bytes_out ?? bw.bytes_out_per_sec)}
+                        </td>
+                        <td className="p-3 text-right space-x-2">
                           <button
-                            key={p.id}
-                            onClick={() =>
-                              setRoute(app, {
-                                type: p.backend === "amnezia_wg" ? "amnezia_wg" : "wire_guard",
-                                value: p.id,
-                              })
-                            }
-                            className="px-3 py-1 rounded bg-blue-800/50 hover:bg-blue-700/50 text-xs"
+                            onClick={() => setExpandedApp(isOpen ? null : app.id)}
+                            className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-xs"
                           >
-                            {p.name}
+                            {isOpen ? "Close" : "Edit exits"}
                           </button>
-                        ))}
-                        <button
-                          onClick={() => setRoute(app, null)}
-                          className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-xs"
-                        >
-                          Clear
-                        </button>
-                        <button
-                          onClick={() => addRuleForApp(app)}
-                          className="px-3 py-1 rounded border border-slate-600 text-xs"
-                          title="Add TCP reconnect rule for this app"
-                        >
-                          TCP rule
-                        </button>
-                      </td>
-                    </tr>
+                          <button
+                            onClick={() => addRuleForApp(app)}
+                            className="px-3 py-1 rounded border border-slate-600 text-xs"
+                          >
+                            TCP rule
+                          </button>
+                        </td>
+                      </tr>
+                      {isOpen && (
+                        <tr className="border-t border-slate-800 bg-slate-900/30">
+                          <td colSpan={4} className="p-4 space-y-3">
+                            <div>
+                              <p className="text-xs text-sentinel-muted mb-2">Ordered exit routes (failover)</p>
+                              <RoutePicker
+                                routes={draft.routes}
+                                catalog={exitCatalog}
+                                disabled={savingApp === app.id}
+                                onChange={(routes) =>
+                                  setDrafts((prev) => ({
+                                    ...prev,
+                                    [app.id]: { ...draft, routes },
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="max-w-md">
+                              <p className="text-xs text-sentinel-muted mb-1">When all routes fail</p>
+                              <ExitExhaustionSelect
+                                value={(draft.on_exhaustion ?? "blocked") as ExitOnExhaustion}
+                                disabled={savingApp === app.id}
+                                onChange={(on_exhaustion) =>
+                                  setDrafts((prev) => ({
+                                    ...prev,
+                                    [app.id]: { ...draft, on_exhaustion },
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => saveExitConfig(app)}
+                                disabled={savingApp === app.id}
+                                className="px-4 py-2 bg-sentinel-accent rounded text-sm disabled:opacity-50"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => clearExitConfig(app)}
+                                disabled={savingApp === app.id}
+                                className="px-4 py-2 bg-slate-700 rounded text-sm disabled:opacity-50"
+                              >
+                              Clear
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>

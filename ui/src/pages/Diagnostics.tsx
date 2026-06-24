@@ -10,6 +10,7 @@ import {
   type ValidationReport,
   type TrafficRoute,
 } from "../api/client";
+import { routeLabel as formatRouteLabel } from "../lib/routeLabels";
 
 const SUBSYSTEMS: Array<{ key: keyof DiagnosticsHealth; label: string }> = [
   { key: "wfp", label: "WFP Engine" },
@@ -35,15 +36,7 @@ function validationStatusClass(status: string) {
 
 function routeLabel(route: TrafficRoute | null | undefined): string {
   if (!route) return "—";
-  switch (route.type) {
-    case "direct":
-      return "Direct";
-    case "blocked":
-      return "Blocked";
-    case "wire_guard":
-    case "amnezia_wg":
-      return `VPN (${route.value.slice(0, 8)}…)`;
-  }
+  return formatRouteLabel(route);
 }
 
 function HealthCard({ label, health }: { label: string; health: SubsystemHealth }) {

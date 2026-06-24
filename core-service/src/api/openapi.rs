@@ -4,7 +4,7 @@ use utoipa::OpenApi;
 #[openapi(
     paths(
         crate::api::routes::status,
-        crate::api::routes::list_apps,
+        crate::api::app_routes::list_apps,
         crate::api::routes::list_vpn,
         crate::api::routes::get_privacy,
         crate::api::routes::list_leaks,

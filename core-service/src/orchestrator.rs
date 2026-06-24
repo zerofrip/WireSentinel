@@ -64,12 +64,17 @@ impl ServiceDeps {
             }
         }
 
+        let (exit_routes, active_exit_index, default_route, _) =
+            self.exit_failover.resolve_active_route(&app.record);
+
         let ctx = ConnectionContext {
             app_id: app.id(),
             domain: domain.clone(),
             vpn_connected,
             active_vpn_profile: active_vpn,
-            default_route: app.record.default_route.clone(),
+            default_route,
+            exit_routes,
+            active_exit_index,
             ztna_subject: self.ztna.current_subject(),
         };
 
@@ -253,6 +258,8 @@ impl Orchestrator {
     pub async fn start(self: &Arc<Self>) -> shared_types::Result<()> {
         info!("starting WireSentinel orchestrator");
 
+        crate::exit_failover::install_exit_failover(Arc::clone(&self.deps));
+
         self.deps.wfp.init().await?;
         let _ = auth::restrict_token_acl();
 
@@ -338,9 +345,6 @@ impl Orchestrator {
                         }
                     }
                     ServiceEvent::VpnDisconnected { profile_id, .. } => {
-                        if let Err(e) = split_tunnel.on_vpn_disconnected(profile_id).await {
-                            warn!(error = %e, %profile_id, "split tunnel vpn disconnect sync failed");
-                        }
                         if let Err(e) = tcp_term.on_vpn_disconnect(profile_id).await {
                             warn!(error = %e, %profile_id, "tcp termination on vpn disconnect failed");
                         }

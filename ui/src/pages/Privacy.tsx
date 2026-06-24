@@ -191,7 +191,7 @@ export function Privacy() {
               ))}
             </ul>
           )}
-          <Link to="/vpn" className="inline-block mt-3 text-xs text-sentinel-accent hover:underline">
+          <Link to="/connect/vpn" className="inline-block mt-3 text-xs text-sentinel-accent hover:underline">
             Configure transports →
           </Link>
         </section>

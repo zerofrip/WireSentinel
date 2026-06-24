@@ -58,7 +58,7 @@ export function Update() {
             <div className="bg-sentinel-panel rounded-lg p-4 border border-slate-700">
               <p className="text-sentinel-muted text-sm">Channel</p>
               <p className="text-2xl font-bold mt-1 capitalize">{info.channel}</p>
-              <Link to="/settings" className="text-xs text-sentinel-accent hover:underline mt-2 inline-block">
+              <Link to="/system/settings" className="text-xs text-sentinel-accent hover:underline mt-2 inline-block">
                 Change channel in Settings →
               </Link>
             </div>

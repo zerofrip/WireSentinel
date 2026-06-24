@@ -1,6 +1,8 @@
 //! Shared data models and IPC DTOs for WireSentinel.
 
 mod app;
+#[cfg(test)]
+mod app_tests;
 mod bandwidth;
 mod config;
 mod dns;

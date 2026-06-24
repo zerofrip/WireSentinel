@@ -1,1 +1,1 @@
-{}
+{"default":{"identifier":"default","description":"Default WireSentinel UI capability","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-hide","core:window:allow-show","core:window:allow-unminimize","core:window:allow-set-focus","core:tray:default","allow-get-ui-preferences","allow-set-ui-preferences"]}}

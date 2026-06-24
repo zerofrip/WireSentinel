@@ -6,24 +6,13 @@ import {
   type TemplateMode,
   type TrafficRoute,
 } from "../api/client";
+import { routeSummary } from "../lib/routeLabels";
 
 const TEMPLATE_MODES: { id: TemplateMode; label: string; hint: string }[] = [
   { id: "disabled", label: "Disabled", hint: "Templates are not applied" },
   { id: "merge", label: "Merge", hint: "Template rules supplement policy rules" },
   { id: "override", label: "Override", hint: "Template replaces policy for matching traffic" },
 ];
-
-function routeSummary(route: TrafficRoute): string {
-  switch (route.type) {
-    case "direct":
-      return "Direct";
-    case "blocked":
-      return "Blocked";
-    case "wire_guard":
-    case "amnezia_wg":
-      return `VPN ${route.value.slice(0, 8)}…`;
-  }
-}
 
 function emptyTemplate(): SplitTunnelTemplate {
   const now = new Date().toISOString();

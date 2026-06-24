@@ -1,3 +1,4 @@
+use crate::api::app_routes::{list_apps, set_app_route};
 use crate::api::anonymity_routes::{
     create_anonymous_service, get_anonymity_entropy, get_anonymity_status,
     get_privacy_anonymity_analytics, list_anonymous_services, list_katzenpost_profiles,
@@ -215,58 +216,6 @@ pub fn router(state: AppState) -> Router {
 #[utoipa::path(get, path = "/api/v1/status", responses((status = 200, body = ServiceStatus)))]
 pub async fn status(State(state): State<Arc<AppState>>) -> Json<ServiceStatus> {
     Json(state.deps.status())
-}
-
-#[utoipa::path(get, path = "/api/v1/apps", responses((status = 200, body = [AppSummary])))]
-pub async fn list_apps(State(state): State<Arc<AppState>>) -> impl IntoResponse {
-    match state.deps.app_registry.list(None, Some(500)).await {
-        Ok(apps) => {
-            let summaries: Vec<AppSummary> = apps.into_iter().map(AppSummary::from).collect();
-            Json(summaries).into_response()
-        }
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-    }
-}
-
-#[derive(Deserialize)]
-pub struct SetAppRouteBody {
-    pub app_id: Uuid,
-    pub route: Option<TrafficRoute>,
-}
-
-async fn set_app_route(
-    State(state): State<Arc<AppState>>,
-    Json(body): Json<SetAppRouteBody>,
-) -> impl IntoResponse {
-    let old_route = state
-        .deps
-        .app_registry
-        .list(None, Some(500))
-        .await
-        .ok()
-        .and_then(|apps| {
-            apps.into_iter()
-                .find(|a| a.app_id == body.app_id)
-                .and_then(|a| a.default_route.clone())
-        });
-
-    match state
-        .deps
-        .app_registry
-        .set_default_route(body.app_id, body.route.clone())
-        .await
-    {
-        Ok(Some(app)) => {
-            let _ = state
-                .deps
-                .audit
-                .record_route_changed(body.app_id, old_route, body.route, None)
-                .await;
-            Json(app).into_response()
-        }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-    }
 }
 
 #[derive(Deserialize)]

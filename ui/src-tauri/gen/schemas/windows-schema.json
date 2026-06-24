@@ -177,6 +177,18 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the get_ui_preferences command.",
+          "type": "string",
+          "const": "allow-get-ui-preferences",
+          "markdownDescription": "Enables the get_ui_preferences command."
+        },
+        {
+          "description": "Enables the set_ui_preferences command.",
+          "type": "string",
+          "const": "allow-set-ui-preferences",
+          "markdownDescription": "Enables the set_ui_preferences command."
+        },
+        {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",
           "type": "string",
           "const": "core:default",

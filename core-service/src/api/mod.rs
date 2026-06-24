@@ -1,6 +1,7 @@
 //! HTTP REST + WebSocket API server.
 
 mod anonymity_routes;
+mod app_routes;
 mod kernel_routes;
 mod middleware;
 mod mixnet_routes;

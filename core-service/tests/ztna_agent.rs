@@ -60,6 +60,8 @@ fn ztna_policy_gate_denies_when_trust_insufficient() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: agent.current_subject(),
     };
 
@@ -76,6 +78,8 @@ fn ztna_policy_gate_allows_when_disabled() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
     assert!(evaluate_ztna_gate(&agent, &ctx).is_none());
@@ -102,6 +106,8 @@ fn ztna_lookup_returns_none_without_subject_when_inactive() {
         vpn_connected: false,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: None,
     };
     assert!(ZtnaPolicyLookup::evaluate(&agent, &ctx).is_none());
@@ -127,6 +133,8 @@ fn ztna_inactive_policy_allows_connections() {
         vpn_connected: true,
         active_vpn_profile: None,
         default_route: None,
+        exit_routes: Vec::new(),
+        active_exit_index: 0,
         ztna_subject: agent.current_subject(),
     };
 

@@ -200,4 +200,24 @@ impl SettingsRepository for SqliteSettingsRepository {
     async fn guardian_mode(&self) -> Result<String> {
         self.get_json("guardian_mode", "wfp".to_string()).await
     }
+
+    async fn enforcement_backend(&self) -> Result<String> {
+        self.get_json("enforcement_backend", "signed".to_string())
+            .await
+    }
+
+    async fn set_enforcement_backend(&self, backend: &str) -> Result<()> {
+        let json = serde_json::to_string(backend).map_err(WireSentinelError::Serde)?;
+        self.set("enforcement_backend", &json).await
+    }
+
+    async fn set_guardian_mode(&self, mode: &str) -> Result<()> {
+        let json = serde_json::to_string(mode).map_err(WireSentinelError::Serde)?;
+        self.set("guardian_mode", &json).await
+    }
+
+    async fn set_wfp_engine_impl(&self, impl_name: &str) -> Result<()> {
+        let json = serde_json::to_string(impl_name).map_err(WireSentinelError::Serde)?;
+        self.set("wfp_engine_impl", &json).await
+    }
 }

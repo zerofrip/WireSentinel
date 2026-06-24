@@ -79,6 +79,22 @@ See [docs/threat-model.md](docs/threat-model.md) and [docs/administrator-guide.m
 
 See [installer/README.md](installer/README.md) and [resources/README.md](resources/README.md).
 
+## Third-party components (signed enforcement stack)
+
+WireSentinel's default enforcement stack uses Microsoft-compatible signed drivers and separate processes:
+
+| Component | Role | License |
+|-----------|------|---------|
+| WireGuard NT (`wireguard.dll`, `tunnel.dll`) | VPN tunnel (Wintun underneath) | MIT |
+| WinDivert (`WinDivert.dll`, `WinDivert64.sys`) | Packet divert / redirect / transform | LGPLv3 |
+| sing-box (`sing-box.exe`) | TUN routing and transport obfuscation (subprocess) | GPLv3 |
+
+Optional **custom kernel** mode uses WireSentinel's own Guardian.sys + NDIS LWF drivers (test-signed).
+
+Full license obligations: [docs/third-party-licenses.md](docs/third-party-licenses.md).  
+Audit report: [docs/LICENSE-AUDIT.md](docs/LICENSE-AUDIT.md).  
+Shipped notices: [installer/THIRD_PARTY_NOTICES.txt](installer/THIRD_PARTY_NOTICES.txt) (GPL/LGPL full texts in `installer/licenses/`).
+
 ## License
 
 Apache-2.0

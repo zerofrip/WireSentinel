@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { apiClient, type BackupBundle, type EnterprisePolicy, type LogLevel, type RuntimeSettings, type TcpTerminationMode, type TcpTerminationSettings } from "../api/client";
+import { Link } from "react-router-dom";
+import { apiClient, type BackupBundle, type EnforcementBackend, type EnforcementSettings, type EnterprisePolicy, type LogLevel, type RuntimeSettings, type TcpTerminationMode, type TcpTerminationSettings } from "../api/client";
 import { useEvents } from "../contexts/ServiceContext";
 
 const LOG_LEVELS: LogLevel[] = ["info", "warn", "error", "debug", "trace"];
@@ -20,21 +21,25 @@ export function Settings() {
   const [policy, setPolicy] = useState<EnterprisePolicy | null>(null);
   const [tcpSettings, setTcpSettings] = useState<TcpTerminationSettings | null>(null);
   const [tcpSaving, setTcpSaving] = useState(false);
+  const [enforcement, setEnforcement] = useState<EnforcementSettings | null>(null);
+  const [enforcementSaving, setEnforcementSaving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     try {
-      const [bundle, enterprise, tcp] = await Promise.all([
+      const [bundle, enterprise, tcp, enf] = await Promise.all([
         apiClient.backupExport("json") as Promise<BackupBundle>,
         apiClient.enterprisePolicy().catch(() => null),
         apiClient.tcpTerminationSettings().catch(() => null),
+        apiClient.enforcementSettings().catch(() => null),
       ]);
       setSettings(bundle.settings ?? {});
       setBundleJson(JSON.stringify(bundle));
       setPolicy(enterprise);
       setTcpSettings(tcp);
+      setEnforcement(enf);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load settings");
@@ -75,6 +80,33 @@ export function Settings() {
     }
   };
 
+  const saveEnforcement = async (backend: EnforcementBackend) => {
+    if (
+      backend === "custom_kernel" &&
+      !window.confirm(
+        "Custom kernel drivers require test-signed Guardian/NDIS drivers and a service restart. Continue?",
+      )
+    ) {
+      return;
+    }
+    setEnforcementSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const updated = await apiClient.setEnforcementBackend(backend);
+      setEnforcement(updated);
+      setMessage(
+        updated.restart_required
+          ? "Enforcement backend saved — restart wire-sentinel-service to apply"
+          : "Enforcement backend saved",
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Enforcement save failed");
+    } finally {
+      setEnforcementSaving(false);
+    }
+  };
+
   const saveTcpMode = async (mode: TcpTerminationMode) => {
     setTcpSaving(true);
     setError(null);
@@ -97,6 +129,11 @@ export function Settings() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">Settings</h2>
+      <p className="text-sm text-sentinel-muted">
+        <Link to="/legal" className="text-sentinel-accent hover:underline">
+          Legal &amp; third-party licenses
+        </Link>
+      </p>
 
       {error && (
         <div className="p-3 bg-red-900/30 border border-red-700 rounded text-sm">{error}</div>
@@ -182,6 +219,36 @@ export function Settings() {
         >
           {saving ? "Saving..." : "Save settings"}
         </button>
+      </div>
+
+
+      <div className="bg-sentinel-panel rounded-lg border border-slate-700 p-4 space-y-4 max-w-lg">
+        <h3 className="font-medium">Enforcement backend</h3>
+        <p className="text-xs text-sentinel-muted">
+          Signed stack uses WireGuard NT, WinDivert, and sing-box (recommended). Custom kernel uses
+          Guardian.sys + NDIS LWF (test-signed).
+        </p>
+        <div>
+          <label className="block text-sm text-sentinel-muted mb-1">Driver stack</label>
+          <select
+            value={enforcement?.enforcement_backend ?? "signed"}
+            disabled={enforcementSaving}
+            onChange={(e) => saveEnforcement(e.target.value as EnforcementBackend)}
+            className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm disabled:opacity-50"
+          >
+            <option value="signed">Signed drivers (recommended)</option>
+            <option value="custom_kernel">Custom kernel drivers (test-signed)</option>
+          </select>
+        </div>
+        {enforcement && (
+          <ul className="text-xs space-y-1 text-sentinel-muted">
+            <li>WFP: {enforcement.components.wfp}</li>
+            <li>WinDivert: {enforcement.components.windivert}</li>
+            <li>sing-box: {enforcement.components.singbox}</li>
+            <li>Guardian: {enforcement.components.guardian}</li>
+            <li>NDIS: {enforcement.components.ndis}</li>
+          </ul>
+        )}
       </div>
 
       <div className="bg-sentinel-panel rounded-lg border border-slate-700 p-4 space-y-4 max-w-lg">

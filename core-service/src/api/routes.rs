@@ -19,6 +19,7 @@ use crate::api::proxy_routes::{
     disconnect_proxy, get_proxy, get_proxy_chain, health_proxy, latency_proxy, list_proxies,
     list_proxy_chains, start_proxy_chain, stop_proxy_chain, update_proxy, update_proxy_chain,
 };
+use crate::api::settings_routes::{get_enforcement_settings, set_enforcement_settings};
 use crate::api::AppState;
 use crate::enterprise::PolicyProvider;
 use crate::route_stats::RouteStatsAggregator;
@@ -169,6 +170,10 @@ pub fn router(state: AppState) -> Router {
         .route("/logs", get(list_logs))
         .route("/logs/download", get(download_logs))
         .route("/settings/log-level", put(set_log_level))
+        .route(
+            "/settings/enforcement",
+            get(get_enforcement_settings).put(set_enforcement_settings),
+        )
         .route("/performance", get(get_performance))
         .route("/diagnostics", get(get_diagnostics))
         .route("/diagnostics/export", post(export_diagnostics))

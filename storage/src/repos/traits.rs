@@ -177,6 +177,10 @@ pub trait SettingsRepository: Send + Sync {
     async fn benchmark_interval_secs(&self) -> Result<u64>;
     async fn set_benchmark_interval_secs(&self, secs: u64) -> Result<()>;
     async fn guardian_mode(&self) -> Result<String>;
+    async fn enforcement_backend(&self) -> Result<String>;
+    async fn set_enforcement_backend(&self, backend: &str) -> Result<()>;
+    async fn set_guardian_mode(&self, mode: &str) -> Result<()>;
+    async fn set_wfp_engine_impl(&self, impl_name: &str) -> Result<()>;
 }
 
 #[async_trait]

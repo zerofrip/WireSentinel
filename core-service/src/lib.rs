@@ -24,6 +24,7 @@ pub mod deps;
 pub mod diagnostics;
 pub mod domain_cache;
 pub mod enterprise;
+pub mod enforcement;
 pub mod fault_injection;
 pub mod guardian_hybrid;
 pub mod kernel_route_bridge;

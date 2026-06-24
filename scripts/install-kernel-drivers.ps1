@@ -1,4 +1,6 @@
 # Install or uninstall WireSentinel kernel drivers (Guardian WFP + NDIS LWF).
+# Used only when enforcement_backend=custom_kernel (test-signed stack).
+# Default signed stack (WireGuard NT + WinDivert + sing-box) does not install these drivers.
 # Called from MSI/NSIS deferred actions.
 # Usage:
 #   .\install-kernel-drivers.ps1 -DriverRoot "C:\Program Files\WireSentinel\drivers" -Mode Install

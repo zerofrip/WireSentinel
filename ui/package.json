@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "sync:legal": "node scripts/sync-legal.mjs",
+    "gen:licenses": "license-checker --production --json --out src/generated/npm-licenses.json",
+    "prebuild": "npm run sync:legal && npm run gen:licenses",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri"
@@ -22,6 +25,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "license-checker": "^25.0.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3",

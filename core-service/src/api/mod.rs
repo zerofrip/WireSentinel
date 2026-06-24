@@ -8,6 +8,7 @@ mod openapi;
 mod proxy_routes;
 pub mod routes;
 pub mod wiresock;
+mod settings_routes;
 mod ws;
 
 use crate::deps::ServiceDeps;

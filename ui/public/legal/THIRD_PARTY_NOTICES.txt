@@ -1,0 +1,50 @@
+WireSentinel Third-Party Notices
+================================
+
+This file accompanies WireSentinel installers and portable packages.
+Full license texts are in the licenses/ subdirectory next to this file.
+
+WireSentinel
+  Copyright WireSentinel Contributors
+  Licensed under the Apache License, Version 2.0
+  See LICENSE in the WireSentinel source repository.
+
+WireGuard (wireguard.dll, tunnel.dll)
+  Copyright WireGuard LLC and contributors
+  Licensed under the MIT License
+  Upstream: https://github.com/WireGuard/wireguard-nt
+           https://github.com/WireGuard/wireguard-windows
+  Full text: licenses/MIT.txt
+
+WinDivert (WinDivert.dll, WinDivert64.sys)
+  Copyright Basil Dilman
+  Version: 2.2.2-A (or version bundled at build time)
+  Licensed under the GNU Lesser General Public License v3.0 (LGPLv3)
+  Upstream: https://reqrypt.org/windivert.html
+  Full text: licenses/LGPL-3.0.txt
+  Users may replace WinDivert.dll with a modified version (LGPL).
+
+sing-box (sing-box.exe)
+  Copyright nekohasekai and contributors
+  Version: 1.11.8
+  Licensed under the GNU General Public License v3.0 (GPLv3)
+  Upstream: https://github.com/SagerNet/sing-box
+  Source (exact version): https://github.com/SagerNet/sing-box/archive/refs/tags/v1.11.8.tar.gz
+  Binary release: https://github.com/SagerNet/sing-box/releases/tag/v1.11.8
+  Full text: licenses/GPL-3.0.txt
+  Used as a separate subprocess only; not linked into WireSentinel binaries.
+  WireSentinel does not imply endorsement by the sing-box project.
+
+Wintun
+  Used indirectly via WireGuard NT (wireguard.dll).
+  Prebuilt wintun.dll is not distributed separately by WireSentinel.
+  Upstream: https://www.wintun.net/
+
+WireSentinel satellite repositories (Apache-2.0, path-linked at build time)
+  WireSentinel-Mixnet, WireSentinel-Anonymity, WireSentinel-ZTNA,
+  WireSentinel-SSE, WireSentinel-XDR, WireSentinel-Kernel,
+  WireSentinel-Ndis, WireSentinel-Cloud, WireSentinel-Controller,
+  WireSentinel-CNAPP, WireSentinel-AI, WireSentinel-Plugin-Sdk
+
+For build instructions and policy, see docs/third-party-licenses.md
+in the WireSentinel source repository.

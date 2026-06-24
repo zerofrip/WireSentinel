@@ -87,6 +87,62 @@ pub fn build_config(
     })
 }
 
+
+/// TUN inbound config for signed-stack full tunnel / strict routing.
+pub fn build_tun_config(
+    outbound: &SingBoxOutboundSpec,
+    tun_name: &str,
+    mtu: u16,
+) -> Value {
+    let outbound_value = outbound_to_json(outbound);
+    json!({
+        "log": { "level": "info" },
+        "inbounds": [{
+            "type": "tun",
+            "tag": "tun-in",
+            "interface_name": tun_name,
+            "inet4_address": "172.19.0.1/30",
+            "mtu": mtu,
+            "auto_route": true,
+            "strict_route": true,
+            "stack": "system"
+        }],
+        "outbounds": [
+            outbound_value,
+            { "type": "direct", "tag": "direct" },
+            { "type": "block", "tag": "block" }
+        ],
+        "route": {
+            "rules": [
+                { "protocol": "dns", "outbound": "dns-out" },
+                { "outbound": "proxy" }
+            ],
+            "final": "direct",
+            "auto_detect_interface": true
+        },
+        "dns": {
+            "servers": [{ "tag": "dns-out", "address": "local" }]
+        }
+    })
+}
+
+/// Per-app routing rules for split tunnel sync (process_name on Windows).
+pub fn build_split_tunnel_route_rules(
+    app_exe_names: &[String],
+    proxy_tag: &str,
+) -> Value {
+    let rules: Vec<Value> = app_exe_names
+        .iter()
+        .map(|name| {
+            json!({
+                "process_name": [name],
+                "outbound": proxy_tag
+            })
+        })
+        .collect();
+    json!({ "rules": rules, "final": "direct" })
+}
+
 fn outbound_to_json(spec: &SingBoxOutboundSpec) -> Value {
     match spec.protocol {
         SingBoxProtocol::Socks => json!({
@@ -183,5 +239,26 @@ mod tests {
         let cfg = build_config(1080, &spec, None);
         assert_eq!(cfg["inbounds"][0]["listen_port"], 1080);
         assert_eq!(cfg["outbounds"][0]["type"], "vless");
+    }
+
+    #[test]
+    fn generates_tun_config() {
+        let spec = SingBoxOutboundSpec {
+            protocol: SingBoxProtocol::Socks,
+            server: "127.0.0.1".into(),
+            server_port: 1080,
+            uuid: None,
+            password: None,
+            method: None,
+            flow: None,
+            tls: false,
+            sni: None,
+            network: None,
+            ws_path: None,
+            ws_host: None,
+        };
+        let cfg = build_tun_config(&spec, "ws0", 1500);
+        assert_eq!(cfg["inbounds"][0]["type"], "tun");
+        assert_eq!(cfg["inbounds"][0]["strict_route"], true);
     }
 }

@@ -1,35 +1,61 @@
-# VPN Backend Binaries
+# Runtime Binaries (Signed Enforcement Stack)
 
-WireSentinel MVP uses the embeddable tunnel service from WireGuard for Windows.
+WireSentinel bundles or invokes these Windows binaries. Place files under `resources/` before building the installer.
 
-## Required files
+## VPN (WireGuard NT)
 
 | File | Source |
 |------|--------|
-| `tunnel.dll` | Build from [wireguard-windows/embeddable-dll-service](https://github.com/WireGuard/wireguard-windows/tree/master/embeddable-dll-service) |
-| `wireguard.dll` | Build from [wireguard-nt](https://github.com/WireGuard/wireguard-nt) or copy from wireguard-windows release |
+| `tunnel.dll` | [wireguard-windows/embeddable-dll-service](https://github.com/WireGuard/wireguard-windows/tree/master/embeddable-dll-service) |
+| `wireguard.dll` | [wireguard-nt](https://github.com/WireGuard/wireguard-nt) |
 
-## Build (Windows)
+Wintun is used **indirectly** via WireGuard NT. Do not ship a standalone `wintun.dll` unless you comply with the [Wintun prebuilt license](https://www.wintun.net/).
+
+## WinDivert (signed stack)
+
+| File | Source |
+|------|--------|
+| `WinDivert.dll` | [WinDivert release](https://reqrypt.org/windivert.html) (x64) |
+| `WinDivert64.sys` | Same package (Microsoft-signed driver) |
+
+License: **LGPLv3** (see `docs/third-party-licenses.md`).
 
 ```powershell
-# wireguard-nt
+# Example: copy from WinDivert install or build output
+copy WinDivert-x.x.x-A\x64\WinDivert.dll resources\
+copy WinDivert-x.x.x-A\x64\WinDivert64.sys resources\
+```
+
+## sing-box (transport / TUN)
+
+| File | Source |
+|------|--------|
+| `sing-box.exe` | [sing-box releases](https://github.com/SagerNet/sing-box/releases) (windows-amd64) |
+
+License: **GPLv3** — used only as a **subprocess**, never linked into WireSentinel.
+
+```powershell
+copy sing-box-*.exe resources\sing-box.exe
+```
+
+## Build WireGuard (Windows)
+
+```powershell
 cd wireguard-nt
 msbuild wireguard-nt.props /p:Configuration=Release
 
-# wireguard-windows embeddable DLL
 cd wireguard-windows/embeddable-dll-service
 .\build.bat
 
-# Copy to WireSentinel
 copy tunnel.dll ..\..\WireSentinel\resources\
 copy wireguard.dll ..\..\WireSentinel\resources\
 ```
 
-## AmneziaWG (Phase 2)
+## AmneziaWG
 
 For AmneziaWG profiles, use a separate `tunnel.dll` built from amneziawg-windows.
 Do not mix with wireguard-NT tunnel.dll in the same process.
 
-## License
+## Licenses
 
-WireGuard components are licensed under the MIT License. See upstream repositories.
+See [docs/third-party-licenses.md](../docs/third-party-licenses.md), [docs/LICENSE-AUDIT.md](../docs/LICENSE-AUDIT.md), and [installer/THIRD_PARTY_NOTICES.txt](../installer/THIRD_PARTY_NOTICES.txt) (full GPL/LGPL texts in `installer/licenses/`).

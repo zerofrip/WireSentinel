@@ -122,6 +122,24 @@ Copy-Item -Force (Join-Path $Root "resources\tunnel.dll") $Staging
 Copy-Item -Force (Join-Path $Root "resources\wireguard.dll") $Staging
 Copy-Item -Force $VersionFile $Staging
 
+foreach ($optional in @("WinDivert.dll", "WinDivert64.sys", "sing-box.exe")) {
+    $src = Join-Path $Root "resources\$optional"
+    if (Test-Path $src) {
+        Copy-Item -Force $src $Staging
+    }
+}
+
+$notices = Join-Path $Root "installer\THIRD_PARTY_NOTICES.txt"
+if (Test-Path $notices) {
+    Copy-Item -Force $notices (Join-Path $Staging "THIRD_PARTY_NOTICES.txt")
+}
+$licensesSrc = Join-Path $Root "installer\licenses"
+if (Test-Path $licensesSrc) {
+    $licensesDst = Join-Path $Staging "licenses"
+    New-Item -ItemType Directory -Force -Path $licensesDst | Out-Null
+    Copy-Item -Force (Join-Path $licensesSrc "*") $licensesDst
+}
+
 $DriverStage = Join-Path $Root "installer\staging\drivers\$ArchLabel"
 if (Test-Path $DriverStage) {
     Copy-Item -Recurse -Force $DriverStage (Join-Path $Staging "drivers")

@@ -35,7 +35,9 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "../../resources/*"
+      "../../resources/*",
+      "../../installer/THIRD_PARTY_NOTICES.txt",
+      "../../installer/licenses/*"
     ]
   }
 }

@@ -470,6 +470,25 @@ export interface MixnetStatus {
   active_sessions: number;
 }
 
+export type EnforcementBackend = "signed" | "custom_kernel";
+
+export interface EnforcementComponentsHealth {
+  wfp: string;
+  wireguard: string;
+  windivert: string;
+  singbox: string;
+  guardian: string;
+  ndis: string;
+}
+
+export interface EnforcementSettings {
+  enforcement_backend: EnforcementBackend;
+  guardian_mode: string;
+  wfp_engine_impl: string;
+  components: EnforcementComponentsHealth;
+  restart_required: boolean;
+}
+
 export interface KernelStatus {
   guardian_mode: string;
   driver_connected: boolean;
@@ -1006,6 +1025,13 @@ export const apiClient = {
   mixnet: () => api<MixnetProfile[]>("/api/v1/mixnet").catch(() => [] as MixnetProfile[]),
   mixnetStatus: () =>
     api<MixnetStatus | null>("/api/v1/mixnet/status").catch(() => null),
+  enforcementSettings: () =>
+    api<EnforcementSettings>("/api/v1/settings/enforcement"),
+  setEnforcementBackend: (backend: EnforcementBackend) =>
+    api<EnforcementSettings>("/api/v1/settings/enforcement", {
+      method: "PUT",
+      body: JSON.stringify({ enforcement_backend: backend }),
+    }),
   kernelStatus: () =>
     api<KernelStatus | null>("/api/v1/kernel/status").catch(() => null),
   kernelTelemetry: () =>

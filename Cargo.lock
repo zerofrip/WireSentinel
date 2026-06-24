@@ -577,6 +577,7 @@ dependencies = [
  "uuid",
  "vpn-engine",
  "wfp",
+ "windivert-engine",
  "windows 0.58.0",
  "windows-service",
  "xdr-core",
@@ -4654,6 +4655,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "windivert-engine",
  "windows 0.58.0",
 ]
 
@@ -4719,6 +4721,21 @@ dependencies = [
  "wasmparser 0.221.3",
  "wasmtime-cranelift",
  "wasmtime-environ",
+]
+
+[[package]]
+name = "windivert-engine"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "libloading",
+ "parking_lot",
+ "serde",
+ "shared-types",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

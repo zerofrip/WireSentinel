@@ -17,6 +17,7 @@ members = [
     "transport-engine",
     "tcp-termination",
     "split-tunnel",
+    "windivert-engine",
     "core-service",
 ]
 exclude = ["ui"]
@@ -57,6 +58,7 @@ dpi-transforms = { path = "dpi-transforms" }
 plugin-runtime = { path = "plugin-runtime" }
 transport-engine = { path = "transport-engine" }
 tcp-termination = { path = "tcp-termination" }
+windivert-engine = { path = "windivert-engine" }
 mixnet-core = { path = "../WireSentinel-Mixnet/mixnet-core" }
 mixnet-transports = { path = "../WireSentinel-Mixnet/transports", package = "transports" }
 mixnet-routing = { path = "../WireSentinel-Mixnet/routing", package = "routing" }

@@ -11,6 +11,7 @@ import { RulesEditor } from "./pages/RulesEditor";
 import { DnsSettingsPage } from "./pages/DnsSettings";
 import { Privacy } from "./pages/Privacy";
 import { Settings } from "./pages/Settings";
+import { Legal } from "./pages/Legal";
 import { Diagnostics } from "./pages/Diagnostics";
 import { Backup } from "./pages/Backup";
 import { Performance } from "./pages/Performance";
@@ -61,6 +62,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="cover-traffic" element={<CoverTraffic />} />
             <Route path="privacy-analytics" element={<PrivacyAnalytics />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="legal" element={<Legal />} />
             <Route path="diagnostics" element={<Diagnostics />} />
             <Route path="backup" element={<Backup />} />
             <Route path="performance" element={<Performance />} />

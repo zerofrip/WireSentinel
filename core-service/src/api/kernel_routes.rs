@@ -71,16 +71,39 @@ pub struct NdisStatusResponse {
 pub async fn kernel_status(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let driver = state.deps.wfp.driver_state().await;
     let kill_switch_active = state.deps.policy.read().kill_switch_active();
+    let mapping = crate::enforcement::resolve_mapping(&state.deps.storage)
+        .await
+        .unwrap_or_else(|_| {
+            shared_types::EnforcementMapping::from_backend(
+                shared_types::EnforcementBackend::Signed,
+            )
+        });
     let wfp_engine = state
         .deps
         .storage
         .settings
         .wfp_engine_impl()
         .await
-        .unwrap_or_else(|_| "userspace".into());
-    let guardian_mode = wfp_engine.clone();
+        .unwrap_or_else(|_| mapping.wfp_engine_impl.to_string());
+    let guardian_mode = mapping.guardian_mode.as_str().to_string();
     let driver_connected = driver.provider_registered || driver.engine == "kernel";
-    let healthy = driver.state == "running" && driver_connected;
+    let ndis_health = if let Some(ndis) = state.deps.wfp.ndis_side() {
+        ndis.health().await
+    } else {
+        shared_types::NdisHealth {
+            available: false,
+            state: "stopped".into(),
+            filter_attached: false,
+            active_route_count: 0,
+            active_redirect_count: 0,
+            classify_count: 0,
+            error_count: 0,
+            message: None,
+            checked_at: chrono::Utc::now(),
+        }
+    };
+    let healthy = driver.state == "running"
+        && (driver_connected || mapping.backend == shared_types::EnforcementBackend::Signed);
 
     Json(KernelStatusResponse {
         guardian_mode,
@@ -90,8 +113,8 @@ pub async fn kernel_status(State(state): State<Arc<AppState>>) -> impl IntoRespo
         filter_count: driver.filter_count,
         provider_registered: driver.provider_registered,
         kill_switch_active,
-        ndis_enabled: false,
-        ndis_lifecycle_state: "stopped".into(),
+        ndis_enabled: ndis_health.available,
+        ndis_lifecycle_state: ndis_health.state.clone(),
         healthy,
     })
     .into_response()
@@ -192,16 +215,42 @@ pub async fn kernel_packets(State(state): State<Arc<AppState>>) -> impl IntoResp
 }
 
 #[utoipa::path(get, path = "/api/v1/kernel/ndis/status", responses((status = 200, body = NdisStatusResponse)))]
-pub async fn ndis_status(_state: State<Arc<AppState>>) -> impl IntoResponse {
+pub async fn ndis_status(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let health = if let Some(ndis) = state.deps.wfp.ndis_side() {
+        ndis.health().await
+    } else {
+        shared_types::NdisHealth {
+            available: false,
+            state: "stopped".into(),
+            filter_attached: false,
+            active_route_count: 0,
+            active_redirect_count: 0,
+            classify_count: 0,
+            error_count: 0,
+            message: Some("NDIS sidecar not active".into()),
+            checked_at: chrono::Utc::now(),
+        }
+    };
+    let telemetry = if let Some(ndis) = state.deps.wfp.ndis_side() {
+        ndis.telemetry_summary().await.ok()
+    } else {
+        None
+    };
     Json(NdisStatusResponse {
-        enabled: false,
-        driver_connected: false,
-        lifecycle_state: "stopped".into(),
-        classify_count: 0,
-        redirect_count: 0,
-        transform_count: 0,
-        cover_traffic_count: 0,
-        error_count: 0,
+        enabled: health.available,
+        driver_connected: health.filter_attached,
+        lifecycle_state: health.state,
+        classify_count: health.classify_count,
+        redirect_count: telemetry
+            .as_ref()
+            .map(|t| t.redirect_count)
+            .unwrap_or(health.active_redirect_count as u64),
+        transform_count: telemetry.as_ref().map(|t| t.transform_count).unwrap_or(0),
+        cover_traffic_count: telemetry
+            .as_ref()
+            .map(|t| t.cover_traffic_count)
+            .unwrap_or(0),
+        error_count: health.error_count,
         pending_events: 0,
     })
     .into_response()

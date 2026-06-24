@@ -25,6 +25,7 @@ const nav = [
   { to: "/cover-traffic", label: "Cover Traffic" },
   { to: "/privacy-analytics", label: "Privacy Analytics" },
   { to: "/settings", label: "Settings" },
+  { to: "/legal", label: "Legal" },
   { to: "/diagnostics", label: "Diagnostics" },
   { to: "/backup", label: "Backup" },
   { to: "/performance", label: "Performance" },

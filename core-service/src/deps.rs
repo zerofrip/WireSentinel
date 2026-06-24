@@ -179,17 +179,14 @@ async fn create_wfp_engine(
     storage: &Storage,
     listen_ports: Arc<ProxyListenPort>,
 ) -> Arc<dyn WfpEngine> {
-    let guardian_mode = storage
-        .settings
-        .guardian_mode()
+    let mapping = crate::enforcement::resolve_mapping(storage)
         .await
-        .unwrap_or_else(|_| "wfp".to_string());
-    let impl_name = storage
-        .settings
-        .wfp_engine_impl()
-        .await
-        .unwrap_or_else(|_| "userspace".to_string());
-    wfp::create_wfp_engine(&guardian_mode, &impl_name, listen_ports)
+        .unwrap_or_else(|_| {
+            shared_types::EnforcementMapping::from_backend(
+                shared_types::EnforcementBackend::Signed,
+            )
+        });
+    wfp::create_wfp_engine(mapping.backend.as_str(), listen_ports)
 }
 
 async fn seed_dns_providers(storage: &Storage) -> shared_types::Result<()> {

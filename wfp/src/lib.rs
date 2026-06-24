@@ -15,6 +15,9 @@ mod userspace;
 mod hybrid;
 mod ndis;
 
+#[cfg(feature = "signed-stack")]
+mod windivert_ndis;
+
 pub use engine::{RouteEnforcer, WfpEngine, WfpEvent, WfpEventKind};
 pub use hybrid::HybridWfpEngine;
 pub use ndis::{
@@ -73,22 +76,51 @@ fn build_base_wfp_engine(
     }
 }
 
-/// Create the active WFP engine based on guardian mode and implementation setting.
+/// Create the active WFP engine from [`EnforcementBackend`] setting.
 pub fn create_wfp_engine(
+    enforcement_backend: &str,
+    listen_ports: Arc<ProxyListenPort>,
+) -> Arc<dyn WfpEngine> {
+    let mapping = shared_types::EnforcementMapping::from_backend(
+        shared_types::EnforcementBackend::parse(enforcement_backend),
+    );
+    create_wfp_engine_inner(
+        mapping.guardian_mode.as_str(),
+        mapping.wfp_engine_impl,
+        mapping.use_windivert,
+        listen_ports,
+    )
+}
+
+fn create_wfp_engine_inner(
     guardian_mode: &str,
     impl_name: &str,
+    use_windivert: bool,
     listen_ports: Arc<ProxyListenPort>,
 ) -> Arc<dyn WfpEngine> {
     let base = build_base_wfp_engine(impl_name, Arc::clone(&listen_ports));
     match guardian_mode {
         "hybrid" => {
-            let ndis = create_ndis_engine();
+            let ndis = create_ndis_engine(use_windivert);
             Arc::new(HybridWfpEngine::new(base, ndis))
         }
         "ndis" => {
-            let ndis = create_ndis_engine();
+            let ndis = create_ndis_engine(use_windivert);
+            Arc::new(HybridWfpEngine::ndis_primary(base, ndis))
+        }
+        _ if use_windivert => {
+            let ndis = create_ndis_engine(true);
             Arc::new(HybridWfpEngine::ndis_primary(base, ndis))
         }
         _ => base,
     }
+}
+
+/// Legacy entry point (guardian_mode + wfp_engine_impl only).
+pub fn create_wfp_engine_legacy(
+    guardian_mode: &str,
+    impl_name: &str,
+    listen_ports: Arc<ProxyListenPort>,
+) -> Arc<dyn WfpEngine> {
+    create_wfp_engine_inner(guardian_mode, impl_name, false, listen_ports)
 }

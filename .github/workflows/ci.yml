@@ -81,6 +81,13 @@ jobs:
         working-directory: WireSentinel
         run: cargo audit
 
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: cargo deny (licenses)
+        working-directory: WireSentinel
+        run: cargo deny check licenses
+
   frontend:
     name: UI (npm build)
     runs-on: ubuntu-latest
@@ -100,6 +107,9 @@ jobs:
 
       - name: npm ci
         run: npm ci
+
+      - name: npm run gen:licenses
+        run: npm run gen:licenses
 
       - name: npm run build
         run: npm run build

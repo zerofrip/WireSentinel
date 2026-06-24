@@ -6,6 +6,30 @@ use crate::DriverState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema, Default)]
 #[serde(rename_all = "snake_case")]
+pub enum EnforcementBackend {
+    #[default]
+    Signed,
+    CustomKernel,
+}
+
+impl EnforcementBackend {
+    pub fn parse(s: &str) -> Self {
+        match s {
+            "custom_kernel" => Self::CustomKernel,
+            _ => Self::Signed,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Signed => "signed",
+            Self::CustomKernel => "custom_kernel",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema, Default)]
+#[serde(rename_all = "snake_case")]
 pub enum GuardianMode {
     #[default]
     Wfp,
@@ -33,6 +57,58 @@ impl GuardianMode {
     pub fn uses_ndis(self) -> bool {
         matches!(self, Self::Ndis | Self::Hybrid)
     }
+}
+
+/// Resolved low-level driver settings derived from [`EnforcementBackend`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EnforcementMapping {
+    pub backend: EnforcementBackend,
+    pub guardian_mode: GuardianMode,
+    pub wfp_engine_impl: &'static str,
+    pub use_windivert: bool,
+}
+
+impl EnforcementMapping {
+    pub fn from_backend(backend: EnforcementBackend) -> Self {
+        match backend {
+            EnforcementBackend::Signed => Self {
+                backend,
+                guardian_mode: GuardianMode::Wfp,
+                wfp_engine_impl: "userspace",
+                use_windivert: true,
+            },
+            EnforcementBackend::CustomKernel => Self {
+                backend,
+                guardian_mode: GuardianMode::Hybrid,
+                wfp_engine_impl: "kernel",
+                use_windivert: false,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct EnforcementSettingsResponse {
+    pub enforcement_backend: EnforcementBackend,
+    pub guardian_mode: GuardianMode,
+    pub wfp_engine_impl: String,
+    pub components: EnforcementComponentsHealth,
+    pub restart_required: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct EnforcementComponentsHealth {
+    pub wfp: String,
+    pub wireguard: String,
+    pub windivert: String,
+    pub singbox: String,
+    pub guardian: String,
+    pub ndis: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]
+pub struct SetEnforcementBackendRequest {
+    pub enforcement_backend: EnforcementBackend,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ToSchema)]

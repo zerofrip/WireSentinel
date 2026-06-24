@@ -24,7 +24,8 @@ pub use factory::TransportBackendFactory;
 pub use mixnet::MixnetTransport;
 pub use process_manager::ProcessManager;
 pub use singbox::{
-    build_config as build_singbox_config, SingBoxOutboundSpec, SingBoxProtocol, SingBoxTransport,
+    build_config as build_singbox_config, build_split_tunnel_route_rules, build_tun_config,
+    SingBoxOutboundSpec, SingBoxProtocol, SingBoxTransport,
 };
 pub use tls_tunnel::TlsTunnelTransport;
 pub use tor::{BridgeManager, BridgeTestResult, TorTransport};

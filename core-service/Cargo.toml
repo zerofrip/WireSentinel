@@ -32,6 +32,7 @@ plugin-runtime = { workspace = true }
 transport-engine = { workspace = true }
 tcp-termination = { workspace = true }
 split-tunnel = { workspace = true }
+windivert-engine = { workspace = true }
 proxy-engine = { workspace = true }
 mixnet-core = { workspace = true }
 mixnet-transports = { workspace = true }

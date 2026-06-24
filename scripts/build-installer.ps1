@@ -14,7 +14,7 @@ param(
     [switch]$SkipBuild,
     [switch]$MsiOnly,
     [switch]$NsisOnly,
-    [bool]$IncludeDrivers = $true,
+    [bool]$IncludeDrivers = $false,
     [switch]$SkipDriverBuild,
     [switch]$SkipDriverSign
 )
@@ -96,6 +96,55 @@ function Get-MakensisExe {
     throw "makensis.exe not found — install NSIS"
 }
 
+function Get-ThirdPartyVersions {
+    $versionsFile = Join-Path $Root "installer\third-party-versions.json"
+    if (-not (Test-Path $versionsFile)) {
+        return $null
+    }
+    return Get-Content -Raw -Path $versionsFile | ConvertFrom-Json
+}
+
+function Write-ThirdPartyNotices {
+    param([string]$DestinationDir)
+
+    $noticesTemplate = Join-Path $Root "installer\THIRD_PARTY_NOTICES.txt"
+    if (-not (Test-Path $noticesTemplate)) {
+        return
+    }
+
+    $content = Get-Content -Raw -Path $noticesTemplate
+    $versions = Get-ThirdPartyVersions
+    if ($versions) {
+        if ($versions.'sing-box'.version) {
+            $content = $content -replace 'Version: 1\.11\.8', "Version: $($versions.'sing-box'.version)"
+        }
+        if ($versions.'sing-box'.source_tarball) {
+            $content = $content -replace 'https://github.com/SagerNet/sing-box/archive/refs/tags/v1\.11\.8\.tar\.gz', $versions.'sing-box'.source_tarball
+        }
+        if ($versions.'sing-box'.binary_release) {
+            $content = $content -replace 'https://github.com/SagerNet/sing-box/releases/tag/v1\.11\.8', $versions.'sing-box'.binary_release
+        }
+        if ($versions.windivert.version) {
+            $content = $content -replace 'Version: 2\.2\.2-A \(or version bundled at build time\)', "Version: $($versions.windivert.version)"
+        }
+    }
+
+    Set-Content -Path (Join-Path $DestinationDir "THIRD_PARTY_NOTICES.txt") -Value $content -Encoding UTF8
+}
+
+function Stage-ThirdPartyLegal {
+    param([string]$DestinationDir)
+
+    Write-ThirdPartyNotices -DestinationDir $DestinationDir
+
+    $licensesSrc = Join-Path $Root "installer\licenses"
+    if (Test-Path $licensesSrc) {
+        $licensesDst = Join-Path $DestinationDir "licenses"
+        New-Item -ItemType Directory -Force -Path $licensesDst | Out-Null
+        Copy-Item -Force (Join-Path $licensesSrc "*") $licensesDst
+    }
+}
+
 function Stage-InstallerBinaries {
     param(
         [string]$ServiceExe,
@@ -108,6 +157,18 @@ function Stage-InstallerBinaries {
     New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
     Copy-Item -Force $ServiceExe (Join-Path $stageDir "wire-sentinel-service.exe")
     Copy-Item -Force $GuiExe (Join-Path $stageDir "wire-sentinel.exe")
+    foreach ($pair in @(
+            @{ Src = $TunnelDll; Dst = "tunnel.dll" },
+            @{ Src = $WireguardDll; Dst = "wireguard.dll" },
+            @{ Src = (Join-Path $Root "resources\WinDivert.dll"); Dst = "WinDivert.dll" },
+            @{ Src = (Join-Path $Root "resources\WinDivert64.sys"); Dst = "WinDivert64.sys" },
+            @{ Src = (Join-Path $Root "resources\sing-box.exe"); Dst = "sing-box.exe" }
+        )) {
+        if (Test-Path $pair.Src) {
+            Copy-Item -Force $pair.Src (Join-Path $stageDir $pair.Dst)
+        }
+    }
+    Stage-ThirdPartyLegal -DestinationDir $stageDir
     Write-Host "Staged installer binaries in $stageDir"
 }
 

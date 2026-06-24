@@ -1,0 +1,22 @@
+{
+  "sing-box": {
+    "version": "1.11.8",
+    "upstream": "https://github.com/SagerNet/sing-box",
+    "source_tarball": "https://github.com/SagerNet/sing-box/archive/refs/tags/v1.11.8.tar.gz",
+    "binary_release": "https://github.com/SagerNet/sing-box/releases/tag/v1.11.8"
+  },
+  "windivert": {
+    "version": "2.2.2-A",
+    "upstream": "https://reqrypt.org/windivert.html",
+    "license": "LGPL-3.0"
+  },
+  "wireguard": {
+    "upstream_nt": "https://github.com/WireGuard/wireguard-nt",
+    "upstream_windows": "https://github.com/WireGuard/wireguard-windows",
+    "license": "MIT"
+  },
+  "wintun": {
+    "upstream": "https://www.wintun.net/",
+    "note": "Used indirectly via wireguard.dll; no standalone wintun.dll shipped"
+  }
+}

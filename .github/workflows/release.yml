@@ -117,15 +117,23 @@ jobs:
           restore-keys: |
             test-signing-${{ runner.os }}-
 
+      - name: Cache packaging resources
+        uses: actions/cache@v4
+        with:
+          path: WireSentinel/.cache/vpn-resources
+          key: packaging-resources-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1', 'WireSentinel/installer/third-party-versions.json') }}
+          restore-keys: |
+            packaging-resources-${{ runner.os }}-
+
       - name: Cache wireguard-windows build deps
         uses: actions/cache@v4
         with:
           path: WireSentinel/.cache/vpn-resources/wireguard-windows/.deps
-          key: wireguard-windows-deps-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1') }}
+          key: wireguard-windows-deps-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1', 'WireSentinel/installer/third-party-versions.json') }}
           restore-keys: |
             wireguard-windows-deps-${{ runner.os }}-
 
-      - name: Fetch VPN resource DLLs
+      - name: Fetch packaging resources
         shell: pwsh
         run: .\scripts\fetch-vpn-resources.ps1 -Arch x64
 
@@ -239,15 +247,23 @@ jobs:
           restore-keys: |
             test-signing-${{ runner.os }}-
 
+      - name: Cache packaging resources
+        uses: actions/cache@v4
+        with:
+          path: WireSentinel/.cache/vpn-resources
+          key: packaging-resources-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1', 'WireSentinel/installer/third-party-versions.json') }}
+          restore-keys: |
+            packaging-resources-${{ runner.os }}-
+
       - name: Cache wireguard-windows build deps
         uses: actions/cache@v4
         with:
           path: WireSentinel/.cache/vpn-resources/wireguard-windows/.deps
-          key: wireguard-windows-deps-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1') }}
+          key: wireguard-windows-deps-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1', 'WireSentinel/installer/third-party-versions.json') }}
           restore-keys: |
             wireguard-windows-deps-${{ runner.os }}-
 
-      - name: Fetch VPN resource DLLs
+      - name: Fetch packaging resources
         shell: pwsh
         run: .\scripts\fetch-vpn-resources.ps1 -Arch arm64
 

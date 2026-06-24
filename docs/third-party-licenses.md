@@ -71,7 +71,7 @@ See [LICENSE-AUDIT.md](LICENSE-AUDIT.md) for the full audit matrix.
 ## Tor (`tor.exe`)
 
 - **License:** **BSD 3-Clause**
-- **Version:** See `installer/third-party-versions.json` (default 0.4.8.14)
+- **Version:** See `installer/third-party-versions.json` (`tor_daemon_version`, default 0.4.8.16)
 - **Upstream:** [The Tor Project](https://www.torproject.org/)
 - **Expert bundle:** https://www.torproject.org/download/tor/
 - **Distribution:** **Separate subprocess only** — spawned by sing-box `tor` outbound, never linked into WireSentinel binaries
@@ -96,4 +96,13 @@ See [LICENSE-AUDIT.md](LICENSE-AUDIT.md) for the full audit matrix.
 
 ## Building third-party binaries
 
-See [resources/README.md](../resources/README.md) for acquisition and build instructions.
+CI fetches pinned binaries via `scripts/fetch-vpn-resources.ps1` (see `release.yml`). Manual steps: [resources/README.md](../resources/README.md).
+
+### Release architecture matrix
+
+| Component | x64 release | arm64 release |
+|-----------|-------------|---------------|
+| WireGuard (`tunnel.dll`, `wireguard.dll`) | Bundled (arch-matched) | Bundled (arch-matched) |
+| WinDivert | Bundled | **Not bundled** (no official signed ARM64 driver) |
+| sing-box | `windows-amd64` | `windows-arm64` |
+| tor.exe | `windows-x86_64` expert bundle | Same x86_64 bundle (WoA x64 emulation) |

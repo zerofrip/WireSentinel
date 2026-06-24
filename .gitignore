@@ -11,6 +11,7 @@ ui/src-tauri/target/
 # Installer output
 dist/
 installer/staging/
+installer/generated/
 
 # VPN resource fetch cache (scripts/fetch-vpn-resources.ps1)
 .cache/

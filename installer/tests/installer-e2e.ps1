@@ -28,6 +28,14 @@ Describe "WireSentinel installer — clean install" {
         $Script:NsisText | Should -Match "wire-sentinel.exe"
         $Script:NsisText | Should -Match "tunnel.dll"
         $Script:NsisText | Should -Match "wireguard.dll"
+        $Script:NsisText | Should -Match "InstallThirdPartyFiles"
+        $Script:NsisText | Should -Match "third-party-files.nsh"
+    }
+
+    It "WiX references third-party component groups" {
+        $Script:WixText | Should -Match 'Id="ThirdPartyComponents"'
+        $Script:WixText | Should -Match 'Id="LegalNoticesComponents"'
+        $Script:WixText | Should -Match "third-party.wxs"
     }
 
     It "NSIS supports silent install" {

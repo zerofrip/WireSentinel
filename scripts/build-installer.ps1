@@ -127,6 +127,9 @@ function Write-ThirdPartyNotices {
         if ($versions.windivert.version) {
             $content = $content -replace 'Version: 2\.2\.2-A \(or version bundled at build time\)', "Version: $($versions.windivert.version)"
         }
+        if ($versions.tor.tor_daemon_version) {
+            $content = $content -replace 'Version: 0\.4\.8\.\d+', "Version: $($versions.tor.tor_daemon_version)"
+        }
     }
 
     Set-Content -Path (Join-Path $DestinationDir "THIRD_PARTY_NOTICES.txt") -Value $content -Encoding UTF8
@@ -236,8 +239,21 @@ if (-not $SkipBuild) {
     if ($uiExit -ne 0) { exit $uiExit }
 }
 
-Test-Prerequisites @($ServiceExe, $GuiExe, $TunnelDll, $WireguardDll)
+$resourceRequired = @(
+    (Join-Path $Root "resources\sing-box.exe"),
+    (Join-Path $Root "resources\tor.exe")
+)
+if ($Arch -eq "x64") {
+    $resourceRequired += @(
+        (Join-Path $Root "resources\WinDivert.dll"),
+        (Join-Path $Root "resources\WinDivert64.sys")
+    )
+}
+
+Test-Prerequisites @($ServiceExe, $GuiExe, $TunnelDll, $WireguardDll) + $resourceRequired
 Stage-InstallerBinaries -ServiceExe $ServiceExe -GuiExe $GuiExe
+& (Join-Path $Root "scripts\generate-installer-third-party.ps1") -Arch $Arch
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Invoke-Validate
 
 New-Item -ItemType Directory -Force -Path $Dist | Out-Null
@@ -251,7 +267,7 @@ if ($buildMsi) {
     $env:WIRESENTINEL_ARCH = $ArchLabel
     Push-Location (Join-Path $Root "installer\wix")
     try {
-        wix build -ext WixToolset.Util.wixext Product.wxs -o $msiOut
+        wix build -ext WixToolset.Util.wixext -d WIRESENTINEL_ARCH=$ArchLabel Product.wxs -o $msiOut
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     } finally {
         Pop-Location

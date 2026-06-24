@@ -4,6 +4,7 @@
 
 !include "LogicLib.nsh"
 !include "Sections.nsh"
+!include "..\generated\third-party-files.nsh"
 
 !define PRODUCT_NAME "WireSentinel"
 !define PRODUCT_VERSION "0.1.0"
@@ -41,6 +42,7 @@ Section "WireSentinel application" SecMain
   File "..\..\installer\staging\bin\wire-sentinel.exe"
   File "..\..\resources\tunnel.dll"
   File "..\..\resources\wireguard.dll"
+  !insertmacro InstallThirdPartyFiles
 
   SetOutPath "$INSTDIR\scripts"
   File "..\..\scripts\install-kernel-drivers.ps1"
@@ -113,6 +115,7 @@ Section "Uninstall"
   Delete "$INSTDIR\wire-sentinel.exe"
   Delete "$INSTDIR\tunnel.dll"
   Delete "$INSTDIR\wireguard.dll"
+  !insertmacro UninstallThirdPartyFiles
   Delete "$INSTDIR\scripts\install-kernel-drivers.ps1"
   Delete "$INSTDIR\scripts\uninstall-kernel-drivers.ps1"
   RMDir "$INSTDIR\scripts"

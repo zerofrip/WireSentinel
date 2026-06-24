@@ -122,18 +122,32 @@ Copy-Item -Force (Join-Path $Root "resources\tunnel.dll") $Staging
 Copy-Item -Force (Join-Path $Root "resources\wireguard.dll") $Staging
 Copy-Item -Force $VersionFile $Staging
 
-foreach ($optional in @("WinDivert.dll", "WinDivert64.sys", "sing-box.exe", "tor.exe")) {
-    $src = Join-Path $Root "resources\$optional"
-    if (Test-Path $src) {
-        Copy-Item -Force $src $Staging
+$requiredResources = @("sing-box.exe", "tor.exe")
+if ($Arch -eq "x64") {
+    $requiredResources += @("WinDivert.dll", "WinDivert64.sys")
+}
+foreach ($name in $requiredResources) {
+    $src = Join-Path $Root "resources\$name"
+    if (-not (Test-Path $src)) {
+        throw "Missing required release resource: $src"
     }
+    Copy-Item -Force $src $Staging
 }
 
-$notices = Join-Path $Root "installer\THIRD_PARTY_NOTICES.txt"
+$stagedBin = Join-Path $Root "installer\staging\bin"
+$notices = Join-Path $stagedBin "THIRD_PARTY_NOTICES.txt"
 if (Test-Path $notices) {
     Copy-Item -Force $notices (Join-Path $Staging "THIRD_PARTY_NOTICES.txt")
+} else {
+    $noticesFallback = Join-Path $Root "installer\THIRD_PARTY_NOTICES.txt"
+    if (Test-Path $noticesFallback) {
+        Copy-Item -Force $noticesFallback (Join-Path $Staging "THIRD_PARTY_NOTICES.txt")
+    }
 }
-$licensesSrc = Join-Path $Root "installer\licenses"
+$licensesSrc = Join-Path $stagedBin "licenses"
+if (-not (Test-Path $licensesSrc)) {
+    $licensesSrc = Join-Path $Root "installer\licenses"
+}
 if (Test-Path $licensesSrc) {
     $licensesDst = Join-Path $Staging "licenses"
     New-Item -ItemType Directory -Force -Path $licensesDst | Out-Null

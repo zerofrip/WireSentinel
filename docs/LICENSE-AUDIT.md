@@ -80,20 +80,24 @@ flowchart LR
 
 ## Installer bundle checklist
 
-After `scripts/build-installer.ps1`, staging must include:
+After `scripts/fetch-vpn-resources.ps1` and `scripts/build-installer.ps1`, staging must include:
 
 - [ ] `THIRD_PARTY_NOTICES.txt`
 - [ ] `licenses/LGPL-3.0.txt`
 - [ ] `licenses/GPL-3.0.txt`
 - [ ] `licenses/MIT.txt`
+- [ ] `licenses/BSD-3-Clause-Tor.txt`
+- [ ] **x64:** `WinDivert.dll`, `WinDivert64.sys`, `sing-box.exe`, `tor.exe`
+- [ ] **arm64:** `sing-box.exe`, `tor.exe` (x86_64); WinDivert intentionally omitted
 
 ## Re-audit procedure
 
 1. Verify all 13 repos still have `LICENSE` (Apache-2.0).
 2. Run `cargo deny check licenses` in WireSentinel root.
 3. Run `npm run gen:licenses` in `ui/` and commit if dependencies changed.
-4. Confirm `installer/third-party-versions.json` matches shipped `sing-box.exe` / WinDivert build.
-5. Review any new `resources/` binaries against [third-party-licenses.md](third-party-licenses.md).
+4. Confirm `installer/third-party-versions.json` matches shipped `sing-box.exe` / WinDivert / tor expert bundle.
+5. On **x64** releases, verify WinDivert is present; on **arm64**, verify WinDivert is absent and tor is the x86_64 expert bundle.
+6. Review any new `resources/` binaries against [third-party-licenses.md](third-party-licenses.md).
 
 ## References
 

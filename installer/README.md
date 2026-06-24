@@ -13,9 +13,10 @@ Build artifacts and installer scripts for Windows deployment.
 - Built binaries:
   - `target/release/wire-sentinel-service.exe`
   - `ui/src-tauri/target/release/wire-sentinel.exe`
-- VPN resources:
-  - `resources/tunnel.dll` (from wireguard-windows embeddable-dll-service)
-  - `resources/wireguard.dll` (from wireguard-nt)
+- Packaging resources (fetched by `scripts/fetch-vpn-resources.ps1`):
+  - `resources/tunnel.dll`, `resources/wireguard.dll` (WireGuard NT)
+  - **x64 only:** `resources/WinDivert.dll`, `resources/WinDivert64.sys`
+  - `resources/sing-box.exe`, `resources/tor.exe` (see `resources/README.md`)
 
 ## Directory Layout
 
@@ -27,6 +28,8 @@ installer/
 │   └── installer.nsi        # NSIS EXE (optional SecKernelDrivers)
 ├── staging/
 │   └── drivers/             # Built by scripts/build-drivers.ps1 (gitignored)
+├── generated/
+│   └── third-party.wxs      # Built by scripts/generate-installer-third-party.ps1 (gitignored)
 └── tests/
     ├── validate.ps1
     └── installer-e2e.ps1

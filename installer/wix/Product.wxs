@@ -18,6 +18,8 @@
 
     <Feature Id="MainFeature" Title="WireSentinel" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ThirdPartyComponents" />
+      <ComponentGroupRef Id="LegalNoticesComponents" />
       <ComponentGroupRef Id="DataDirectories" />
       <ComponentGroupRef Id="InstallerScriptComponents" />
     </Feature>
@@ -182,4 +184,6 @@
       </Component>
     </ComponentGroup>
   </Package>
+
+  <?include ../generated/third-party.wxs ?>
 </Wix>

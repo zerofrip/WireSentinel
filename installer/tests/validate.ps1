@@ -12,6 +12,7 @@ $Root = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation
 
 $WixFile = Join-Path $Root "installer\wix\Product.wxs"
 $NsisFile = Join-Path $Root "installer\nsis\installer.nsi"
+$ThirdPartyWixFile = Join-Path $Root "installer\generated\third-party.wxs"
 
 $DriverSourceFragments = @(
     "installer\staging\drivers\current\guardian",
@@ -160,6 +161,11 @@ Test-XmlSyntax -Path $WixFile
 Test-WixRequiredContent -Path $WixFile
 if (-not $SkipFileRefs) {
     Test-WixFileRefs -Path $WixFile -SkipDriverRefs:$SkipDriverRefs
+    if (Test-Path $ThirdPartyWixFile) {
+        Test-WixFileRefs -Path $ThirdPartyWixFile -SkipDriverRefs:$SkipDriverRefs
+    } else {
+        Write-Host "SKIP generated third-party WiX fragment (not built yet)"
+    }
 } else {
     Write-Host "SKIP WiX file references (-SkipFileRefs)"
 }

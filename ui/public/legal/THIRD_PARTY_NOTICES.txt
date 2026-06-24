@@ -37,7 +37,7 @@ sing-box (sing-box.exe)
 
 Tor (tor.exe)
   Copyright The Tor Project, Inc. and contributors
-  Version: 0.4.8.14
+  Version: 0.4.8.16
   Licensed under the BSD 3-Clause License
   Upstream: https://www.torproject.org/
   Expert bundle: https://www.torproject.org/download/tor/

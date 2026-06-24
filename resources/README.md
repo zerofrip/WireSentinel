@@ -1,6 +1,21 @@
 # Runtime Binaries (Signed Enforcement Stack)
 
-WireSentinel bundles or invokes these Windows binaries. Place files under `resources/` before building the installer.
+WireSentinel bundles or invokes these Windows binaries under `resources/` before building the installer.
+
+## CI / release (recommended)
+
+`release.yml` and local release builds run:
+
+```powershell
+.\scripts\fetch-vpn-resources.ps1 -Arch x64   # or arm64
+```
+
+This downloads pinned versions from [`installer/third-party-versions.json`](../installer/third-party-versions.json) into `resources/`. Manual copying below is only needed for offline or custom builds.
+
+| Architecture | Bundled in `resources/` |
+|--------------|-------------------------|
+| **x64** | `tunnel.dll`, `wireguard.dll`, `WinDivert.dll`, `WinDivert64.sys`, `sing-box.exe`, `tor.exe` |
+| **arm64** | `tunnel.dll`, `wireguard.dll`, `sing-box.exe` (native arm64), `tor.exe` (x86_64 expert bundle; WoA x64 emulation). **No WinDivert** — official signed ARM64 driver unavailable; signed stack uses WFP-only on arm64. |
 
 ## VPN (WireGuard NT)
 
@@ -11,7 +26,7 @@ WireSentinel bundles or invokes these Windows binaries. Place files under `resou
 
 Wintun is used **indirectly** via WireGuard NT. Do not ship a standalone `wintun.dll` unless you comply with the [Wintun prebuilt license](https://www.wintun.net/).
 
-## WinDivert (signed stack)
+## WinDivert (signed stack, x64 only)
 
 | File | Source |
 |------|--------|
@@ -21,7 +36,7 @@ Wintun is used **indirectly** via WireGuard NT. Do not ship a standalone `wintun
 License: **LGPLv3** (see `docs/third-party-licenses.md`).
 
 ```powershell
-# Example: copy from WinDivert install or build output
+# Manual fallback (x64 only)
 copy WinDivert-x.x.x-A\x64\WinDivert.dll resources\
 copy WinDivert-x.x.x-A\x64\WinDivert64.sys resources\
 ```
@@ -30,11 +45,12 @@ copy WinDivert-x.x.x-A\x64\WinDivert64.sys resources\
 
 | File | Source |
 |------|--------|
-| `sing-box.exe` | [sing-box releases](https://github.com/SagerNet/sing-box/releases) (windows-amd64) |
+| `sing-box.exe` | [sing-box releases](https://github.com/SagerNet/sing-box/releases) (`windows-amd64` or `windows-arm64`) |
 
 License: **GPLv3** — used only as a **subprocess**, never linked into WireSentinel.
 
 ```powershell
+# Manual fallback
 copy sing-box-*.exe resources\sing-box.exe
 ```
 
@@ -42,16 +58,17 @@ copy sing-box-*.exe resources\sing-box.exe
 
 | File | Source |
 |------|--------|
-| `tor.exe` | [Tor Expert Bundle](https://www.torproject.org/download/tor/) (windows-x86_64) |
+| `tor.exe` | [Tor Expert Bundle](https://www.torproject.org/download/tor/) (`windows-x86_64`; same binary on arm64 via WoA emulation) |
 
 License: **BSD 3-Clause** — used only as a **subprocess** (spawned by sing-box `tor` outbound), never linked into WireSentinel.
 
 ```powershell
-# Extract tor.exe from the Expert Bundle archive
-copy tor-win64-0.4.8.14\tor\tor.exe resources\tor.exe
+# Manual fallback: extract tor.exe from the expert bundle .tar.gz
+tar -xzf tor-expert-bundle-windows-x86_64-*.tar.gz tor/tor.exe
+copy tor\tor.exe resources\tor.exe
 ```
 
-Record the exact version and SHA256 of the binary you ship in release notes.
+Pinned versions and SHA256 are in `installer/third-party-versions.json`.
 
 ## Build WireGuard (Windows)
 

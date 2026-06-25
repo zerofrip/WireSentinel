@@ -155,6 +155,21 @@ function Test-NsisRequiredContent {
     Write-Host "OK NSIS required configuration tokens"
 }
 
+function Test-ThirdPartyWixStructure {
+    param([string]$Path)
+    $text = Get-Content -Raw -Path $Path
+    if ($text -notmatch '<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">') {
+        throw "Generated third-party.wxs must use Wix as document root (WiX WIX0048)"
+    }
+    if ($text -notmatch '<Fragment>') {
+        throw "Generated third-party.wxs must wrap content in Fragment"
+    }
+    if ($text -match '<Fragment xmlns=') {
+        throw "Generated third-party.wxs must not use Fragment as document root"
+    }
+    Write-Host "OK generated third-party WiX structure (Wix > Fragment)"
+}
+
 function Test-WixSmokeCompile {
     param([string]$ArchLabel = "x64")
     if (-not (Get-Command wix -ErrorAction SilentlyContinue)) {
@@ -200,6 +215,7 @@ if (-not $SkipFileRefs) {
     Test-WixFileRefs -Path $WixFile -SkipDriverRefs:$SkipDriverRefs
     if (Test-Path $ThirdPartyWixFile) {
         Test-WixFileRefs -Path $ThirdPartyWixFile -SkipDriverRefs:$SkipDriverRefs
+        Test-ThirdPartyWixStructure -Path $ThirdPartyWixFile
     } else {
         Write-Host "SKIP generated third-party WiX fragment (not built yet)"
     }

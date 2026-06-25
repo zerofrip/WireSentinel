@@ -124,6 +124,7 @@ mod windows_impl {
     use windows::Win32::System::Services::{
         CloseServiceHandle, OpenSCManagerW, OpenServiceW, QueryServiceStatus, StartServiceW,
         SC_MANAGER_CONNECT, SERVICE_ALL_ACCESS, SERVICE_RUNNING, SERVICE_STATUS,
+        SERVICE_STATUS_CURRENT_STATE,
     };
     use windows::Win32::UI::Shell::ShellExecuteW;
     use windows::Win32::UI::WindowsAndMessaging::SW_HIDE;
@@ -147,7 +148,7 @@ mod windows_impl {
         query_service_state().is_some()
     }
 
-    pub fn query_service_state() -> Option<u32> {
+    pub fn query_service_state() -> Option<SERVICE_STATUS_CURRENT_STATE> {
         let name = wide(SERVICE_NAME);
         unsafe {
             let scm = OpenSCManagerW(PCWSTR::null(), PCWSTR::null(), SC_MANAGER_CONNECT).ok()?;
@@ -170,7 +171,7 @@ mod windows_impl {
 
     pub fn start_scm_service() -> Result<(), String> {
         let state = query_service_state();
-        if state == Some(SERVICE_RUNNING.0) {
+        if state == Some(SERVICE_RUNNING) {
             return Ok(());
         }
         if state.is_none() {
@@ -218,7 +219,7 @@ mod windows_impl {
 
         let deadline = std::time::Instant::now() + Duration::from_secs(60);
         while std::time::Instant::now() < deadline {
-            if query_service_state() == Some(SERVICE_RUNNING.0) {
+            if query_service_state() == Some(SERVICE_RUNNING) {
                 return Ok(());
             }
             std::thread::sleep(Duration::from_millis(500));
@@ -263,7 +264,7 @@ mod windows_impl {
         }
 
         match query_service_state() {
-            Some(state) if state == SERVICE_RUNNING.0 => {
+            Some(state) if state == SERVICE_RUNNING => {
                 wait_for_api_ready()?;
                 return Ok(ServiceBootstrapResult {
                     mode: "scm".into(),

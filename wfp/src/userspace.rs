@@ -117,7 +117,7 @@ impl UserspaceWfpEngine {
         let status = unsafe {
             FwpmEngineOpen0(
                 PCWSTR::null(),
-                0x00000002,
+                RPC_C_AUTHN_WINNT,
                 None,
                 Some(&session),
                 &mut handle,
@@ -128,7 +128,7 @@ impl UserspaceWfpEngine {
         agent_log(
             "A",
             "userspace.rs:open_engine:current",
-            "FwpmEngineOpen0 with authnService=0x2 (production path)",
+            "FwpmEngineOpen0 with RPC_C_AUTHN_WINNT (production path)",
             &format!(r#"{{"status":{status}}}"#),
         );
         // #endregion

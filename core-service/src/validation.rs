@@ -209,12 +209,13 @@ impl ValidationService {
                 use windows::Win32::NetworkManagement::WindowsFilteringPlatform::{
                     FwpmEngineClose0, FwpmEngineOpen0, FWPM_SESSION0,
                 };
+                use windows::Win32::System::Rpc::RPC_C_AUTHN_WINNT;
                 let mut handle = HANDLE::default();
                 let session = FWPM_SESSION0::default();
                 let status = unsafe {
                     FwpmEngineOpen0(
                         PCWSTR::null(),
-                        0x00000002,
+                        RPC_C_AUTHN_WINNT,
                         None,
                         Some(&session),
                         &mut handle,

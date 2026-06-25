@@ -64,6 +64,7 @@ Write-Host "WireSentinel release builder v$Version ($ArchLabel, channel=$Channel
 
 $BuildArgs = @{
     Arch = $Arch
+    IncludeDrivers = $true
 }
 if ($SkipBuild) { $BuildArgs.SkipBuild = $true }
 if ($SkipDriverSign) { $BuildArgs.SkipDriverSign = $true }

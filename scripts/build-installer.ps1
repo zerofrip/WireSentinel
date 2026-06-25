@@ -254,7 +254,7 @@ Test-Prerequisites @($ServiceExe, $GuiExe, $TunnelDll, $WireguardDll) + $resourc
 Stage-InstallerBinaries -ServiceExe $ServiceExe -GuiExe $GuiExe
 & (Join-Path $Root "scripts\generate-installer-third-party.ps1") -Arch $Arch
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-Invoke-Validate
+Invoke-Validate -SkipDriverRefs:(-not $IncludeDrivers)
 
 New-Item -ItemType Directory -Force -Path $Dist | Out-Null
 

@@ -7,6 +7,7 @@
 #   ./scripts/build-windows-cross.sh
 #   ./scripts/build-windows-cross.sh core-service
 #   ./scripts/build-windows-cross.sh core-service --release
+#   ./scripts/build-windows-cross.sh core-service   # debug (default profile)
 
 set -euo pipefail
 
@@ -60,24 +61,8 @@ ensure_llvm_tools() {
     exit 1
 }
 
-# #region agent log
-_debug_log() {
-    local msg="$1" data="$2" hid="$3"
-    local ts
-    ts="$(date +%s%3N 2>/dev/null || date +%s)000"
-    printf '%s\n' "{\"sessionId\":\"28de1e\",\"timestamp\":${ts},\"location\":\"build-windows-cross.sh\",\"message\":\"${msg}\",\"data\":${data},\"hypothesisId\":\"${hid}\",\"runId\":\"${RUN_ID:-pre-fix}\"}" >> "$ROOT/.cursor/debug-28de1e.log" 2>/dev/null || true
-}
-# #endregion
-
 ensure_clang_cl
-# #region agent log
-_debug_log "clang-cl resolved" "{\"clang_cl\":\"$(command -v clang-cl 2>/dev/null || echo missing)\"}" "H1"
-# #endregion
-
 ensure_llvm_tools
-# #region agent log
-_debug_log "llvm-lib resolved" "{\"llvm_lib\":\"$(command -v llvm-lib 2>/dev/null || echo missing)\",\"lld_link\":\"$(command -v lld-link 2>/dev/null || echo missing)\"}" "H2"
-# #endregion
 
 if ! command -v cargo-xwin >/dev/null 2>&1; then
     echo "Installing cargo-xwin..."
@@ -93,11 +78,19 @@ export XWIN_ACCEPT_LICENSE="${XWIN_ACCEPT_LICENSE:-1}"
 echo "Building package=$PACKAGE target=$TARGET (via cargo-xwin)..."
 cargo xwin build -p "$PACKAGE" --target "$TARGET" "$@"
 
-BIN="wire-sentinel-service.exe"
-for profile in release debug; do
-    candidate="$ROOT/target/$TARGET/$profile/$BIN"
-    if [[ -f "$candidate" ]]; then
-        echo "Output: $candidate"
+PROFILE="debug"
+for arg in "$@"; do
+    if [[ "$arg" == "--release" ]]; then
+        PROFILE="release"
         break
     fi
 done
+
+BIN="wire-sentinel-service.exe"
+candidate="$ROOT/target/$TARGET/$PROFILE/$BIN"
+if [[ -f "$candidate" ]]; then
+    echo "Output: $candidate"
+else
+    echo "error: expected binary not found: $candidate" >&2
+    exit 1
+fi

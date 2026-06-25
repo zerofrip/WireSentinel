@@ -68,6 +68,8 @@ cargo check --workspace --target aarch64-pc-windows-msvc
 
 Full installer builds require `windows-latest` GitHub Actions runners.
 
+For a WSL → Windows portable backend bundle (console mode, no UI), see [wsl-portable-debug.md](wsl-portable-debug.md).
+
 ## VPN backend notes
 
 | Backend | Source | Architecture |

@@ -226,7 +226,7 @@ git push origin v0.1.0
 2. Run the **Release** workflow on `main` (or another `ref`)
 3. The workflow creates tag `v{version}` from `version.json` and publishes the release
 
-Manual runs fail if that tag already exists (prevents duplicate releases).
+Manual runs fail if that tag already exists (prevents duplicate releases). To re-run a failed Release workflow for the same version, bump `version.json` or delete the existing `v{version}` tag first.
 
 ### Release artifacts
 
@@ -256,7 +256,7 @@ Local release (Windows, sibling repos checked out next to WireSentinel):
 ## Manual WiX / NSIS
 
 ```powershell
-wix build -ext WixToolset.Util.wixext installer/wix/Product.wxs -o dist/WireSentinel-0.1.0.msi
+wix build -ext WixToolset.Util.wixext -d WIRESENTINEL_ARCH=x64 installer/wix/Product.wxs installer/generated/third-party.wxs -o dist/WireSentinel-0.1.0.msi
 makensis /DWIRESENTINEL_VERSION=0.1.0 /DWIRESENTINEL_ARCH=x64 installer/nsis/installer.nsi
 ```
 

@@ -7,8 +7,10 @@ BeforeAll {
     $Root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     $Script:WixFile = Join-Path $Root "installer\wix\Product.wxs"
     $Script:NsisFile = Join-Path $Root "installer\nsis\installer.nsi"
+    $Script:BuildInstaller = Join-Path $Root "scripts\build-installer.ps1"
     $Script:WixText = Get-Content -Raw -Path $Script:WixFile
     $Script:NsisText = Get-Content -Raw -Path $Script:NsisFile
+    $Script:BuildInstallerText = Get-Content -Raw -Path $Script:BuildInstaller
 }
 
 Describe "WireSentinel installer — clean install" {
@@ -33,9 +35,10 @@ Describe "WireSentinel installer — clean install" {
     }
 
     It "WiX references third-party component groups" {
-        $Script:WixText | Should -Match 'Id="ThirdPartyComponents"'
-        $Script:WixText | Should -Match 'Id="LegalNoticesComponents"'
-        $Script:WixText | Should -Match "third-party.wxs"
+        $Script:WixText | Should -Match 'ComponentGroupRef Id="ThirdPartyComponents"'
+        $Script:WixText | Should -Match 'ComponentGroupRef Id="LegalNoticesComponents"'
+        $Script:BuildInstallerText | Should -Match "third-party\.wxs"
+        $Script:WixText | Should -Not -Match "third-party\.wxs"
     }
 
     It "NSIS supports silent install" {

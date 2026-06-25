@@ -74,7 +74,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: WireSentinel/ui/package-lock.json
 
@@ -121,9 +121,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: WireSentinel/.cache/vpn-resources
-          key: packaging-resources-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1', 'WireSentinel/installer/third-party-versions.json') }}
+          key: packaging-resources-${{ runner.os }}-x64-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1', 'WireSentinel/installer/third-party-versions.json') }}
           restore-keys: |
-            packaging-resources-${{ runner.os }}-
+            packaging-resources-${{ runner.os }}-x64-
 
       - name: Cache wireguard-windows build deps
         uses: actions/cache@v4
@@ -204,7 +204,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: WireSentinel/ui/package-lock.json
 
@@ -251,9 +251,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: WireSentinel/.cache/vpn-resources
-          key: packaging-resources-${{ runner.os }}-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1', 'WireSentinel/installer/third-party-versions.json') }}
+          key: packaging-resources-${{ runner.os }}-arm64-${{ hashFiles('WireSentinel/scripts/fetch-vpn-resources.ps1', 'WireSentinel/installer/third-party-versions.json') }}
           restore-keys: |
-            packaging-resources-${{ runner.os }}-
+            packaging-resources-${{ runner.os }}-arm64-
 
       - name: Cache wireguard-windows build deps
         uses: actions/cache@v4

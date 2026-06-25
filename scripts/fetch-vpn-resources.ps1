@@ -247,6 +247,16 @@ Install-WinDivert -Versions $versions
 Install-SingBox -Versions $versions
 Install-Tor -Versions $versions
 
+if ($Arch -eq "arm64") {
+    foreach ($name in @("WinDivert.dll", "WinDivert64.sys")) {
+        $stale = Join-Path $ResourcesDir $name
+        if (Test-Path $stale) {
+            Remove-Item -Force $stale
+            Write-Step "Removed stale $name from cache restore on $Arch"
+        }
+    }
+}
+
 $required = @("tunnel.dll", "wireguard.dll", "sing-box.exe", "tor.exe")
 if ($Arch -eq "x64") {
     $required += @("WinDivert.dll", "WinDivert64.sys")

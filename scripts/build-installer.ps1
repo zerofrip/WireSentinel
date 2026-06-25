@@ -151,7 +151,9 @@ function Stage-ThirdPartyLegal {
 function Stage-InstallerBinaries {
     param(
         [string]$ServiceExe,
-        [string]$GuiExe
+        [string]$GuiExe,
+        [ValidateSet("x64", "arm64")]
+        [string]$Arch = "x64"
     )
     $stageDir = Join-Path $Root "installer\staging\bin"
     if (Test-Path $stageDir) {
@@ -160,14 +162,19 @@ function Stage-InstallerBinaries {
     New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
     Copy-Item -Force $ServiceExe (Join-Path $stageDir "wire-sentinel-service.exe")
     Copy-Item -Force $GuiExe (Join-Path $stageDir "wire-sentinel.exe")
-    foreach ($pair in @(
-            @{ Src = $TunnelDll; Dst = "tunnel.dll" },
-            @{ Src = $WireguardDll; Dst = "wireguard.dll" },
+    $resourcePairs = @(
+        @{ Src = $TunnelDll; Dst = "tunnel.dll" },
+        @{ Src = $WireguardDll; Dst = "wireguard.dll" },
+        @{ Src = (Join-Path $Root "resources\sing-box.exe"); Dst = "sing-box.exe" },
+        @{ Src = (Join-Path $Root "resources\tor.exe"); Dst = "tor.exe" }
+    )
+    if ($Arch -eq "x64") {
+        $resourcePairs = @(
             @{ Src = (Join-Path $Root "resources\WinDivert.dll"); Dst = "WinDivert.dll" },
-            @{ Src = (Join-Path $Root "resources\WinDivert64.sys"); Dst = "WinDivert64.sys" },
-            @{ Src = (Join-Path $Root "resources\sing-box.exe"); Dst = "sing-box.exe" },
-            @{ Src = (Join-Path $Root "resources\tor.exe"); Dst = "tor.exe" }
-        )) {
+            @{ Src = (Join-Path $Root "resources\WinDivert64.sys"); Dst = "WinDivert64.sys" }
+        ) + $resourcePairs
+    }
+    foreach ($pair in $resourcePairs) {
         if (Test-Path $pair.Src) {
             Copy-Item -Force $pair.Src (Join-Path $stageDir $pair.Dst)
         }
@@ -251,7 +258,7 @@ if ($Arch -eq "x64") {
 }
 
 Test-Prerequisites @($ServiceExe, $GuiExe, $TunnelDll, $WireguardDll) + $resourceRequired
-Stage-InstallerBinaries -ServiceExe $ServiceExe -GuiExe $GuiExe
+Stage-InstallerBinaries -ServiceExe $ServiceExe -GuiExe $GuiExe -Arch $Arch
 & (Join-Path $Root "scripts\generate-installer-third-party.ps1") -Arch $Arch
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Invoke-Validate -SkipDriverRefs:(-not $IncludeDrivers)
@@ -265,9 +272,14 @@ if ($buildMsi) {
     $msiOut = Join-Path $Dist "WireSentinel-$Version-$ArchLabel.msi"
     Write-Host "Building MSI -> $msiOut"
     $env:WIRESENTINEL_ARCH = $ArchLabel
+    $thirdPartyWix = Join-Path $Root "installer\generated\third-party.wxs"
     Push-Location (Join-Path $Root "installer\wix")
     try {
-        wix build -ext WixToolset.Util.wixext -d WIRESENTINEL_ARCH=$ArchLabel Product.wxs -o $msiOut
+        $wixInputs = @("Product.wxs")
+        if (Test-Path $thirdPartyWix) {
+            $wixInputs += "..\generated\third-party.wxs"
+        }
+        wix build -ext WixToolset.Util.wixext -d WIRESENTINEL_ARCH=$ArchLabel @wixInputs -o $msiOut
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     } finally {
         Pop-Location

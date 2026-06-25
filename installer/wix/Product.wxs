@@ -184,6 +184,4 @@
       </Component>
     </ComponentGroup>
   </Package>
-
-  <?include ../generated/third-party.wxs ?>
 </Wix>

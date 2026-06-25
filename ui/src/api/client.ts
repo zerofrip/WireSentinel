@@ -6,14 +6,42 @@ let authToken: string | null = null;
 
 export async function initAuth(): Promise<void> {
   if (authToken) return;
+
+  const { invoke } = await import("@tauri-apps/api/core");
   try {
-    const { invoke } = await import("@tauri-apps/api/core");
+    await invoke("ensure_backend_service");
+  } catch (error) {
+    throw error instanceof Error
+      ? error
+      : new Error(
+          "Failed to start WireSentinel service — administrator approval may be required"
+        );
+  }
+
+  try {
+    const res = await fetch(`${BASE}/api/v1/auth/token`);
+    if (res.ok) {
+      const body = (await res.json()) as { token?: string };
+      if (body.token) {
+        authToken = body.token;
+        return;
+      }
+    }
+  } catch {
+    // fall through to file/env fallbacks
+  }
+
+  try {
     authToken = await invoke<string>("read_api_token");
+    return;
   } catch {
     authToken = import.meta.env.VITE_API_TOKEN ?? null;
   }
+
   if (!authToken) {
-    throw new Error("API token unavailable — start WireSentinel service first");
+    throw new Error(
+      "API token unavailable — WireSentinel service could not be reached"
+    );
   }
 }
 

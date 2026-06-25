@@ -1,7 +1,9 @@
+mod service_manager;
 mod ui_prefs;
 
+use service_manager::{BackendServiceState, ServiceBootstrapResult};
 use std::path::PathBuf;
-use tauri::{Manager, WindowEvent};
+use tauri::{Manager, RunEvent, WindowEvent};
 use ui_prefs::{
     ensure_tray, get_ui_preferences, load_ui_preferences, set_ui_preferences, AppUiState,
     MAIN_WINDOW_LABEL,
@@ -80,6 +82,13 @@ fn read_api_token() -> Result<String, String> {
 }
 
 #[tauri::command]
+fn ensure_backend_service(
+    backend: tauri::State<'_, BackendServiceState>,
+) -> Result<ServiceBootstrapResult, String> {
+    service_manager::ensure_backend_service(backend.inner())
+}
+
+#[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {name}! WireSentinel UI ready.")
 }
@@ -91,8 +100,17 @@ pub fn run() {
 
     tracing::info!(version = env!("CARGO_PKG_VERSION"), "WireSentinel UI starting");
 
-    if let Err(e) = tauri::Builder::default()
+    let app = match tauri::Builder::default()
+        .manage(BackendServiceState::new())
         .setup(|app| {
+            let backend = app.state::<BackendServiceState>();
+            match service_manager::ensure_backend_service(backend.inner()) {
+                Ok(result) => tracing::info!(mode = %result.mode, "backend service ready"),
+                Err(error) => {
+                    tracing::warn!(error = %error, "backend service bootstrap failed during setup");
+                }
+            }
+
             let prefs = load_ui_preferences(app.handle());
             app.manage(AppUiState::new(prefs.clone()));
             if prefs.close_to_tray {
@@ -103,6 +121,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             read_api_token,
+            ensure_backend_service,
             get_ui_preferences,
             set_ui_preferences,
         ])
@@ -117,12 +136,23 @@ pub fn run() {
                 }
             }
         })
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
     {
-        tracing::error!(error = %e, "WireSentinel UI exited with error");
-        eprintln!("error while running WireSentinel UI: {e}");
-        std::process::exit(1);
-    }
+        Ok(app) => app,
+        Err(error) => {
+            tracing::error!(error = %error, "WireSentinel UI failed to build");
+            eprintln!("error while building WireSentinel UI: {error}");
+            std::process::exit(1);
+        }
+    };
+
+    app.run(|app_handle, event| {
+        if let RunEvent::Exit = event {
+            if let Some(backend) = app_handle.try_state::<BackendServiceState>() {
+                backend.stop_console_child();
+            }
+        }
+    });
 
     tracing::info!("WireSentinel UI shut down");
 }

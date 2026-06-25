@@ -71,6 +71,7 @@ function eventReducer(state: EventState, action: EventAction): EventState {
 interface EventContextValue extends EventState {
   connected: boolean;
   error: string | null;
+  bootstrapping: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -78,6 +79,7 @@ const EventContext = createContext<EventContextValue>({
   ...initialEventState,
   connected: false,
   error: null,
+  bootstrapping: false,
   refresh: async () => {},
 });
 
@@ -85,82 +87,97 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(eventReducer, initialEventState);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bootstrapping, setBootstrapping] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
 
   const refresh = useCallback(async () => {
-    try {
-      await initAuth();
-      const [
-        status,
-        bandwidth,
-        apps,
-        vpnProfiles,
-        rules,
-        dnsLogs,
-        topDomains,
-        filterLists,
-        routeStats,
-        blockedStats,
-        auditLog,
-        privacySnapshot,
-        transports,
-        transportStatus,
-        chains,
-        dnsProviders,
-        leakIncidents,
-        performance,
-      ] = await Promise.all([
-        apiClient.status(),
-        apiClient.traffic(100),
-        apiClient.apps(),
-        apiClient.vpnList(),
-        apiClient.rules(),
-        apiClient.dnsLogs({ limit: 50 }),
-        apiClient.topDomains(10).catch(() => []),
-        apiClient.filterLists().catch(() => []),
-        apiClient.routeStatistics({ limit: 50 }).catch(() => []),
-        apiClient.blockedStatistics(20).catch(() => []),
-        apiClient.auditLog({ limit: 50 }).catch(() => []),
-        apiClient.privacy().catch(() => null),
-        apiClient.transports().catch(() => []),
-        apiClient.transportStatus().catch(() => []),
-        apiClient.chains().catch(() => []),
-        apiClient.dnsProviders().catch(() => []),
-        apiClient.leaks(50).catch(() => []),
-        apiClient.performance(20).catch(() => ({ latest: null, snapshots: [] })),
-      ]);
-      dispatch({
-        type: "hydrate",
-        status,
-        bandwidth,
-        apps,
-        vpnProfiles,
-        rules,
-        dnsLogs,
-        topDomains,
-        filterLists,
-        routeStats,
-        blockedStats,
-        auditLog,
-        privacySnapshot,
-        transports,
-        transportStatus,
-        chains,
-        dnsProviders,
-        leakIncidents,
-        performanceSnapshots: performance.snapshots,
-        securityAudit: (await apiClient.securityAudit().catch(() => [])).map((f) => ({
-          action: f.title,
-          detail: `${f.severity}: ${f.category}`,
-          timestamp: f.created_at,
-        })),
-      });
-      setConnected(true);
-      setError(null);
-    } catch (e) {
-      setConnected(false);
-      setError(e instanceof Error ? e.message : "Service unavailable");
+    const retryDelaysMs = [0, 1000, 2000, 4000];
+    let lastError: unknown = null;
+
+    setBootstrapping(true);
+    for (const delay of retryDelaysMs) {
+      if (delay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+      try {
+        await initAuth();
+        const [
+          status,
+          bandwidth,
+          apps,
+          vpnProfiles,
+          rules,
+          dnsLogs,
+          topDomains,
+          filterLists,
+          routeStats,
+          blockedStats,
+          auditLog,
+          privacySnapshot,
+          transports,
+          transportStatus,
+          chains,
+          dnsProviders,
+          leakIncidents,
+          performance,
+        ] = await Promise.all([
+          apiClient.status(),
+          apiClient.traffic(100),
+          apiClient.apps(),
+          apiClient.vpnList(),
+          apiClient.rules(),
+          apiClient.dnsLogs({ limit: 50 }),
+          apiClient.topDomains(10).catch(() => []),
+          apiClient.filterLists().catch(() => []),
+          apiClient.routeStatistics({ limit: 50 }).catch(() => []),
+          apiClient.blockedStatistics(20).catch(() => []),
+          apiClient.auditLog({ limit: 50 }).catch(() => []),
+          apiClient.privacy().catch(() => null),
+          apiClient.transports().catch(() => []),
+          apiClient.transportStatus().catch(() => []),
+          apiClient.chains().catch(() => []),
+          apiClient.dnsProviders().catch(() => []),
+          apiClient.leaks(50).catch(() => []),
+          apiClient.performance(20).catch(() => ({ latest: null, snapshots: [] })),
+        ]);
+        dispatch({
+          type: "hydrate",
+          status,
+          bandwidth,
+          apps,
+          vpnProfiles,
+          rules,
+          dnsLogs,
+          topDomains,
+          filterLists,
+          routeStats,
+          blockedStats,
+          auditLog,
+          privacySnapshot,
+          transports,
+          transportStatus,
+          chains,
+          dnsProviders,
+          leakIncidents,
+          performanceSnapshots: performance.snapshots,
+          securityAudit: (await apiClient.securityAudit().catch(() => [])).map((f) => ({
+            action: f.title,
+            detail: `${f.severity}: ${f.category}`,
+            timestamp: f.created_at,
+          })),
+        });
+        setConnected(true);
+        setError(null);
+        setBootstrapping(false);
+        return;
+      } catch (e) {
+        lastError = e;
+        setConnected(false);
+      }
     }
+
+    setBootstrapping(false);
+    setError(lastError instanceof Error ? lastError.message : "Service unavailable");
   }, []);
 
   useEffect(() => {
@@ -188,7 +205,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
   }, [connected]);
 
   return (
-    <EventContext.Provider value={{ ...state, connected, error, refresh }}>
+    <EventContext.Provider value={{ ...state, connected, error, bootstrapping, refresh }}>
       {children}
     </EventContext.Provider>
   );

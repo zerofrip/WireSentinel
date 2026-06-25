@@ -7,6 +7,7 @@ interface ServiceContextValue {
   bandwidth: ReturnType<typeof useEvents>["bandwidth"];
   refresh: () => Promise<void>;
   error: string | null;
+  bootstrapping: boolean;
 }
 
 const ServiceContext = createContext<ServiceContextValue>({
@@ -15,6 +16,7 @@ const ServiceContext = createContext<ServiceContextValue>({
   bandwidth: [],
   refresh: async () => {},
   error: null,
+  bootstrapping: false,
 });
 
 function ServiceBridge({ children }: { children: React.ReactNode }) {
@@ -27,6 +29,7 @@ function ServiceBridge({ children }: { children: React.ReactNode }) {
         bandwidth: events.bandwidth,
         refresh: events.refresh,
         error: events.error,
+        bootstrapping: events.bootstrapping,
       }}
     >
       {children}

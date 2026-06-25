@@ -11,6 +11,7 @@
     "core:window:allow-set-focus",
     "core:tray:default",
     "allow-get-ui-preferences",
-    "allow-set-ui-preferences"
+    "allow-set-ui-preferences",
+    "allow-ensure-backend-service"
   ]
 }

@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-ensure-backend-service"
+description = "Enables the ensure_backend_service command."
+commands.allow = ["ensure_backend_service"]

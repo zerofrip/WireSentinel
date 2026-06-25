@@ -177,6 +177,12 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the ensure_backend_service command.",
+          "type": "string",
+          "const": "allow-ensure-backend-service",
+          "markdownDescription": "Enables the ensure_backend_service command."
+        },
+        {
           "description": "Enables the get_ui_preferences command.",
           "type": "string",
           "const": "allow-get-ui-preferences",

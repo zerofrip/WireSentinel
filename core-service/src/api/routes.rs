@@ -57,7 +57,7 @@ use vpn_engine::{detect_backend, materialize_profile_config};
 
 pub fn router(state: AppState) -> Router {
     let shared = Arc::new(state);
-    let api = Router::new()
+    let protected = Router::new()
         .route("/status", get(status))
         .route("/apps", get(list_apps).post(set_app_route))
         .route("/traffic", get(list_traffic))
@@ -204,7 +204,11 @@ pub fn router(state: AppState) -> Router {
         .route_layer(middleware::from_fn_with_state(
             Arc::clone(&shared),
             crate::api::middleware::require_bearer,
-        ))
+        ));
+
+    let api = Router::new()
+        .route("/auth/token", get(get_auth_token))
+        .merge(protected)
         .with_state(Arc::clone(&shared));
 
     Router::new()
@@ -1458,6 +1462,13 @@ async fn get_metrics(
         }
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
+}
+
+async fn get_auth_token(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    Json(serde_json::json!({
+        "token": state.deps.api_token.read().clone()
+    }))
+    .into_response()
 }
 
 async fn rotate_auth_token(State(state): State<Arc<AppState>>) -> impl IntoResponse {

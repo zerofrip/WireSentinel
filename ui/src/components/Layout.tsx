@@ -4,7 +4,7 @@ import { navPillars, pillarForPath } from "../config/nav";
 import { useService } from "../contexts/ServiceContext";
 
 export function Layout() {
-  const { connected, error, status } = useService();
+  const { connected, error, status, bootstrapping } = useService();
   const location = useLocation();
   const activePillar = pillarForPath(location.pathname);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -22,7 +22,11 @@ export function Layout() {
         <div className="p-4 border-b border-slate-700">
           <h1 className="text-lg font-bold text-sentinel-accent">WireSentinel</h1>
           <p className="text-xs text-sentinel-muted mt-1">
-            {connected ? "Service connected" : "Service offline"}
+            {connected
+              ? "Service connected"
+              : bootstrapping
+                ? "Starting service…"
+                : "Service offline"}
           </p>
         </div>
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
@@ -72,9 +76,18 @@ export function Layout() {
         )}
       </aside>
       <main className="flex-1 overflow-auto p-6">
+        {bootstrapping && !error && (
+          <div className="mb-4 p-3 bg-slate-800/60 border border-slate-600 rounded text-sm text-sentinel-muted">
+            WireSentinel サービスを起動しています…
+          </div>
+        )}
         {error && (
           <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded text-sm">
-            {error} — start <code className="text-sentinel-accent">wire-sentinel-service --console</code>
+            {error}
+            <p className="mt-2 text-sentinel-muted">
+              管理者権限の承認が必要な場合があります。承認後にアプリを再起動するか、管理者として{" "}
+              <code className="text-sentinel-accent">sc start WireSentinel</code> を実行してください。
+            </p>
           </div>
         )}
         <Outlet />

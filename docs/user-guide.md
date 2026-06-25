@@ -5,8 +5,7 @@ WireSentinel helps you control which applications can reach the network, route t
 ## Getting started
 
 1. **Install** WireSentinel using the MSI or setup EXE (requires administrator approval).
-2. **Start the service** — the UI prompts you if the service is not running.
-3. **Open WireSentinel** from the Start Menu or desktop shortcut.
+2. **Open WireSentinel** from the Start Menu or desktop shortcut — the app starts the backend service automatically when needed.
 
 The UI connects automatically to the local service at `http://127.0.0.1:8170`.
 

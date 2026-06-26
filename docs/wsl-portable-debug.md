@@ -75,7 +75,111 @@ Use CodeLLDB or the MSVC debugger with the staged `.pdb` in debug builds.
 | x64 cross-build from WSL | arm64 portable (future) |
 | Console mode | SCM service install |
 
-For UI development, build on Windows: `cd ui && npm run tauri dev`.
+For UI development, build on Windows from a **native NTFS path** (not `\\wsl$\`). See [Frontend on Windows](#frontend-on-windows-with-wsl-backend) below.
+
+## Frontend on Windows (with WSL backend)
+
+Tauri (`npm run tauri dev`) must run on **Windows**, on a normal drive path such as `C:\dev\WireSentinel`. Do **not** run `npm install` from PowerShell against `\\wsl.localhost\...\WireSentinel\ui`.
+
+### Why `EISDIR` on `node_modules\.bin\json5`?
+
+WSL `npm install` creates Unix symlinks under `node_modules/.bin/`. Windows npm over `\\wsl$\` cannot `lstat` those entries correctly and fails with:
+
+```text
+EISDIR: illegal operation on a directory, lstat '...\node_modules\.bin\json5'
+```
+
+Mixing WSL and Windows npm on the same `node_modules` tree is unsupported.
+
+### Recommended layout
+
+| Component | Where |
+|-----------|--------|
+| Rust backend cross-build | WSL: `~/github/WireSentinel` → `stage-windows-portable.sh` |
+| Tauri UI + `npm install` | Windows: `C:\dev\WireSentinel` (git clone or copy) |
+| Running backend | `C:\dev\WireSentinel-portable\wire-sentinel-service.exe --console` |
+
+### Setup (one-time)
+
+**1. WSL — clean mixed `node_modules` if present:**
+
+```bash
+rm -rf ~/github/WireSentinel/ui/node_modules
+```
+
+**2. Copy repo to native Windows path** (pick one):
+
+**Option A — WSL `rsync` (recommended; avoids Git `safe.directory` on UNC):**
+
+```bash
+mkdir -p /mnt/c/dev
+rsync -a --delete \
+  --exclude node_modules \
+  --exclude target \
+  --exclude ui/src-tauri/target \
+  --exclude .git \
+  ~/github/WireSentinel/ /mnt/c/dev/WireSentinel/
+```
+
+**Option B — clone from GitHub** (run in **Windows** PowerShell from `C:\dev`, not from `\\wsl$\`):
+
+```powershell
+cd C:\dev
+git clone https://github.com/zerofrip/WireSentinel.git WireSentinel
+```
+
+**Option C — `robocopy`** (no `.git` history):
+
+```powershell
+robocopy \\wsl.localhost\Ubuntu\home\zero\github\WireSentinel C:\dev\WireSentinel /E /XD node_modules target ui\src-tauri\target .git
+```
+
+Do **not** use `git clone \\wsl.localhost\...` from Windows — Git 2.35+ reports `dubious ownership` on the WSL `.git` directory.
+
+**3. Windows — install UI deps:**
+
+Prerequisites for `npm run tauri dev` on Windows (in addition to Node.js):
+
+1. **Rust (MSVC)** — [https://rustup.rs](https://rustup.rs) → run `rustup-init.exe`, default *Visual Studio* toolchain
+2. **Visual Studio Build Tools 2022** — workload *Desktop development with C++* (MSVC linker for `cargo build`)
+3. **WebView2** — included on Windows 11; install [Evergreen WebView2](https://developer.microsoft.com/microsoft-edge/webview2/) on Windows 10 if the window fails to open
+
+After install, open a **new** PowerShell and verify:
+
+```powershell
+cargo --version
+rustc --version
+```
+
+If `cargo` is not found, restart the terminal or log out/in so `%USERPROFILE%\.cargo\bin` is on `PATH`.
+
+```powershell
+cd C:\dev\WireSentinel\ui
+npm install
+```
+
+If npm 11 blocks `esbuild` postinstall: `npm approve-scripts esbuild`
+
+If Vite crashes with `EBUSY` on `src-tauri\target\...\build_script_build-*.exe`, ensure `ui/vite.config.ts` sets `server.watch.ignored: ["**/src-tauri/**"]` (already in repo) and re-copy or pull the latest `ui/vite.config.ts`.
+
+**4. Windows — run UI** (backend portable or service must be up):
+
+```powershell
+cd C:\dev\WireSentinel\ui
+npm run tauri dev
+```
+
+Optional: `RUST_LOG=debug npm run tauri dev`
+
+### Vite-only (no Tauri) from WSL
+
+If you only need the React dev server without the desktop shell:
+
+```bash
+cd ~/github/WireSentinel/ui
+npm install   # WSL only; do not run Windows npm on this tree afterward
+npm run dev
+```
 
 ## Related scripts
 

@@ -36,8 +36,12 @@ API listens on `http://127.0.0.1:8170`
 
 **Debug** (`npm run tauri dev`): GUI plus a console window with Rust-side logs on stderr.
 
-```bash
-cd ui
+Run from a **native Windows path** (e.g. `C:\dev\WireSentinel\ui`). Do not run `npm install` on `\\wsl$\...\ui` — WSL symlinks in `node_modules/.bin` break Windows npm (`EISDIR`). See [docs/wsl-portable-debug.md](docs/wsl-portable-debug.md#frontend-on-windows-with-wsl-backend).
+
+**Windows prerequisites:** [Rust (rustup)](https://rustup.rs), Visual Studio Build Tools 2022 (*Desktop development with C++*), WebView2.
+
+```powershell
+cd C:\dev\WireSentinel\ui
 npm install
 npm run tauri dev
 ```

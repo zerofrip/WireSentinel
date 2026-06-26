@@ -3937,6 +3937,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "windivert-engine",
  "windows 0.58.0",
 ]
 

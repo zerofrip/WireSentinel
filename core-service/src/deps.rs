@@ -160,6 +160,7 @@ pub struct ServiceDeps {
     pub tcp_termination: Arc<TcpTerminationService>,
     pub split_templates: Arc<SplitTemplateService>,
     pub exit_failover: Arc<crate::exit_failover::ExitFailoverService>,
+    pub api_listen_port: u16,
     pub api_token: Arc<RwLock<String>>,
 }
 
@@ -306,7 +307,9 @@ impl ServiceDeps {
         dns.load_providers_from_records(&dns_provider_records)?;
         wire_dns_log_handler(&dns, Arc::clone(&storage), events.clone());
 
-        let traffic = Arc::new(TrafficMonitor::new(1000));
+        let api_listen_port = storage.settings.get_api_port().await?;
+        let traffic_poll_interval_ms = storage.settings.traffic_poll_interval_ms().await?;
+        let traffic = Arc::new(TrafficMonitor::new(traffic_poll_interval_ms));
 
         let app_registry = Arc::new(AppRegistryService::new(
             Arc::clone(&storage.apps) as Arc<dyn storage::AppRepository>,
@@ -589,6 +592,7 @@ impl ServiceDeps {
             tcp_termination,
             split_templates,
             exit_failover,
+            api_listen_port,
             api_token,
         })
     }

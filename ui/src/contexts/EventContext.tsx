@@ -187,16 +187,23 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!connected) return;
     let closed = false;
-    try {
-      wsRef.current = connectEvents((raw) => {
-        dispatch(raw as ServiceEvent);
-      });
-      wsRef.current.onclose = () => {
-        if (!closed) setConnected(false);
-      };
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "WebSocket failed");
-    }
+    void (async () => {
+      try {
+        const ws = await connectEvents((raw) => {
+          dispatch(raw as ServiceEvent);
+        });
+        if (closed) {
+          ws.close();
+          return;
+        }
+        wsRef.current = ws;
+        ws.onclose = () => {
+          if (!closed) setConnected(false);
+        };
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "WebSocket failed");
+      }
+    })();
     return () => {
       closed = true;
       wsRef.current?.close();

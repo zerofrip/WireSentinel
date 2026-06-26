@@ -12,6 +12,7 @@
     "core:tray:default",
     "allow-get-ui-preferences",
     "allow-set-ui-preferences",
-    "allow-ensure-backend-service"
+    "allow-ensure-backend-service",
+    "allow-get-api-base-url"
   ]
 }

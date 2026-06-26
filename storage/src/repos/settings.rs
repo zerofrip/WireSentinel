@@ -76,13 +76,22 @@ impl SettingsRepository for SqliteSettingsRepository {
     }
 
     async fn traffic_monitor_backend(&self) -> Result<String> {
-        self.get_json("traffic_monitor_backend", "iphlpapi".to_string())
+        self.get_json("traffic_monitor_backend", "packet".to_string())
             .await
     }
 
     async fn set_traffic_monitor_backend(&self, backend: &str) -> Result<()> {
         let json = serde_json::to_string(backend).map_err(WireSentinelError::Serde)?;
         self.set("traffic_monitor_backend", &json).await
+    }
+
+    async fn traffic_poll_interval_ms(&self) -> Result<u64> {
+        self.get_json("traffic_poll_interval_ms", 5000u64).await
+    }
+
+    async fn set_traffic_poll_interval_ms(&self, ms: u64) -> Result<()> {
+        let json = serde_json::to_string(&ms).map_err(WireSentinelError::Serde)?;
+        self.set("traffic_poll_interval_ms", &json).await
     }
 
     async fn wfp_engine_impl(&self) -> Result<String> {

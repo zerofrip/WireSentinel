@@ -47,6 +47,8 @@ cd C:\dev\WireSentinel-portable
 .\wire-sentinel-service.exe --console
 ```
 
+Startup log should include `traffic backend: packet` when `WinDivert.dll` is present. If the DLL is missing, the service falls back to `iphlpapi` polling automatically.
+
 Verify the API:
 
 ```powershell
@@ -69,9 +71,10 @@ Use CodeLLDB or the MSVC debugger with the staged `.pdb` in debug builds.
 ## Limitations
 
 | Included | Not included |
-|----------|----------------|
+|----------|--------------|
 | `wire-sentinel-service.exe` | `wire-sentinel.exe` (Tauri UI) |
 | VPN/transport DLLs and helpers | MSI / NSIS installers |
+| `WinDivert.dll` + `WinDivert64.sys` (traffic `packet` backend) | — |
 | x64 cross-build from WSL | arm64 portable (future) |
 | Console mode | SCM service install |
 
@@ -94,7 +97,7 @@ Mixing WSL and Windows npm on the same `node_modules` tree is unsupported.
 ### Recommended layout
 
 | Component | Where |
-|-----------|--------|
+|-----------|-------|
 | Rust backend cross-build | WSL: `~/github/WireSentinel` → `stage-windows-portable.sh` |
 | Tauri UI + `npm install` | Windows: `C:\dev\WireSentinel` (git clone or copy) |
 | Running backend | `C:\dev\WireSentinel-portable\wire-sentinel-service.exe --console` |
@@ -181,7 +184,22 @@ npm install   # WSL only; do not run Windows npm on this tree afterward
 npm run dev
 ```
 
+## UI / Service connection verification
+
+After `wire-sentinel-service.exe` is running (portable `--console` or Windows Service):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\dev\WireSentinel\scripts\verify-ui-service-connection.ps1
+```
+
+Checks: `GET /api/v1/auth/token` → `GET /api/v1/status` (Bearer) → `GET /api/v1/diagnostics` → WebSocket `/api/v1/events`.
+
+With the Tauri UI (`wire-sentinel.exe`), the Dashboard should show **connected** when `EventContext` successfully hydrates via REST and WebSocket. Both executables should live in the same directory (or set `WIRESENTINEL_SERVICE_EXE`).
+
+Traffic monitor design comparison: [traffic-monitor-comparison.md](traffic-monitor-comparison.md).
+
 ## Related scripts
 
 - [`scripts/build-windows-cross.sh`](../scripts/build-windows-cross.sh) — low-level `cargo-xwin` wrapper
 - [`scripts/stage-windows-portable.sh`](../scripts/stage-windows-portable.sh) — build + copy to portable folder
+- [`scripts/verify-ui-service-connection.ps1`](../scripts/verify-ui-service-connection.ps1) — API/WebSocket health check

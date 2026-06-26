@@ -14,6 +14,7 @@ chrono = { workspace = true }
 async-trait = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
+windivert-engine = { workspace = true }
 windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_NetworkManagement_IpHelper",

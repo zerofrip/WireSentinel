@@ -1,6 +1,22 @@
 const DEFAULT_PORT = 8170;
-const BASE = `http://127.0.0.1:${import.meta.env.VITE_API_PORT ?? DEFAULT_PORT}`;
-const WS_BASE = `ws://127.0.0.1:${import.meta.env.VITE_API_PORT ?? DEFAULT_PORT}`;
+
+let resolvedHttpBase: string | null = null;
+
+async function httpBase(): Promise<string> {
+  if (resolvedHttpBase) return resolvedHttpBase;
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    resolvedHttpBase = await invoke<string>("get_api_base_url");
+  } catch {
+    resolvedHttpBase = `http://127.0.0.1:${import.meta.env.VITE_API_PORT ?? DEFAULT_PORT}`;
+  }
+  return resolvedHttpBase;
+}
+
+async function wsBase(): Promise<string> {
+  const http = await httpBase();
+  return http.replace(/^http/, "ws");
+}
 
 let authToken: string | null = null;
 
@@ -18,8 +34,9 @@ export async function initAuth(): Promise<void> {
         );
   }
 
+  const base = await httpBase();
   try {
-    const res = await fetch(`${BASE}/api/v1/auth/token`);
+    const res = await fetch(`${base}/api/v1/auth/token`);
     if (res.ok) {
       const body = (await res.json()) as { token?: string };
       if (body.token) {
@@ -57,7 +74,8 @@ function headers(): HeadersInit {
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   await initAuth();
-  const res = await fetch(`${BASE}${path}`, {
+  const base = await httpBase();
+  const res = await fetch(`${base}${path}`, {
     ...init,
     headers: { ...headers(), ...init?.headers },
   });
@@ -860,7 +878,8 @@ export interface BackupBundle {
 
 async function apiBlob(path: string, init?: RequestInit): Promise<Blob> {
   await initAuth();
-  const res = await fetch(`${BASE}${path}`, {
+  const base = await httpBase();
+  const res = await fetch(`${base}${path}`, {
     ...init,
     headers: { ...headers(), ...init?.headers },
   });
@@ -870,7 +889,8 @@ async function apiBlob(path: string, init?: RequestInit): Promise<Blob> {
 
 async function apiText(path: string, init?: RequestInit): Promise<string> {
   await initAuth();
-  const res = await fetch(`${BASE}${path}`, {
+  const base = await httpBase();
+  const res = await fetch(`${base}${path}`, {
     ...init,
     headers: { ...headers(), ...init?.headers },
   });
@@ -1300,10 +1320,11 @@ export const apiClient = {
     }),
 };
 
-export function connectEvents(onEvent: (data: unknown) => void): WebSocket {
+export async function connectEvents(onEvent: (data: unknown) => void): Promise<WebSocket> {
   if (!authToken) throw new Error("auth not initialized");
+  const wsUrl = await wsBase();
   const ws = new WebSocket(
-    `${WS_BASE}/api/v1/events?token=${encodeURIComponent(authToken)}`
+    `${wsUrl}/api/v1/events?token=${encodeURIComponent(authToken)}`
   );
   ws.onmessage = (ev) => {
     try {
@@ -1315,4 +1336,6 @@ export function connectEvents(onEvent: (data: unknown) => void): WebSocket {
   return ws;
 }
 
-export { BASE as API_BASE };
+export async function getApiBaseUrl(): Promise<string> {
+  return httpBase();
+}

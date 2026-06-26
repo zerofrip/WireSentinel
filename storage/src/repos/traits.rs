@@ -151,6 +151,8 @@ pub trait SettingsRepository: Send + Sync {
     async fn vpn_wireguard_impl(&self) -> Result<String>;
     async fn traffic_monitor_backend(&self) -> Result<String>;
     async fn set_traffic_monitor_backend(&self, backend: &str) -> Result<()>;
+    async fn traffic_poll_interval_ms(&self) -> Result<u64>;
+    async fn set_traffic_poll_interval_ms(&self, ms: u64) -> Result<()>;
     async fn wfp_engine_impl(&self) -> Result<String>;
     async fn dns_block_mode(&self) -> Result<String>;
     async fn store_firewall_decisions(&self) -> Result<bool>;

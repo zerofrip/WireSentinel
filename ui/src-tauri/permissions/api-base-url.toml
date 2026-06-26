@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-get-api-base-url"
+description = "Enables the get_api_base_url command."
+commands.allow = ["get_api_base_url"]

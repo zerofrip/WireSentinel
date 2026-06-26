@@ -1,11 +1,13 @@
-//! Network traffic monitoring via iphlpapi polling and bandwidth aggregation.
+//! Network traffic monitoring via packet events or iphlpapi polling.
 
-mod etw;
+mod backend;
 mod handler;
+mod iphlpapi;
 mod monitor;
 mod stub;
 
-pub use etw::{backend_from_settings, TrafficBackend};
+#[cfg(windows)]
+mod packet;
 
 #[cfg(windows)]
 mod windows;
@@ -13,5 +15,8 @@ mod windows;
 #[cfg(windows)]
 pub use windows::enumerate_tcp_connections;
 
+pub use backend::{
+    create_connection_backend, spawn_monitor, BackendMode, ConnectionBackend, MonitorContext,
+};
 pub use handler::ConnectionHandler;
-pub use monitor::{spawn_monitor, TrafficMonitor};
+pub use monitor::{connection_key, TrafficMonitor};

@@ -47,6 +47,10 @@ pub fn api_token_url() -> String {
     format!("http://127.0.0.1:{}/api/v1/auth/token", api_port())
 }
 
+pub fn api_base_url() -> String {
+    format!("http://127.0.0.1:{}", api_port())
+}
+
 pub fn wait_for_api_ready() -> Result<(), String> {
     let url = api_token_url();
     let deadline = std::time::Instant::now() + API_READY_TIMEOUT;

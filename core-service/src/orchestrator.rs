@@ -20,7 +20,7 @@ use std::sync::Arc;
 use storage::Storage;
 use tokio::sync::watch;
 use tracing::{info, warn};
-use traffic_monitor::{spawn_monitor, ConnectionHandler};
+use traffic_monitor::ConnectionHandler;
 
 pub struct Orchestrator {
     deps: Arc<ServiceDeps>,
@@ -231,7 +231,7 @@ impl ServiceDeps {
             active_vpn_count: self.vpn.active_count(),
             monitored_app_count: self.traffic.apps().len() as u32,
             connection_count: self.traffic.connection_count(),
-            api_port: 8170,
+            api_port: self.api_listen_port,
         }
     }
 }
@@ -316,18 +316,27 @@ impl Orchestrator {
         let handler: Arc<dyn ConnectionHandler> = Arc::new(OrchestratorHandler {
             deps: Arc::clone(&self.deps),
         });
-        let backend = self
+        let backend_name = self
             .deps
             .storage
             .settings
             .traffic_monitor_backend()
             .await
-            .unwrap_or_else(|_| "iphlpapi".to_string());
-        *self.monitor_handle.lock() = Some(spawn_monitor(
+            .unwrap_or_else(|_| "packet".to_string());
+        let cleaner_interval_ms = self
+            .deps
+            .storage
+            .settings
+            .traffic_poll_interval_ms()
+            .await
+            .unwrap_or(5000);
+        let backend = traffic_monitor::create_connection_backend(&backend_name);
+        *self.monitor_handle.lock() = Some(traffic_monitor::spawn_monitor(
             Arc::clone(&self.deps.traffic),
             handler,
             self.shutdown_rx.clone(),
-            &backend,
+            backend,
+            cleaner_interval_ms,
         ));
 
         let mut rx = self.deps.events.subscribe();
@@ -365,13 +374,7 @@ impl Orchestrator {
             }
         }));
 
-        let port = self
-            .deps
-            .storage
-            .settings
-            .get_api_port()
-            .await
-            .unwrap_or(8170);
+        let port = self.deps.api_listen_port;
         let state = AppState::from_deps(Arc::clone(&self.deps));
         let handle = tokio::spawn(async move {
             if let Err(e) = crate::api::serve(state, port).await {

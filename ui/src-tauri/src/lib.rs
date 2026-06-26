@@ -82,6 +82,11 @@ fn read_api_token() -> Result<String, String> {
 }
 
 #[tauri::command]
+fn get_api_base_url() -> String {
+    service_manager::api_base_url()
+}
+
+#[tauri::command]
 fn ensure_backend_service(
     backend: tauri::State<'_, BackendServiceState>,
 ) -> Result<ServiceBootstrapResult, String> {
@@ -121,6 +126,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             read_api_token,
+            get_api_base_url,
             ensure_backend_service,
             get_ui_preferences,
             set_ui_preferences,

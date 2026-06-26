@@ -36,6 +36,10 @@ impl EventBus {
         let _ = self.tx.send(event);
     }
 
+    pub fn has_subscribers(&self) -> bool {
+        self.tx.receiver_count() > 0
+    }
+
     pub fn subscribe(&self) -> broadcast::Receiver<ServiceEvent> {
         self.tx.subscribe()
     }

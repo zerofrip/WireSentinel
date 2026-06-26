@@ -56,7 +56,7 @@ impl DomainResolverCache {
             );
 
             let entry = DomainCacheEntry {
-                id: Uuid::new_v4(),
+                id: crate::deterministic_id::domain_cache_id(app_id, ip),
                 app_id,
                 domain: domain.to_string(),
                 ip_address: ip.to_string(),

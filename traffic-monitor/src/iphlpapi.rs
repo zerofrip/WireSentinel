@@ -20,14 +20,22 @@ impl ConnectionBackend for IphlpapiBackend {
         let interval = ctx.monitor.poll_interval_ms();
         let mut ticker = tokio::time::interval(std::time::Duration::from_millis(interval));
         let mut shutdown = ctx.shutdown;
+        let mut bootstrapped = false;
 
         loop {
             tokio::select! {
                 _ = ticker.tick() => {
                     let connections = collect_tcp_connections();
                     sink.prune_to_active(&connections);
-                    for conn in connections {
-                        sink.on_new_connection(conn).await;
+                    if !bootstrapped {
+                        for conn in &connections {
+                            sink.seed_known(conn);
+                        }
+                        bootstrapped = true;
+                    } else {
+                        for conn in connections {
+                            sink.try_new_connection(conn);
+                        }
                     }
                 }
                 _ = shutdown.changed() => {

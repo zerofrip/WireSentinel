@@ -161,6 +161,15 @@ impl SettingsRepository for SqliteSettingsRepository {
         self.set("log_max_files", &json).await
     }
 
+    async fn log_retention_days(&self) -> Result<u64> {
+        self.get_json("log_retention_days", 7u64).await
+    }
+
+    async fn set_log_retention_days(&self, days: u64) -> Result<()> {
+        let json = serde_json::to_string(&days).map_err(WireSentinelError::Serde)?;
+        self.set("log_retention_days", &json).await
+    }
+
     async fn recovery_enabled(&self) -> Result<bool> {
         self.get_json("recovery_enabled", true).await
     }
@@ -171,7 +180,7 @@ impl SettingsRepository for SqliteSettingsRepository {
     }
 
     async fn metrics_interval_secs(&self) -> Result<u64> {
-        self.get_json("metrics_interval_secs", 30u64).await
+        self.get_json("metrics_interval_secs", 60u64).await
     }
 
     async fn set_metrics_interval_secs(&self, secs: u64) -> Result<()> {

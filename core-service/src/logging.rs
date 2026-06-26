@@ -3,7 +3,7 @@
 use parking_lot::RwLock;
 use shared_types::{LogEntry, LogLevel, WireSentinelError};
 use std::collections::VecDeque;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock};
 use storage::data_dir;
 use tracing_subscriber::{
@@ -49,7 +49,7 @@ impl LoggingService {
                 .init();
         }
 
-        let _ = max_files;
+        prune_old_log_files(&log_dir, max_files);
 
         let service = Arc::new(Self {
             ring,
@@ -87,6 +87,35 @@ impl LoggingService {
 
     pub fn log_dir(&self) -> &PathBuf {
         &self.log_dir
+    }
+}
+
+fn prune_old_log_files(log_dir: &Path, max_files: u32) {
+    if max_files == 0 {
+        return;
+    }
+    let Ok(entries) = std::fs::read_dir(log_dir) else {
+        return;
+    };
+    let mut files: Vec<(std::time::SystemTime, PathBuf)> = entries
+        .filter_map(|e| e.ok())
+        .map(|e| {
+            let path = e.path();
+            let modified = e
+                .metadata()
+                .and_then(|m| m.modified())
+                .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+            (modified, path)
+        })
+        .filter(|(_, p)| p.is_file())
+        .collect();
+    if files.len() <= max_files as usize {
+        return;
+    }
+    files.sort_by_key(|(t, _)| *t);
+    let remove_count = files.len() - max_files as usize;
+    for (_, path) in files.into_iter().take(remove_count) {
+        let _ = std::fs::remove_file(path);
     }
 }
 

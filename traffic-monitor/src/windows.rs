@@ -60,7 +60,10 @@ fn enumerate_tcp_v4() -> Vec<ConnectionSnapshot> {
         let table = &*(buffer.as_ptr().cast::<MIB_TCPTABLE_OWNER_PID>());
         let rows = std::slice::from_raw_parts(table.table.as_ptr(), table.dwNumEntries as usize);
         for row in rows {
-            connections.push(row_to_snapshot_v4(row));
+            let snap = row_to_snapshot_v4(row);
+            if crate::filter::is_processable_connection(&snap) {
+                connections.push(snap);
+            }
         }
     }
     connections
@@ -110,7 +113,10 @@ fn enumerate_tcp_v6() -> Vec<ConnectionSnapshot> {
         let table = &*(buffer.as_ptr().cast::<MIB_TCP6TABLE_OWNER_PID>());
         let rows = std::slice::from_raw_parts(table.table.as_ptr(), table.dwNumEntries as usize);
         for row in rows {
-            connections.push(row_to_snapshot_v6(row));
+            let snap = row_to_snapshot_v6(row);
+            if crate::filter::is_processable_connection(&snap) {
+                connections.push(snap);
+            }
         }
     }
     connections

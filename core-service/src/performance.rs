@@ -2,11 +2,12 @@
 
 use chrono::Utc;
 use event_bus::EventBus;
+use parking_lot::Mutex;
 use shared_types::{PerformanceSnapshot, Result, ServiceEventInner};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use storage::Storage;
-use sysinfo::{Pid, System};
+use sysinfo::{Pid, ProcessesToUpdate, System};
 use tokio::sync::watch;
 use tracing::warn;
 use uuid::Uuid;
@@ -30,16 +31,23 @@ pub fn record_api_latency_ms(ms: f64) {
 pub struct PerformanceMonitor {
     storage: Arc<Storage>,
     events: EventBus,
+    system: Mutex<System>,
 }
 
 impl PerformanceMonitor {
     pub fn new(storage: Arc<Storage>, events: EventBus) -> Self {
-        Self { storage, events }
+        let mut system = System::new();
+        system.refresh_processes(ProcessesToUpdate::All, true);
+        Self {
+            storage,
+            events,
+            system: Mutex::new(system),
+        }
     }
 
     pub fn snapshot_now(&self) -> PerformanceSnapshot {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+        let mut sys = self.system.lock();
+        sys.refresh_processes(ProcessesToUpdate::All, true);
         let pid = Pid::from_u32(std::process::id());
         let cpu = sys
             .process(pid)
@@ -79,13 +87,13 @@ impl PerformanceMonitor {
     }
 
     pub fn start_periodic(
-        monitor: Arc<Self>,
+        monitor: Arc<PerformanceMonitor>,
         interval_secs: u64,
         mut shutdown: watch::Receiver<bool>,
     ) {
         tokio::spawn(async move {
             let mut interval =
-                tokio::time::interval(std::time::Duration::from_secs(interval_secs.max(5)));
+                tokio::time::interval(std::time::Duration::from_secs(interval_secs.max(10)));
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
@@ -93,8 +101,8 @@ impl PerformanceMonitor {
                             warn!(error = %e, "performance snapshot failed");
                         }
                     }
-                    changed = shutdown.changed() => {
-                        if changed.is_ok() && *shutdown.borrow() {
+                    _ = shutdown.changed() => {
+                        if *shutdown.borrow() {
                             break;
                         }
                     }

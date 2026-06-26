@@ -146,7 +146,7 @@ impl SplitTunnelEngine {
     ) -> Result<()> {
         let now = Utc::now();
         let record = WfpFilterStateRecord {
-            id: Uuid::new_v4(),
+            id: crate::deterministic_id::wfp_filter_state_id("app", Some(&app.id().to_string())),
             scope_type: "app".into(),
             scope_value: Some(app.id().to_string()),
             filter_id,
@@ -349,7 +349,13 @@ impl SplitTunnelEngine {
         let window_end = window_start + chrono::Duration::hours(1);
 
         let record = RouteStatisticsRecord {
-            id: Uuid::new_v4(),
+            id: crate::deterministic_id::route_statistics_id(
+                app_id,
+                profile_id,
+                domain.as_deref(),
+                route_type_str(route),
+                window_start,
+            ),
             app_id,
             profile_id,
             domain,

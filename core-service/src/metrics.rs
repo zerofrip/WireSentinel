@@ -1,17 +1,26 @@
 //! Observability metrics aggregation.
 
 use chrono::{Duration, Utc};
+use parking_lot::Mutex;
 use shared_types::{MetricsSnapshot, Result, TransportState};
 use std::sync::Arc;
+use std::time::{Duration as StdDuration, Instant};
 use storage::Storage;
 use vpn_engine::VpnManager;
 
 use crate::transport::TransportManager;
 
+struct MetricsCache {
+    at: Instant,
+    blocked: u64,
+    dns_queries: u64,
+}
+
 pub struct MetricsService {
     storage: Arc<Storage>,
     vpn: Arc<VpnManager>,
     transport: Arc<TransportManager>,
+    cache: Mutex<Option<MetricsCache>>,
 }
 
 impl MetricsService {
@@ -24,12 +33,28 @@ impl MetricsService {
             storage,
             vpn,
             transport,
+            cache: Mutex::new(None),
         }
     }
 
-    pub async fn snapshot(&self) -> Result<MetricsSnapshot> {
+    async fn cached_counts(&self) -> Result<(u64, u64)> {
+        if let Some(entry) = self.cache.lock().as_ref() {
+            if entry.at.elapsed() < StdDuration::from_secs(60) {
+                return Ok((entry.blocked, entry.dns_queries));
+            }
+        }
         let blocked = self.storage.firewall_decisions.count().await? as u64;
         let dns_queries = self.storage.dns_logs.count().await? as u64;
+        *self.cache.lock() = Some(MetricsCache {
+            at: Instant::now(),
+            blocked,
+            dns_queries,
+        });
+        Ok((blocked, dns_queries))
+    }
+
+    pub async fn snapshot(&self) -> Result<MetricsSnapshot> {
+        let (blocked, dns_queries) = self.cached_counts().await?;
         let open_leaks = self
             .storage
             .leak_incidents
@@ -82,8 +107,8 @@ impl MetricsService {
              # HELP wiresentinel_open_leak_incidents Open leak incidents\n\
              # TYPE wiresentinel_open_leak_incidents gauge\n\
              wiresentinel_open_leak_incidents {}\n\
-             # HELP wiresentinel_route_changes_24h Route changes in 24h\n\
-             # TYPE wiresentinel_route_changes_24h counter\n\
+             # HELP wiresentinel_route_changes_24h Route changes in last 24h\n\
+             # TYPE wiresentinel_route_changes_24h gauge\n\
              wiresentinel_route_changes_24h {}\n",
             snapshot.active_tunnels,
             snapshot.active_transports,

@@ -4,6 +4,7 @@ use crate::api::AppState;
 use crate::auth;
 use crate::benchmark::{self, BenchmarkService};
 use crate::deps::ServiceDeps;
+use crate::log_retention;
 use crate::performance::PerformanceMonitor;
 use crate::privacy::PrivacyScoreService;
 use crate::privacy_analytics::PrivacyAnalyticsService;
@@ -16,7 +17,10 @@ use shared_types::{
     ConnectionSnapshot, Direction, ServiceEvent, ServiceEventInner, ServiceStatus, TrafficEvent,
     ValidationStatus,
 };
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use storage::Storage;
 use tokio::sync::watch;
 use tracing::{info, warn};
@@ -35,17 +39,40 @@ struct OrchestratorHandler {
     deps: Arc<ServiceDeps>,
 }
 
+static CONN_FAIL_COUNT: AtomicU64 = AtomicU64::new(0);
+static LAST_CONN_FAIL_LOG: std::sync::OnceLock<RwLock<Option<Instant>>> = std::sync::OnceLock::new();
+static BANDWIDTH_LAST_PUBLISH: std::sync::OnceLock<RwLock<HashMap<uuid::Uuid, Instant>>> =
+    std::sync::OnceLock::new();
+
 #[async_trait]
 impl ConnectionHandler for OrchestratorHandler {
     async fn on_connection(&self, conn: ConnectionSnapshot) {
         if let Err(e) = self.deps.as_ref().process_connection(conn).await {
-            warn!(error = %e, "connection processing failed");
+            let n = CONN_FAIL_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+            let log_gate = LAST_CONN_FAIL_LOG.get_or_init(|| RwLock::new(None));
+            let mut last = log_gate.write();
+            let now = Instant::now();
+            if last
+                .map(|t| now.duration_since(t) >= Duration::from_secs(60))
+                .unwrap_or(true)
+            {
+                warn!(
+                    error = %e,
+                    suppressed_since_last = n.saturating_sub(1),
+                    "connection processing failed"
+                );
+                CONN_FAIL_COUNT.store(0, Ordering::Relaxed);
+                *last = Some(now);
+            }
         }
     }
 }
 
 impl ServiceDeps {
     pub async fn process_connection(&self, conn: ConnectionSnapshot) -> shared_types::Result<()> {
+        if conn.pid == 0 {
+            return Ok(());
+        }
         let (app, _discovered) = self.app_registry.resolve_or_register(conn.pid).await?;
         self.traffic.register_app(app.clone());
 
@@ -202,14 +229,30 @@ impl ServiceDeps {
             conn.bytes_sent,
         );
 
-        if let Some(snapshot) = self
-            .traffic
-            .bandwidth_snapshots()
-            .into_iter()
-            .find(|s| s.app_id == app.id())
-        {
-            self.events
-                .publish(ServiceEventInner::BandwidthUpdated { snapshot }.with_timestamp(ts));
+        if self.events.has_subscribers() {
+            let throttle = BANDWIDTH_LAST_PUBLISH.get_or_init(|| RwLock::new(HashMap::new()));
+            let now = Instant::now();
+            let publish = {
+                let mut map = throttle.write();
+                match map.get(&app.id()) {
+                    Some(t) if now.duration_since(*t) < Duration::from_secs(1) => false,
+                    _ => {
+                        map.insert(app.id(), now);
+                        true
+                    }
+                }
+            };
+            if publish {
+                if let Some(snapshot) = self
+                    .traffic
+                    .bandwidth_snapshots()
+                    .into_iter()
+                    .find(|s| s.app_id == app.id())
+                {
+                    self.events
+                        .publish(ServiceEventInner::BandwidthUpdated { snapshot }.with_timestamp(ts));
+                }
+            }
         }
 
         if route.is_blocked() {
@@ -280,6 +323,12 @@ impl Orchestrator {
         }
 
         self.deps.start_domain_cache_purge(self.shutdown_rx.clone());
+        log_retention::start_retention_task(Arc::clone(&self.deps.storage), self.shutdown_rx.clone());
+        let storage = Arc::clone(&self.deps.storage);
+        tokio::spawn(async move {
+            let days = storage.settings.log_retention_days().await.unwrap_or(7);
+            let _ = log_retention::purge_older_than(&storage, days).await;
+        });
         self.deps.start_filter_scheduler().await;
 
         if let Err(e) = self.deps.plugins.discover().await {

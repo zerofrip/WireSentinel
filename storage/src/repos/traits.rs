@@ -168,6 +168,8 @@ pub trait SettingsRepository: Send + Sync {
     async fn set_log_json_enabled(&self, enabled: bool) -> Result<()>;
     async fn log_max_files(&self) -> Result<u32>;
     async fn set_log_max_files(&self, count: u32) -> Result<()>;
+    async fn log_retention_days(&self) -> Result<u64>;
+    async fn set_log_retention_days(&self, days: u64) -> Result<()>;
     async fn recovery_enabled(&self) -> Result<bool>;
     async fn set_recovery_enabled(&self, enabled: bool) -> Result<()>;
     async fn metrics_interval_secs(&self) -> Result<u64>;

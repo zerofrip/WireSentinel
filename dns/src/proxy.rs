@@ -67,6 +67,7 @@ async fn run_proxy(
     };
     debug!(%listen, "DNS UDP proxy listening");
 
+    let sem = Arc::new(tokio::sync::Semaphore::new(32));
     let mut buf = [0u8; 512];
     loop {
         tokio::select! {
@@ -87,7 +88,10 @@ async fn run_proxy(
 
                 let ctx = Arc::clone(&ctx);
                 let sock = Arc::clone(&socket);
+                let sem = Arc::clone(&sem);
+                let Ok(permit) = sem.try_acquire_owned() else { continue };
                 tokio::spawn(async move {
+                    let _permit = permit;
                     let settings = ctx.settings.clone();
                     let filter = ctx.filter.clone();
                     let upstream = Arc::clone(&ctx.upstream);

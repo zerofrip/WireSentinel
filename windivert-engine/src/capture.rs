@@ -55,7 +55,7 @@ mod imp {
         if !path.exists() {
             return Err(format!("WinDivert.dll not found at {}", path.display()));
         }
-        let _ = WinDivertLib::load(&path)?;
+        let _probe = WinDivertCapture::open_sniff("false")?;
         Ok(path)
     }
 }

@@ -235,24 +235,28 @@ async fn seed_dns_providers(storage: &Storage) -> shared_types::Result<()> {
 }
 
 fn wire_dns_log_handler(dns: &DnsLayer, storage: Arc<Storage>, events: EventBus) {
-    dns.set_log_handler(Some(Arc::new(move |log| {
-        let storage = Arc::clone(&storage);
-        let events = events.clone();
-        tokio::spawn(async move {
-            if storage.settings.store_dns_logs().await.unwrap_or(true) {
-                let _ = storage.dns_logs.insert(&log).await;
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<shared_types::DNSQueryLog>(512);
+    let storage_worker = Arc::clone(&storage);
+    let events_worker = events.clone();
+    tokio::spawn(async move {
+        while let Some(log) = rx.recv().await {
+            if storage_worker.settings.store_dns_logs().await.unwrap_or(true) {
+                let _ = storage_worker.dns_logs.insert(&log).await;
             }
             let ts = Utc::now();
             if log.blocked {
-                events.publish(
+                events_worker.publish(
                     ServiceEventInner::DnsQueryBlocked { log: log.clone() }.with_timestamp(ts),
                 );
-            } else {
-                events.publish(
+            } else if events_worker.has_subscribers() {
+                events_worker.publish(
                     ServiceEventInner::DnsQueryObserved { log: log.clone() }.with_timestamp(ts),
                 );
             }
-        });
+        }
+    });
+    dns.set_log_handler(Some(Arc::new(move |log| {
+        let _ = tx.try_send(log);
     })));
 }
 

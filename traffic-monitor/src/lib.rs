@@ -1,6 +1,7 @@
 //! Network traffic monitoring via packet events or iphlpapi polling.
 
 mod backend;
+mod filter;
 mod handler;
 mod iphlpapi;
 mod monitor;

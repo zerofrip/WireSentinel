@@ -1,55 +1,17 @@
 //! WinDivert packet-event connection backend.
 
 use crate::backend::{BackendMode, ConnectionBackend, MonitorConnectionSink, MonitorContext};
+use crate::filter::is_valid_pid;
 use async_trait::async_trait;
 use shared_types::ConnectionSnapshot;
-use std::collections::HashSet;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use windivert_engine::{parse_packet, WinDivertCapture};
 
-const PACKET_FILTER: &str = "(outbound and tcp.Syn == 1) or (outbound and udp)";
+const PACKET_FILTER: &str = "outbound and tcp.Syn == 1";
 
 pub struct PacketConnectionBackend;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct FlowKey {
-    pid: u32,
-    local: String,
-    remote: String,
-}
-
-impl FlowKey {
-    fn from_snapshot(conn: &ConnectionSnapshot) -> Self {
-        Self {
-            pid: conn.pid,
-            local: conn.local_addr.to_string(),
-            remote: conn.remote_addr.to_string(),
-        }
-    }
-}
-
-struct ConnectionTracker {
-    flows: HashSet<FlowKey>,
-}
-
-impl ConnectionTracker {
-    fn new() -> Self {
-        Self {
-            flows: HashSet::new(),
-        }
-    }
-
-    fn insert_snapshot(&mut self, conn: &ConnectionSnapshot) -> bool {
-        self.flows.insert(FlowKey::from_snapshot(conn))
-    }
-
-    fn retain_active(&mut self, connections: &[ConnectionSnapshot]) {
-        let active: HashSet<FlowKey> = connections.iter().map(FlowKey::from_snapshot).collect();
-        self.flows.retain(|k| active.contains(k));
-    }
-}
 
 #[async_trait]
 impl ConnectionBackend for PacketConnectionBackend {
@@ -71,7 +33,6 @@ impl ConnectionBackend for PacketConnectionBackend {
             ctx.monitor.clone(),
             ctx.handler.clone(),
         ));
-        let mut tracker = ConnectionTracker::new();
         let cleaner_ms = ctx.cleaner_interval_ms.max(1000);
         let mut cleaner = tokio::time::interval(Duration::from_millis(cleaner_ms));
         cleaner.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -82,15 +43,10 @@ impl ConnectionBackend for PacketConnectionBackend {
                 _ = cleaner.tick() => {
                     let active = collect_tcp_connections();
                     sink.prune_to_active(&active);
-                    tracker.retain_active(&active);
                 }
                 conn = rx.recv() => {
                     match conn {
-                        Some(conn) => {
-                            if tracker.insert_snapshot(&conn) {
-                                sink.on_new_connection(conn).await;
-                            }
-                        }
+                        Some(conn) => sink.try_new_connection(conn),
                         None => break,
                     }
                 }
@@ -125,9 +81,15 @@ fn packet_capture_loop(
         }
         match capture.recv_blocking() {
             Ok(pkt) => {
+                if !is_valid_pid(pkt.meta.process_id) {
+                    continue;
+                }
                 let Some(flow) = parse_packet(&pkt.data, pkt.meta.outbound, pkt.meta.ipv6) else {
                     continue;
                 };
+                if flow.remote.port() == 0 {
+                    continue;
+                }
                 let conn = ConnectionSnapshot {
                     pid: pkt.meta.process_id,
                     app_id: None,
@@ -153,30 +115,4 @@ fn packet_capture_loop(
 
 fn collect_tcp_connections() -> Vec<ConnectionSnapshot> {
     crate::windows::enumerate_tcp_connections()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use shared_types::Protocol;
-    use std::net::SocketAddr;
-
-    #[test]
-    fn connection_tracker_dedup() {
-        let mut t = ConnectionTracker::new();
-        let conn = ConnectionSnapshot {
-            pid: 1,
-            app_id: None,
-            exe_name: "pid:1".into(),
-            protocol: Protocol::Tcp,
-            local_addr: "127.0.0.1:1234".parse().unwrap(),
-            remote_addr: "93.184.216.34:443".parse().unwrap(),
-            state: "new".into(),
-            remote_domain: None,
-            bytes_sent: 0,
-            bytes_received: 0,
-        };
-        assert!(t.insert_snapshot(&conn));
-        assert!(!t.insert_snapshot(&conn));
-    }
 }

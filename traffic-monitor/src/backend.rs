@@ -1,5 +1,6 @@
 //! Connection source backends (packet event-driven and iphlpapi polling).
 
+use crate::filter::is_processable_connection;
 use crate::handler::ConnectionHandler;
 use crate::monitor::{connection_key, TrafficMonitor};
 use async_trait::async_trait;
@@ -39,14 +40,32 @@ impl MonitorConnectionSink {
         }
     }
 
-    pub async fn on_new_connection(&self, conn: ConnectionSnapshot) {
+    /// Mark connection as known without invoking the handler (startup bootstrap).
+    pub fn seed_known(&self, conn: &ConnectionSnapshot) {
+        if !is_processable_connection(conn) {
+            return;
+        }
+        self.known_keys.write().insert(connection_key(conn));
+    }
+
+    /// Process a connection if newly seen (non-blocking handler dispatch).
+    pub fn try_new_connection(&self, conn: ConnectionSnapshot) {
+        if !is_processable_connection(&conn) {
+            return;
+        }
         let key = connection_key(&conn);
+        if self.known_keys.read().contains(&key) {
+            return;
+        }
         if !self.known_keys.write().insert(key) {
             return;
         }
         self.monitor.track_connection(&conn);
         self.monitor.broadcast_connection(conn.clone());
-        self.handler.on_connection(conn).await;
+        let handler = Arc::clone(&self.handler);
+        tokio::spawn(async move {
+            handler.on_connection(conn).await;
+        });
     }
 
     pub fn prune_to_active(&self, connections: &[ConnectionSnapshot]) {

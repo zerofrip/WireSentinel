@@ -26,6 +26,13 @@ pub fn global() -> Option<Arc<LoggingService>> {
 
 impl LoggingService {
     pub fn init(default_level: LogLevel, json_enabled: bool, max_files: u32) -> Arc<Self> {
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "core-service/src/logging.rs:LoggingService::init",
+            "ls: enter",
+            &[("hypothesisId", "H_LOGINIT".to_string())],
+        );
+        // #endregion
         let ring = Arc::new(RwLock::new(VecDeque::with_capacity(RING_CAPACITY)));
         let log_dir = data_dir().join("logs");
         let _ = std::fs::create_dir_all(&log_dir);
@@ -36,6 +43,13 @@ impl LoggingService {
         let file_appender = tracing_appender::rolling::daily(&log_dir, "wiresentinel.log");
         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
         std::mem::forget(_guard);
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "core-service/src/logging.rs:LoggingService::init",
+            "ls: appender created, before subscriber.init",
+            &[("hypothesisId", "H_LOGINIT".to_string())],
+        );
+        // #endregion
 
         if json_enabled {
             Registry::default()
@@ -48,8 +62,22 @@ impl LoggingService {
                 .with(fmt::layer().with_writer(non_blocking))
                 .init();
         }
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "core-service/src/logging.rs:LoggingService::init",
+            "ls: subscriber.init done, before prune",
+            &[("hypothesisId", "H_LOGINIT".to_string())],
+        );
+        // #endregion
 
         prune_old_log_files(&log_dir, max_files);
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "core-service/src/logging.rs:LoggingService::init",
+            "ls: prune done",
+            &[("hypothesisId", "H_LOGINIT".to_string())],
+        );
+        // #endregion
 
         let service = Arc::new(Self {
             ring,

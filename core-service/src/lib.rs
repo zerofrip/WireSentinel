@@ -74,17 +74,63 @@ use tokio::sync::watch;
 
 pub async fn init_logging() -> anyhow::Result<()> {
     let storage = Storage::open().await?;
+    // #region agent log
+    shared_types::debug_log::emit_kv(
+        "core-service/src/lib.rs:init_logging",
+        "il: storage opened",
+        &[("hypothesisId", "H_LOGINIT".to_string())],
+    );
+    // #endregion
     let level = storage.settings.log_level().await.unwrap_or_default();
     let json = storage.settings.log_json_enabled().await.unwrap_or(false);
     let max_files = storage.settings.log_max_files().await.unwrap_or(5);
+    // #region agent log
+    shared_types::debug_log::emit_kv(
+        "core-service/src/lib.rs:init_logging",
+        "il: settings read",
+        &[
+            ("hypothesisId", "H_LOGINIT".to_string()),
+            ("json", json.to_string()),
+            ("max_files", max_files.to_string()),
+        ],
+    );
+    // #endregion
     let _ = logging::LoggingService::init(level, json, max_files);
+    // #region agent log
+    shared_types::debug_log::emit_kv(
+        "core-service/src/lib.rs:init_logging",
+        "il: LoggingService::init returned",
+        &[("hypothesisId", "H_LOGINIT".to_string())],
+    );
+    // #endregion
     Ok(())
 }
 
 pub async fn run_service(external_shutdown: Option<watch::Receiver<bool>>) -> anyhow::Result<()> {
+    // #region agent log
+    shared_types::debug_log::emit_kv(
+        "core-service/src/lib.rs:run_service",
+        "run_service entry",
+        &[("hypothesisId", "H_EARLY".to_string())],
+    );
+    // #endregion
     init_logging().await?;
+    // #region agent log
+    shared_types::debug_log::emit_kv(
+        "core-service/src/lib.rs:run_service",
+        "logging initialized",
+        &[("hypothesisId", "H_EARLY".to_string())],
+    );
+    // #endregion
 
     let orchestrator = Orchestrator::new().await?;
+    // #region agent log
+    shared_types::debug_log::emit_kv(
+        "core-service/src/lib.rs:run_service",
+        "orchestrator constructed",
+        &[("hypothesisId", "H_EARLY".to_string())],
+    );
+    // #endregion
 
     if let Some(mut ext) = external_shutdown {
         let tx = orchestrator.shutdown_sender();

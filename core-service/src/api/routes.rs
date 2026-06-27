@@ -1465,6 +1465,13 @@ async fn get_metrics(
 }
 
 async fn get_auth_token(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    // #region agent log
+    shared_types::debug_log::emit_kv(
+        "core-service/src/api/routes.rs:get_auth_token",
+        "auth/token requested",
+        &[("hypothesisId", "H_AUTH".to_string())],
+    );
+    // #endregion
     Json(serde_json::json!({
         "token": state.deps.api_token.read().clone()
     }))

@@ -56,6 +56,17 @@ impl MonitorConnectionSink {
         capacity: usize,
     ) -> Self {
         let (tx, rx) = mpsc::channel::<ConnectionSnapshot>(capacity.max(1));
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "traffic-monitor/src/backend.rs:with_capacity",
+            "connection worker pool started",
+            &[
+                ("hypothesisId", "DEPLOY_D".to_string()),
+                ("workers", workers.max(1).to_string()),
+                ("queue_capacity", capacity.max(1).to_string()),
+            ],
+        );
+        // #endregion
         let rx = Arc::new(tokio::sync::Mutex::new(rx));
         for _ in 0..workers.max(1) {
             let rx = Arc::clone(&rx);
@@ -124,6 +135,16 @@ impl MonitorConnectionSink {
                 dropped_total = total,
                 "connection processing queue full; shedding new connections"
             );
+            // #region agent log
+            shared_types::debug_log::emit_kv(
+                "traffic-monitor/src/backend.rs:note_dropped",
+                "connection queue full; shedding",
+                &[
+                    ("hypothesisId", "DEPLOY_D".to_string()),
+                    ("dropped_total", total.to_string()),
+                ],
+            );
+            // #endregion
             *last = Some(now);
         }
     }

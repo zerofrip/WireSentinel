@@ -10,6 +10,7 @@ mod bandwidth;
 mod cloud_telemetry;
 mod cnapp;
 mod config;
+pub mod debug_log;
 mod dns;
 mod error;
 mod events;

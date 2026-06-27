@@ -54,6 +54,28 @@ pub async fn init_pool(db_path: Option<&Path>) -> Result<SqlitePool, WireSentine
     crate::migrations::run_migrations(&pool).await?;
 
     info!(path = %path.display(), "SQLite database initialized");
+    // #region agent log
+    {
+        let journal: String = sqlx::query_scalar("PRAGMA journal_mode")
+            .fetch_one(&pool)
+            .await
+            .unwrap_or_else(|_| "unknown".to_string());
+        let busy: i64 = sqlx::query_scalar("PRAGMA busy_timeout")
+            .fetch_one(&pool)
+            .await
+            .unwrap_or(-1);
+        shared_types::debug_log::emit_kv(
+            "storage/src/pool.rs:init_pool",
+            "sqlite pool initialized",
+            &[
+                ("hypothesisId", "DEPLOY_A".to_string()),
+                ("max_connections", "10".to_string()),
+                ("journal_mode", journal),
+                ("busy_timeout_ms", busy.to_string()),
+            ],
+        );
+    }
+    // #endregion
     Ok(pool)
 }
 

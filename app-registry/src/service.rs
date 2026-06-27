@@ -101,7 +101,19 @@ impl AppRegistryService {
                 return Some(entry.hash.clone());
             }
         }
+        let sha_start = std::time::Instant::now();
         let hash = file_sha256(path).ok()?;
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "app-registry/src/service.rs:cached_sha256",
+            "sha256 cache miss (hashed file)",
+            &[
+                ("hypothesisId", "DEPLOY_B".to_string()),
+                ("size_bytes", size.to_string()),
+                ("hash_ms", sha_start.elapsed().as_millis().to_string()),
+            ],
+        );
+        // #endregion
         let mut cache = self.sha_cache.write();
         if cache.len() >= SHA_CACHE_MAX {
             cache.clear();

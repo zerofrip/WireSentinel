@@ -41,12 +41,17 @@ struct OrchestratorHandler {
 
 static CONN_FAIL_COUNT: AtomicU64 = AtomicU64::new(0);
 static LAST_CONN_FAIL_LOG: std::sync::OnceLock<RwLock<Option<Instant>>> = std::sync::OnceLock::new();
+// #region agent log
+static CONN_OK_COUNT: AtomicU64 = AtomicU64::new(0);
+static LAST_CONN_OK_LOG: std::sync::OnceLock<RwLock<Option<Instant>>> = std::sync::OnceLock::new();
+// #endregion
 static BANDWIDTH_LAST_PUBLISH: std::sync::OnceLock<RwLock<HashMap<uuid::Uuid, Instant>>> =
     std::sync::OnceLock::new();
 
 #[async_trait]
 impl ConnectionHandler for OrchestratorHandler {
     async fn on_connection(&self, conn: ConnectionSnapshot) {
+        let started = Instant::now();
         if let Err(e) = self.deps.as_ref().process_connection(conn).await {
             let n = CONN_FAIL_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
             let log_gate = LAST_CONN_FAIL_LOG.get_or_init(|| RwLock::new(None));
@@ -61,9 +66,43 @@ impl ConnectionHandler for OrchestratorHandler {
                     suppressed_since_last = n.saturating_sub(1),
                     "connection processing failed"
                 );
+                // #region agent log
+                shared_types::debug_log::emit_kv(
+                    "core-service/src/orchestrator.rs:on_connection",
+                    "process_connection error",
+                    &[
+                        ("hypothesisId", "H2_pool".to_string()),
+                        ("error", e.to_string()),
+                        ("suppressed_since_last", n.saturating_sub(1).to_string()),
+                        ("elapsed_ms", started.elapsed().as_millis().to_string()),
+                    ],
+                );
+                // #endregion
                 CONN_FAIL_COUNT.store(0, Ordering::Relaxed);
                 *last = Some(now);
             }
+        } else {
+            // #region agent log
+            let ok = CONN_OK_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+            let gate = LAST_CONN_OK_LOG.get_or_init(|| RwLock::new(None));
+            let now = Instant::now();
+            let mut last = gate.write();
+            if last
+                .map(|t| now.duration_since(t) >= Duration::from_secs(60))
+                .unwrap_or(true)
+            {
+                shared_types::debug_log::emit_kv(
+                    "core-service/src/orchestrator.rs:on_connection",
+                    "process_connection ok (sampled)",
+                    &[
+                        ("hypothesisId", "HEALTH".to_string()),
+                        ("ok_total", ok.to_string()),
+                        ("elapsed_ms", started.elapsed().as_millis().to_string()),
+                    ],
+                );
+                *last = Some(now);
+            }
+            // #endregion
         }
     }
 }

@@ -7,9 +7,18 @@ use async_trait::async_trait;
 use parking_lot::RwLock;
 use shared_types::ConnectionSnapshot;
 use std::collections::HashSet;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use tokio::sync::watch;
+use std::time::{Duration, Instant};
+use tokio::sync::{mpsc, watch};
 use tracing::warn;
+
+/// Fixed number of workers draining the connection queue. Bounds how many
+/// `on_connection` handlers (and their DB work) run concurrently.
+const CONN_WORKER_COUNT: usize = 4;
+/// Bounded queue depth. Bursts up to this many connections are buffered; beyond
+/// that, new connections are dropped to apply backpressure instead of growing memory.
+const CONN_QUEUE_CAPACITY: usize = 256;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BackendMode {
@@ -27,16 +36,49 @@ pub struct MonitorContext {
 /// Handles new connections and lifecycle pruning for all backends.
 pub struct MonitorConnectionSink {
     monitor: Arc<TrafficMonitor>,
-    handler: Arc<dyn ConnectionHandler>,
     known_keys: RwLock<HashSet<String>>,
+    tx: mpsc::Sender<ConnectionSnapshot>,
+    dropped: AtomicU64,
+    last_drop_warn: RwLock<Option<Instant>>,
 }
 
 impl MonitorConnectionSink {
     pub fn new(monitor: Arc<TrafficMonitor>, handler: Arc<dyn ConnectionHandler>) -> Self {
+        Self::with_capacity(monitor, handler, CONN_WORKER_COUNT, CONN_QUEUE_CAPACITY)
+    }
+
+    /// Build a sink backed by a bounded queue and a fixed pool of workers that
+    /// invoke the handler, so connection processing concurrency stays capped.
+    pub fn with_capacity(
+        monitor: Arc<TrafficMonitor>,
+        handler: Arc<dyn ConnectionHandler>,
+        workers: usize,
+        capacity: usize,
+    ) -> Self {
+        let (tx, rx) = mpsc::channel::<ConnectionSnapshot>(capacity.max(1));
+        let rx = Arc::new(tokio::sync::Mutex::new(rx));
+        for _ in 0..workers.max(1) {
+            let rx = Arc::clone(&rx);
+            let handler = Arc::clone(&handler);
+            tokio::spawn(async move {
+                loop {
+                    let next = {
+                        let mut guard = rx.lock().await;
+                        guard.recv().await
+                    };
+                    match next {
+                        Some(conn) => handler.on_connection(conn).await,
+                        None => break,
+                    }
+                }
+            });
+        }
         Self {
             monitor,
-            handler,
             known_keys: RwLock::new(HashSet::new()),
+            tx,
+            dropped: AtomicU64::new(0),
+            last_drop_warn: RwLock::new(None),
         }
     }
 
@@ -48,7 +90,9 @@ impl MonitorConnectionSink {
         self.known_keys.write().insert(connection_key(conn));
     }
 
-    /// Process a connection if newly seen (non-blocking handler dispatch).
+    /// Enqueue a connection for processing if newly seen. Non-blocking: when the
+    /// worker queue is full the connection is dropped (and may be retried on a
+    /// later poll) rather than spawning unbounded work.
     pub fn try_new_connection(&self, conn: ConnectionSnapshot) {
         if !is_processable_connection(&conn) {
             return;
@@ -57,15 +101,31 @@ impl MonitorConnectionSink {
         if self.known_keys.read().contains(&key) {
             return;
         }
-        if !self.known_keys.write().insert(key) {
+        if !self.known_keys.write().insert(key.clone()) {
             return;
         }
         self.monitor.track_connection(&conn);
         self.monitor.broadcast_connection(conn.clone());
-        let handler = Arc::clone(&self.handler);
-        tokio::spawn(async move {
-            handler.on_connection(conn).await;
-        });
+        if self.tx.try_send(conn).is_err() {
+            self.known_keys.write().remove(&key);
+            self.note_dropped();
+        }
+    }
+
+    fn note_dropped(&self) {
+        let total = self.dropped.fetch_add(1, Ordering::Relaxed) + 1;
+        let now = Instant::now();
+        let mut last = self.last_drop_warn.write();
+        if last
+            .map(|t| now.duration_since(t) >= Duration::from_secs(60))
+            .unwrap_or(true)
+        {
+            warn!(
+                dropped_total = total,
+                "connection processing queue full; shedding new connections"
+            );
+            *last = Some(now);
+        }
     }
 
     pub fn prune_to_active(&self, connections: &[ConnectionSnapshot]) {

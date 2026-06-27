@@ -115,6 +115,7 @@ dependencies = [
  "chrono",
  "event-bus",
  "hex",
+ "parking_lot",
  "sha2",
  "shared-types",
  "storage",

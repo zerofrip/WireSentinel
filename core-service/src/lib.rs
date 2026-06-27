@@ -30,6 +30,7 @@ pub mod enterprise;
 pub mod exit_failover;
 pub mod fault_injection;
 pub mod guardian_hybrid;
+pub mod hot_settings;
 pub mod kernel_route_bridge;
 pub mod kernel_telemetry;
 pub mod leak_detector;

@@ -57,7 +57,6 @@ fn parse_tcp_state(state: &str) -> Option<u32> {
 mod tests {
     use super::*;
     use shared_types::Protocol;
-    use std::net::SocketAddr;
 
     #[test]
     fn rejects_pid_zero() {

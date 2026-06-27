@@ -163,12 +163,7 @@ impl ServiceDeps {
             }
         }
 
-        let store_decisions = self
-            .storage
-            .settings
-            .store_firewall_decisions()
-            .await
-            .unwrap_or(true);
+        let store_decisions = self.hot_settings.store_firewall_decisions().await;
 
         let firewall_record = self
             .split_tunnel
@@ -211,13 +206,7 @@ impl ServiceDeps {
         self.events
             .publish(ServiceEventInner::RouteUsageUpdated { stats }.with_timestamp(ts));
 
-        if self
-            .storage
-            .settings
-            .store_traffic_logs()
-            .await
-            .unwrap_or(true)
-        {
+        if self.hot_settings.store_traffic_logs().await {
             let _ = self.storage.traffic_logs.insert(&event).await;
         }
 

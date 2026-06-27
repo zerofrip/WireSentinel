@@ -162,6 +162,7 @@ pub struct ServiceDeps {
     pub exit_failover: Arc<crate::exit_failover::ExitFailoverService>,
     pub api_listen_port: u16,
     pub api_token: Arc<RwLock<String>>,
+    pub hot_settings: Arc<crate::hot_settings::HotSettings>,
 }
 
 fn record_to_subscription(record: &FilterListRecord) -> FilterSubscription {
@@ -234,13 +235,18 @@ async fn seed_dns_providers(storage: &Storage) -> shared_types::Result<()> {
     Ok(())
 }
 
-fn wire_dns_log_handler(dns: &DnsLayer, storage: Arc<Storage>, events: EventBus) {
+fn wire_dns_log_handler(
+    dns: &DnsLayer,
+    storage: Arc<Storage>,
+    events: EventBus,
+    hot_settings: Arc<crate::hot_settings::HotSettings>,
+) {
     let (tx, mut rx) = tokio::sync::mpsc::channel::<shared_types::DNSQueryLog>(512);
     let storage_worker = Arc::clone(&storage);
     let events_worker = events.clone();
     tokio::spawn(async move {
         while let Some(log) = rx.recv().await {
-            if storage_worker.settings.store_dns_logs().await.unwrap_or(true) {
+            if hot_settings.store_dns_logs().await {
                 let _ = storage_worker.dns_logs.insert(&log).await;
             }
             let ts = Utc::now();
@@ -306,10 +312,17 @@ impl ServiceDeps {
         seed_dns_providers(storage.as_ref()).await?;
         let dns_provider_records = storage.dns_providers.list().await?;
 
+        let hot_settings = crate::hot_settings::HotSettings::new(Arc::clone(&storage)).await;
+
         let dns_settings = storage.settings.get_dns_settings().await?;
         let dns = Arc::new(DnsLayer::new(dns_settings));
         dns.load_providers_from_records(&dns_provider_records)?;
-        wire_dns_log_handler(&dns, Arc::clone(&storage), events.clone());
+        wire_dns_log_handler(
+            &dns,
+            Arc::clone(&storage),
+            events.clone(),
+            Arc::clone(&hot_settings),
+        );
 
         let api_listen_port = storage.settings.get_api_port().await?;
         let traffic_poll_interval_ms = storage.settings.traffic_poll_interval_ms().await?;
@@ -598,6 +611,7 @@ impl ServiceDeps {
             exit_failover,
             api_listen_port,
             api_token,
+            hot_settings,
         })
     }
 

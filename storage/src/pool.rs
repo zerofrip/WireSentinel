@@ -1,7 +1,10 @@
 use shared_types::WireSentinelError;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
+use sqlx::sqlite::{
+    SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteSynchronous,
+};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::time::Duration;
 use tracing::info;
 
 pub fn data_dir() -> PathBuf {
@@ -30,10 +33,20 @@ pub async fn init_pool(db_path: Option<&Path>) -> Result<SqlitePool, WireSentine
     let options = SqliteConnectOptions::from_str(&url)
         .map_err(|e| WireSentinelError::Config(format!("sqlite options: {e}")))?
         .create_if_missing(true)
-        .foreign_keys(true);
+        .foreign_keys(true)
+        // WAL lets readers run concurrently with a single writer, avoiding the
+        // whole-database lock that exhausted the connection pool under load.
+        .journal_mode(SqliteJournalMode::Wal)
+        // Wait for the write lock instead of failing immediately with SQLITE_BUSY.
+        .busy_timeout(Duration::from_secs(5))
+        // NORMAL is safe under WAL and avoids an fsync on every transaction.
+        .synchronous(SqliteSynchronous::Normal)
+        // Keep the WAL file from growing unbounded between checkpoints.
+        .pragma("wal_autocheckpoint", "1000");
 
     let pool = SqlitePoolOptions::new()
-        .max_connections(5)
+        .max_connections(10)
+        .acquire_timeout(Duration::from_secs(10))
         .connect_with(options)
         .await
         .map_err(|e| WireSentinelError::Config(format!("sqlite connect: {e}")))?;

@@ -328,9 +328,23 @@ impl Orchestrator {
 
     pub async fn start(self: &Arc<Self>) -> shared_types::Result<()> {
         info!("starting WireSentinel orchestrator");
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "core-service/src/orchestrator.rs:start",
+            "orchestrator start begin",
+            &[("hypothesisId", "H_START".to_string())],
+        );
+        // #endregion
 
         crate::exit_failover::install_exit_failover(Arc::clone(&self.deps));
 
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "core-service/src/orchestrator.rs:start",
+            "before wfp.init",
+            &[("hypothesisId", "H_START".to_string())],
+        );
+        // #endregion
         self.deps.wfp.init().await?;
         let _ = auth::restrict_token_acl();
 
@@ -407,6 +421,17 @@ impl Orchestrator {
             .traffic_poll_interval_ms()
             .await
             .unwrap_or(5000);
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "core-service/src/orchestrator.rs:start",
+            "creating traffic backend",
+            &[
+                ("hypothesisId", "H_START".to_string()),
+                ("backend_name", backend_name.clone()),
+                ("cleaner_interval_ms", cleaner_interval_ms.to_string()),
+            ],
+        );
+        // #endregion
         let backend = traffic_monitor::create_connection_backend(&backend_name);
         *self.monitor_handle.lock() = Some(traffic_monitor::spawn_monitor(
             Arc::clone(&self.deps.traffic),
@@ -461,6 +486,16 @@ impl Orchestrator {
         *self.api_handle.lock() = Some(handle);
 
         info!(port, "WireSentinel service started");
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "core-service/src/orchestrator.rs:start",
+            "service started (api task spawned)",
+            &[
+                ("hypothesisId", "H_START".to_string()),
+                ("port", port.to_string()),
+            ],
+        );
+        // #endregion
 
         let recovery_enabled = self
             .deps

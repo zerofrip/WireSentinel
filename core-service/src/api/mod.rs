@@ -31,10 +31,31 @@ impl AppState {
 pub async fn serve(state: AppState, port: u16) -> Result<()> {
     let app = routes::router(state);
     let addr = format!("127.0.0.1:{port}");
-    let listener = tokio::net::TcpListener::bind(&addr)
-        .await
-        .map_err(|e| WireSentinelError::Api(format!("bind {addr}: {e}")))?;
+    let listener = match tokio::net::TcpListener::bind(&addr).await {
+        Ok(l) => l,
+        Err(e) => {
+            // #region agent log
+            shared_types::debug_log::emit_kv(
+                "core-service/src/api/mod.rs:serve",
+                "API bind failed",
+                &[
+                    ("hypothesisId", "H_PORT".to_string()),
+                    ("addr", addr.clone()),
+                    ("error", e.to_string()),
+                ],
+            );
+            // #endregion
+            return Err(WireSentinelError::Api(format!("bind {addr}: {e}")));
+        }
+    };
     tracing::info!(addr = %addr, "API server listening");
+    // #region agent log
+    shared_types::debug_log::emit_kv(
+        "core-service/src/api/mod.rs:serve",
+        "API server listening",
+        &[("hypothesisId", "H_API".to_string()), ("addr", addr.clone())],
+    );
+    // #endregion
     axum::serve(listener, app)
         .await
         .map_err(|e| WireSentinelError::Api(format!("serve: {e}")))?;

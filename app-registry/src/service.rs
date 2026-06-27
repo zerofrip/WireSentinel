@@ -24,6 +24,10 @@ const LAST_SEEN_REFRESH_SECS: i64 = 300;
 /// Soft caps to keep the in-memory caches from growing with dead PIDs/paths.
 const PID_CACHE_MAX: usize = 8192;
 const SHA_CACHE_MAX: usize = 4096;
+/// Skip SHA-256 for binaries larger than this. Hashing a 200+ MB executable
+/// takes several seconds; doing it on the connection path starved the runtime.
+/// Large apps fall back to path-based identity (sha256 = None).
+const MAX_HASH_BYTES: u64 = 32 * 1024 * 1024;
 
 struct PidCacheEntry {
     identity: AppIdentity,
@@ -92,7 +96,7 @@ impl AppRegistryService {
 
     /// SHA256 of an executable, cached by (path, mtime, size) so repeated lookups
     /// for the same binary avoid re-reading and re-hashing the whole file.
-    fn cached_sha256(&self, path: &Path) -> Option<String> {
+    async fn cached_sha256(&self, path: &Path) -> Option<String> {
         let meta = std::fs::metadata(path).ok()?;
         let size = meta.len();
         let mtime = meta.modified().ok();
@@ -101,14 +105,33 @@ impl AppRegistryService {
                 return Some(entry.hash.clone());
             }
         }
+        if size > MAX_HASH_BYTES {
+            // #region agent log
+            shared_types::debug_log::emit_kv(
+                "app-registry/src/service.rs:cached_sha256",
+                "sha256 skipped (file too large)",
+                &[
+                    ("hypothesisId", "FIX_HASH".to_string()),
+                    ("size_bytes", size.to_string()),
+                ],
+            );
+            // #endregion
+            return None;
+        }
+        // Hash on the blocking pool so a slow file read never stalls tokio worker
+        // threads (which also drive the API server).
         let sha_start = std::time::Instant::now();
-        let hash = file_sha256(path).ok()?;
+        let hash_path = path.to_path_buf();
+        let hash = tokio::task::spawn_blocking(move || file_sha256(&hash_path))
+            .await
+            .ok()?
+            .ok()?;
         // #region agent log
         shared_types::debug_log::emit_kv(
             "app-registry/src/service.rs:cached_sha256",
             "sha256 cache miss (hashed file)",
             &[
-                ("hypothesisId", "DEPLOY_B".to_string()),
+                ("hypothesisId", "FIX_HASH".to_string()),
                 ("size_bytes", size.to_string()),
                 ("hash_ms", sha_start.elapsed().as_millis().to_string()),
             ],
@@ -149,7 +172,7 @@ impl AppRegistryService {
                 return Err(e);
             }
         };
-        let sha256 = self.cached_sha256(&exe_path);
+        let sha256 = self.cached_sha256(&exe_path).await;
 
         let existing = if let Some(ref hash) = sha256 {
             self.apps.find_by_sha256(hash).await?

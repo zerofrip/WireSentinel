@@ -553,6 +553,13 @@ impl ServiceDeps {
 
         let exit_failover = Arc::new(ExitFailoverService::new());
 
+        // #region agent log
+        shared_types::debug_log::emit_kv(
+            "core-service/src/deps.rs:build",
+            "service deps built",
+            &[("hypothesisId", "H_START".to_string())],
+        );
+        // #endregion
         Ok(Self {
             storage,
             events,

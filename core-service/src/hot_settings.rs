@@ -53,7 +53,8 @@ impl HotSettings {
         self.traffic_logs.store(traffic, Ordering::Relaxed);
         self.firewall_decisions.store(firewall, Ordering::Relaxed);
         self.dns_logs.store(dns, Ordering::Relaxed);
-        self.last_refresh_ms.store(Self::now_ms(), Ordering::Relaxed);
+        self.last_refresh_ms
+            .store(Self::now_ms(), Ordering::Relaxed);
     }
 
     async fn maybe_refresh(&self) {

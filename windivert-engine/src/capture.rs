@@ -23,12 +23,7 @@ mod imp {
         pub fn open_sniff(filter: &str) -> Result<Self, String> {
             let path = windivert_dll_path();
             let lib = WinDivertLib::load(&path)?;
-            let handle = lib.open(
-                filter,
-                WINDIVERT_LAYER_NETWORK,
-                0,
-                WINDIVERT_FLAG_SNIFF,
-            )?;
+            let handle = lib.open(filter, WINDIVERT_LAYER_NETWORK, 0, WINDIVERT_FLAG_SNIFF)?;
             Ok(Self { lib, handle })
         }
 
@@ -64,6 +59,7 @@ mod imp {
 pub use imp::{capture_available, CapturedPacket, WinDivertCapture};
 
 #[cfg(not(windows))]
+#[allow(dead_code)] // stub API mirrors the Windows implementation for cross-platform builds
 mod stub {
     use std::path::PathBuf;
 
@@ -89,4 +85,5 @@ mod stub {
 }
 
 #[cfg(not(windows))]
+#[allow(unused_imports)] // public API surface for cross-platform consumers
 pub use stub::{capture_available, CapturedPacket, WinDivertCapture};

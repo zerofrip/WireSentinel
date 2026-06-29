@@ -40,7 +40,8 @@ struct OrchestratorHandler {
 }
 
 static CONN_FAIL_COUNT: AtomicU64 = AtomicU64::new(0);
-static LAST_CONN_FAIL_LOG: std::sync::OnceLock<RwLock<Option<Instant>>> = std::sync::OnceLock::new();
+static LAST_CONN_FAIL_LOG: std::sync::OnceLock<RwLock<Option<Instant>>> =
+    std::sync::OnceLock::new();
 // #region agent log
 static CONN_OK_COUNT: AtomicU64 = AtomicU64::new(0);
 static LAST_CONN_OK_LOG: std::sync::OnceLock<RwLock<Option<Instant>>> = std::sync::OnceLock::new();
@@ -277,8 +278,9 @@ impl ServiceDeps {
                     .into_iter()
                     .find(|s| s.app_id == app.id())
                 {
-                    self.events
-                        .publish(ServiceEventInner::BandwidthUpdated { snapshot }.with_timestamp(ts));
+                    self.events.publish(
+                        ServiceEventInner::BandwidthUpdated { snapshot }.with_timestamp(ts),
+                    );
                 }
             }
         }
@@ -365,7 +367,10 @@ impl Orchestrator {
         }
 
         self.deps.start_domain_cache_purge(self.shutdown_rx.clone());
-        log_retention::start_retention_task(Arc::clone(&self.deps.storage), self.shutdown_rx.clone());
+        log_retention::start_retention_task(
+            Arc::clone(&self.deps.storage),
+            self.shutdown_rx.clone(),
+        );
         let storage = Arc::clone(&self.deps.storage);
         tokio::spawn(async move {
             let days = storage.settings.log_retention_days().await.unwrap_or(7);

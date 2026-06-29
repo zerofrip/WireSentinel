@@ -26,11 +26,7 @@ pub fn route_statistics_id(
 }
 
 pub fn wfp_filter_state_id(scope_type: &str, scope_value: Option<&str>) -> Uuid {
-    let key = format!(
-        "{}|{}",
-        scope_type,
-        scope_value.unwrap_or("")
-    );
+    let key = format!("{}|{}", scope_type, scope_value.unwrap_or(""));
     Uuid::new_v5(&WFP_STATE_NS, key.as_bytes())
 }
 

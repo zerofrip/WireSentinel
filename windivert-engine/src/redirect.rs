@@ -204,7 +204,9 @@ mod imp {
 }
 
 #[cfg(windows)]
-pub use imp::{windivert_available, windivert_dll_path, WinDivertEngine, WinDivertEngineApi, WinDivertHealth};
+pub use imp::{
+    windivert_available, windivert_dll_path, WinDivertEngine, WinDivertEngineApi, WinDivertHealth,
+};
 
 #[cfg(not(windows))]
 mod stub {

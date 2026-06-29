@@ -53,7 +53,10 @@ pub async fn serve(state: AppState, port: u16) -> Result<()> {
     shared_types::debug_log::emit_kv(
         "core-service/src/api/mod.rs:serve",
         "API server listening",
-        &[("hypothesisId", "H_API".to_string()), ("addr", addr.clone())],
+        &[
+            ("hypothesisId", "H_API".to_string()),
+            ("addr", addr.clone()),
+        ],
     );
     // #endregion
     axum::serve(listener, app)

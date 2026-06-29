@@ -15,8 +15,7 @@ fn log_path() -> std::path::PathBuf {
         return std::path::PathBuf::from(p);
     }
     if cfg!(windows) {
-        let base = std::env::var("PROGRAMDATA")
-            .unwrap_or_else(|_| r"C:\ProgramData".to_string());
+        let base = std::env::var("PROGRAMDATA").unwrap_or_else(|_| r"C:\ProgramData".to_string());
         std::path::PathBuf::from(base)
             .join("WireSentinel")
             .join(format!("debug-{SESSION_ID}.log"))
@@ -66,7 +65,11 @@ pub fn emit_kv(location: &str, message: &str, kvs: &[(&str, String)]) {
         } else {
             serde_json::Value::String(v.clone()).to_string()
         };
-        data.push_str(&format!("{}:{}", serde_json::Value::String(k.to_string()), value));
+        data.push_str(&format!(
+            "{}:{}",
+            serde_json::Value::String(k.to_string()),
+            value
+        ));
     }
     data.push('}');
     let line = format!(

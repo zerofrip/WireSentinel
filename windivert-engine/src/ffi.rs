@@ -74,8 +74,7 @@ impl WinDivertLib {
             let open: WinDivertOpenFn = *lib.get(b"WinDivertOpen\0").map_err(|e| e.to_string())?;
             let close: WinDivertCloseFn =
                 *lib.get(b"WinDivertClose\0").map_err(|e| e.to_string())?;
-            let recv: WinDivertRecvFn =
-                *lib.get(b"WinDivertRecv\0").map_err(|e| e.to_string())?;
+            let recv: WinDivertRecvFn = *lib.get(b"WinDivertRecv\0").map_err(|e| e.to_string())?;
             let send: WinDivertSendFn = *lib.get(b"WinDivertSend\0").map_err(|e| e.to_string())?;
             Ok(Self {
                 _lib: lib,
